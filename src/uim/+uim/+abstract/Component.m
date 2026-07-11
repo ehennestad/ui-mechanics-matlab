@@ -162,6 +162,8 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
 
             if isa(hParent, 'uim.abstract.Container')
                 obj.Parent = hParent.getGraphicsContainer();
+            elseif isa(hParent, 'uim.UIComponentCanvas')
+                obj.Parent = hParent;
             elseif isgraphics(hParent)
                 obj.Parent = hParent;
             else
@@ -243,11 +245,15 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
 
         function assignComponentCanvas(obj)
         %assignComponentCanvas Assign component canvas
-            obj.Canvas = getappdata(obj.Parent, 'UIComponentCanvas');
+            if isa(obj.Parent, 'uim.UIComponentCanvas')
+                obj.Canvas = obj.Parent;
+            else
+                obj.Canvas = getappdata(obj.Parent, 'UIComponentCanvas');
 
-            if isempty(obj.Canvas)
-                obj.Canvas = uim.UIComponentCanvas(obj.Parent, 'GlassMode', 'off');
-                setappdata(obj.Parent, 'UIComponentCanvas', obj.Canvas);
+                if isempty(obj.Canvas)
+                    obj.Canvas = uim.UIComponentCanvas(obj.Parent, 'GlassMode', 'off');
+                    setappdata(obj.Parent, 'UIComponentCanvas', obj.Canvas);
+                end
             end
 
             obj.hAxes = obj.Canvas.Axes;

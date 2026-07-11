@@ -1,9 +1,13 @@
-classdef rangeslider < uim.abstract.virtualContainer & uim.mixin.assignProperties & matlab.mixin.SetGet
+classdef rangeslider < uim.abstract.Control & matlab.mixin.SetGet
 
     % Todo:
     %   [ ] add vertical orientation
     %   [ ] updateSize and updateLocation should happen automatically when
     %   position is set.
+
+    properties (Constant)
+        Type = 'RangeSlider'
+    end
 
     properties (Dependent)
         Min                 % Minimum possible slider value
@@ -15,7 +19,6 @@ classdef rangeslider < uim.abstract.virtualContainer & uim.mixin.assignPropertie
     properties
         NumTicks = 100
 
-        Label = ''                  % Todo: Add to superclass (a widget class)
         LabelLocation = 'left'      % Todo: Add to superclass (a widget class)
 
         TrackWidth = 2              % Width of the slider track
@@ -38,7 +41,6 @@ classdef rangeslider < uim.abstract.virtualContainer & uim.mixin.assignPropertie
 
         ValueChangingFcn = []
 
-        Callback = []
         CallbackRefreshRate = inf % allowed number of updates per second. Useful for applications that do heavy computations.
     end
 
@@ -67,37 +69,12 @@ classdef rangeslider < uim.abstract.virtualContainer & uim.mixin.assignPropertie
 
         function obj = rangeslider(hParent, varargin)
 
-            if isa(hParent, 'matlab.graphics.axis.Axes')
-
-                obj.Parent = hParent;
-                obj.Canvas = struct('Axes', hParent);
-                obj.hAxes = hParent;
-
-            else
-
-                %obj@uim.abstract.virtualContainer(hParent)
-                el = listener(hParent, 'SizeChanged', ...
-                    @obj.onParentContainerSizeChanged);
-                obj.ParentContainerSizeChangedListener = el;
-
-                obj.Parent = hParent;
-                obj.Canvas = hParent;
-                obj.hAxes = obj.Canvas.Axes;
-            end
-
-            obj.parseInputs(varargin{:})
-            obj.IsFixedSize = [1, 1]; % No floating!
+            obj@uim.abstract.Control(hParent, varargin{:})
 
             obj.createSlider()
             obj.plotLabel()
 
             obj.IsConstructed = true;
-
-            % Call updateSize to trigger size update (call before location)
-            obj.updateSize('auto')
-
-            % Call updateLocation to trigger location update
-            obj.updateLocation('auto')
 
             obj.onVisibleChanged()
 
@@ -114,8 +91,6 @@ classdef rangeslider < uim.abstract.virtualContainer & uim.mixin.assignPropertie
     methods (Access = private) % Component construction
 
         function createSlider(obj)
-
-            obj.createBackground()
 
             % Slider and especially the slider track is thin, and its easy
             % to miss when pressing it. Patch background so that
@@ -268,10 +243,30 @@ classdef rangeslider < uim.abstract.virtualContainer & uim.mixin.assignPropertie
         function updateBackground(obj)
 
             if ~isempty(obj.hBackground) && obj.IsConstructed
-                [X, Y] = obj.createBoxCoordinates(obj.Size, obj.CornerRadius);
+                [X, Y] = uim.shape.rectangle(obj.Size, obj.CornerRadius);
                 X = X + obj.Position(1);
                 Y = Y + obj.Position(2);
                 set(obj.hBackground, 'XData', X, 'YData', Y)
+            end
+        end
+    end
+
+    methods (Hidden, Access = protected)
+
+        function onVisibleChanged(obj, newValue)
+
+            if ~obj.IsConstructed; return; end
+
+            % Set visibility of subcomponents.
+            obj.hTrack.Visible = obj.Visible;
+            set(obj.hSliderKnob, 'Visible', obj.Visible);
+            obj.hLabel.Visible = obj.Visible;
+
+            switch obj.Visible
+                case 'on'
+                    obj.hBackground.PickableParts = 'all';
+                case 'off'
+                    obj.hBackground.PickableParts = 'none';
             end
         end
     end
@@ -506,7 +501,7 @@ classdef rangeslider < uim.abstract.virtualContainer & uim.mixin.assignPropertie
             if ~obj.IsConstructed; return; end
 
             if nargin < 2; mode = obj.PositionMode; end
-            updateLocation@uim.abstract.virtualContainer(obj, mode)
+            updateLocation@uim.abstract.Component(obj, mode)
             obj.plotTrack()
             obj.plotKnobs()
             obj.plotText()
@@ -518,26 +513,9 @@ classdef rangeslider < uim.abstract.virtualContainer & uim.mixin.assignPropertie
             if ~obj.IsConstructed; return; end
 
             if nargin < 2; mode = obj.PositionMode; end
-            updateSize@uim.abstract.virtualContainer(obj, mode)
+            updateSize@uim.abstract.Component(obj, mode)
             obj.plotTrack()
             obj.plotKnobs()
-        end
-
-        function onVisibleChanged(obj, newValue)
-
-            if ~obj.IsConstructed; return; end
-
-            % Set visibility of subcomponents.
-            obj.hTrack.Visible = obj.Visible;
-            set(obj.hSliderKnob, 'Visible', obj.Visible);
-            obj.hLabel.Visible = obj.Visible;
-
-            switch obj.Visible
-                case 'on'
-                    obj.hBackground.PickableParts = 'all';
-                case 'off'
-                    obj.hBackground.PickableParts = 'none';
-            end
         end
 
         function onValueChanging(obj, newValue, whichValue)
@@ -663,6 +641,12 @@ classdef rangeslider < uim.abstract.virtualContainer & uim.mixin.assignPropertie
 
         function stepSize = get.StepSize(obj)
             stepSize = (obj.Max-obj.Min) / obj.NumTicks;
+        end
+    end
+
+    methods (Static)
+        function S = getTypeDefaults()
+            S.IsFixedSize = [true, true]; % No floating!
         end
     end
 end
