@@ -76,7 +76,7 @@ classdef wtoolbar < uim.abstract.Container
                         'Size', separatorPosition(3:4) }, varargin, ...
                         'Visible', obj.Visible];
 
-            hSep = uim.control.toolbarSeparator(obj, varargin{:});
+            hSep = uim.decorator.Separator(obj, varargin{:});
 
             % Add listener for SizeChanged event on button
             el = addlistener(hSep, 'SizeChanged', @obj.onButtonSizeChanged);

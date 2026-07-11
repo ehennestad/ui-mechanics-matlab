@@ -32,14 +32,18 @@ classdef panel < uim.abstract.Container
             if nargin < 2; mode = obj.PositionMode; end
 
             updateSize@uim.abstract.Component(obj, mode)
-            obj.hPanel.Position = obj.Position;
+            if ~isequal(obj.hPanel.Position, obj.Position)
+                obj.hPanel.Position = obj.Position;
+            end
         end
 
         function updateLocation(obj, mode)
             if nargin < 2; mode = obj.PositionMode; end
 
             updateLocation@uim.abstract.Component(obj, mode)
-            obj.hPanel.Position = obj.Position;
+            if ~isequal(obj.hPanel.Position, obj.Position)
+                obj.hPanel.Position = obj.Position;
+            end
         end
     end
 

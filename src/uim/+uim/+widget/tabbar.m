@@ -25,7 +25,7 @@ classdef tabbar < uim.widget.toolbar
                         'Color', ones(1,3)*0.9, ...
                         'LineWidth', 0.5};
 
-            hSep = uim.control.toolbarSeparator(obj, varargin{:});
+            hSep = uim.decorator.Separator(obj, varargin{:});
 
             % Add listener for SizeChanged event on button
             el = addlistener(hSep, 'SizeChanged', @obj.onButtonSizeChanged);

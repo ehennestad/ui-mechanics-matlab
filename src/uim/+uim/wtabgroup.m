@@ -24,7 +24,7 @@ classdef wtabgroup < uim.abstract.Container
         TabToolBar
 
         TabButtonGroup uim.control.Button
-        TabSeparators uim.control.toolbarSeparator
+        TabSeparators uim.decorator.Separator
         TabPanels uim.panel
 
         Tabs uim.tab

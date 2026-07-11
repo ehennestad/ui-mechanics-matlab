@@ -238,19 +238,6 @@ classdef rangeslider < uim.abstract.Control & matlab.mixin.SetGet
         end
     end
 
-    methods (Access = protected)
-
-        function updateBackground(obj)
-
-            if ~isempty(obj.hBackground) && obj.IsConstructed
-                [X, Y] = uim.shape.rectangle(obj.Size, obj.CornerRadius);
-                X = X + obj.Position(1);
-                Y = Y + obj.Position(2);
-                set(obj.hBackground, 'XData', X, 'YData', Y)
-            end
-        end
-    end
-
     methods (Hidden, Access = protected)
 
         function onVisibleChanged(obj, newValue)
@@ -506,7 +493,6 @@ classdef rangeslider < uim.abstract.Control & matlab.mixin.SetGet
             obj.plotKnobs()
             obj.plotText()
             obj.plotLabel()
-            obj.updateBackground()
         end
 
         function updateSize(obj, mode)
