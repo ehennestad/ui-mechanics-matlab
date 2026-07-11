@@ -2,8 +2,8 @@ classdef tab < uim.handle & uim.mixin.assignProperties
 %tab Logical wrapper registering a titled panel with a tabgroup.
 %
 %   A tab has no position/style of its own - all drawing is delegated to
-%   its Panel. Parent refers to the owning tabgroup/wtabgroup object
-%   (not a graphics handle), since a tab needs to call tabgroup-specific
+%   its Panel. Parent refers to the owning tabgroup object (not a
+%   graphics handle), since a tab needs to call tabgroup-specific
 %   methods (addTab, updateTabTitle) on it.
 
     properties
@@ -22,7 +22,7 @@ classdef tab < uim.handle & uim.mixin.assignProperties
 
             % Assert that parent is a tabgroup.
             assertMsg = 'Parent must be an instance of uim.tabgroup';
-            assert(isa(hParent, 'uim.tabgroup') || isa(hParent, 'uim.wtabgroup'), assertMsg)
+            assert(isa(hParent, 'uim.tabgroup'), assertMsg)
 
             obj.Parent = hParent;
             obj.parseInputs(varargin{:});

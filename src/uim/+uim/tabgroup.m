@@ -17,6 +17,7 @@ classdef tabgroup < uim.abstract.Container
         TabLocation = 'top' % Not priority.
         SelectedTab = []
         SelectionChangedFcn = []
+        ToolbarCanvasMode = 'shared' % 'shared' or 'private'. Private gives the tab button bar its own axes, stacked on top - use for tabgroups whose own canvas is heavily used by other content.
     end
 
     properties (Access = private, Hidden, Transient)
@@ -66,9 +67,18 @@ classdef tabgroup < uim.abstract.Container
 
             toolbarMargin = obj.Margin - [0,0,0,toolbarHeight/2];
 
-            uicc = obj.Canvas;
+            canvasMode = validatestring(obj.ToolbarCanvasMode, {'shared', 'private'});
 
-            hToolbar = uim.widget.toolbar(uicc, ...
+            switch canvasMode
+                case 'shared'
+                    toolbarParent = obj.Canvas;
+                    canvasModeArgs = {};
+                case 'private'
+                    toolbarParent = obj.Parent;
+                    canvasModeArgs = {'CanvasMode', 'private', 'BarExtensionMode', 'expanded'};
+            end
+
+            hToolbar = uim.widget.toolbar(toolbarParent, canvasModeArgs{:}, ...
                 'Size', [inf, toolbarHeight], ...
                 'Margin', toolbarMargin, ...
                 'Padding', [1, 1, 1, 1], ...
@@ -81,6 +91,10 @@ classdef tabgroup < uim.abstract.Container
             hToolbar.Location = 'northeast';
             hToolbar.ComponentAlignment = 'center';
             hToolbar.CornerRadius = 4;
+
+            if strcmp(canvasMode, 'private')
+                uistack(hToolbar.Canvas, 'top')
+            end
 
             obj.TabToolBar = hToolbar;
         end
