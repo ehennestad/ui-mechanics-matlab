@@ -1,8 +1,20 @@
-classdef tab < uim.abstract.virtualContainer & uim.mixin.assignProperties
+classdef tab < uim.handle & uim.mixin.assignProperties
+%tab Logical wrapper registering a titled panel with a tabgroup.
+%
+%   A tab has no position/style of its own - all drawing is delegated to
+%   its Panel. Parent refers to the owning tabgroup/wtabgroup object
+%   (not a graphics handle), since a tab needs to call tabgroup-specific
+%   methods (addTab, updateTabTitle) on it.
 
     properties
+        Parent = []
         Title = ''
         Panel = []
+        BackgroundColor = [0.94, 0.94, 0.94] % uipanel does not support 'none'
+    end
+
+    properties (Access = protected)
+        IsConstructed = false
     end
 
     methods
@@ -32,9 +44,6 @@ classdef tab < uim.abstract.virtualContainer & uim.mixin.assignProperties
         end
     end
 
-    methods (Access = protected)
-    end
-
     methods
         function set.Title(obj, newValue)
             obj.Title = newValue;
@@ -46,32 +55,8 @@ classdef tab < uim.abstract.virtualContainer & uim.mixin.assignProperties
     end
 
     methods % Wrappers for placing matlab components
-
         function hContainer = getGraphicsContainer(obj)
             hContainer = obj.Panel.hPanel;
         end
     end
 end
-
-% %         did not work:
-% %         function varargout = subsref(obj, s)
-% %
-% %             varargout = cell(1, nargout);
-% %
-% %             switch s(1).type
-% %
-% %                 % Use builtin if a property is requested.
-% %                 case '.'
-% %
-% %                     if isprop(obj, s(1).subs)
-% %                         [varargout{1}] = builtin('subsref', obj, s);
-% %                     elseif ismethod(obj, s(1).subs)
-% %                         [varargout{:}] = builtin('subsref', obj, s);
-% %                     else % todo: the subsasgn is not a property or not a method, unwrap panel an call again.
-% %                         func = str2func(s(1).subs);
-% %                         [varargout{:}] = func(obj.Panel, s(2).subs{''});
-% %                     end
-% %
-% %                 otherwise
-% %                     [varargout{:}] = builtin('subsref', obj, s);
-% %             end

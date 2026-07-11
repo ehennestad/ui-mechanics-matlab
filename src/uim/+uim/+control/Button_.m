@@ -61,7 +61,7 @@ classdef Button_ < uim.abstract.Control
     end
 
     properties (Dependent)
-        String string = '' %#ok<MDEPIN>
+        String = '' %#ok<MDEPIN>
     end
 
     properties (Dependent, Transient)

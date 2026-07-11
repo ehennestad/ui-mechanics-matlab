@@ -1,9 +1,17 @@
-classdef tabgroup < uim.abstract.virtualContainer & uim.mixin.assignProperties
+classdef tabgroup < uim.abstract.Container
 %tabgroup Mimic Matlab's tabgroup container class.
 %
 %   This tabgroup container has more flexibility in design, but is slower
 %   to update when being resized because the code is using axes and
 %   graphical objects for the components.
+
+    properties (Constant)
+        Type = 'TabGroup'
+    end
+
+    properties (SetAccess = protected, Transient)
+        Children uim.abstract.Component
+    end
 
     properties
         TabLocation = 'top' % Not priority.
@@ -15,12 +23,11 @@ classdef tabgroup < uim.abstract.virtualContainer & uim.mixin.assignProperties
         % BackgroundDecoration
         TabToolBar
 
-        TabButtonGroup uim.control.Button
-        TabSeparators uim.control.toolbarSeparator
+        TabButtonGroup uim.control.Button_
+        TabSeparators uim.decorator.Separator
         TabPanels uim.panel
-    end
 
-    properties
+        Tabs uim.tab
     end
 
     events
@@ -31,28 +38,9 @@ classdef tabgroup < uim.abstract.virtualContainer & uim.mixin.assignProperties
 
         function obj = tabgroup(hParent, varargin)
 
-            % Create listener for when parent size changes.
-            el = listener(hParent, 'SizeChanged', ...
-                @obj.onParentContainerSizeChanged);
-            obj.ParentContainerSizeChangedListener = el;
-
-            obj.Parent = hParent;
-
-            obj.assignComponentCanvas()
-
-            obj.parseInputs(varargin{:})
-
-            obj.createBackground()
+            obj@uim.abstract.Container(hParent, varargin{:})
 
             obj.IsConstructed = true;
-
-            % Call adjustSize to trigger size update (call before location)
-            obj.updateSize('auto')
-
-            % Call updateLocation to trigger location update
-            obj.updateLocation('auto')
-
-            obj.onStyleChanged()
 
             obj.createComponents()
         end
@@ -78,9 +66,9 @@ classdef tabgroup < uim.abstract.virtualContainer & uim.mixin.assignProperties
 
             toolbarMargin = obj.Margin - [0,0,0,toolbarHeight/2];
 
-            uicc = getappdata(obj.Parent, 'UIComponentCanvas');
+            uicc = obj.Canvas;
 
-            hToolbar = uim.widget.toolbar(uicc, ...
+            hToolbar = uim.widget.toolbar_(uicc, ...
                 'Size', [inf, toolbarHeight], ...
                 'Margin', toolbarMargin, ...
                 'Padding', [1, 1, 1, 1], ...
@@ -101,14 +89,14 @@ classdef tabgroup < uim.abstract.virtualContainer & uim.mixin.assignProperties
         %createTabButton Create new tab button for given tab
 
             buttonOptions = {'FontName', 'Lucida Grande', ...
-                'Type', 'togglebutton', ...
+                'Mode', 'togglebutton', ...
                 'Style', uim.style.tabButton, ...
                 'Padding', [5, 0, 5, 0], ...
                 'HorizontalTextAlignment', 'center', ...
                 'AutoWrapText', true, ...
-                'ButtonDownFcn', @obj.onTabButtonPressed };
+                'Callback', @obj.onTabButtonPressed };
 
-            numButtons = numel(obj.Children);
+            numButtons = numel(obj.Tabs);
             iButton = numButtons + 1; % number for this button
 
             if iButton > 1 % Add a separator between buttons
@@ -150,16 +138,16 @@ classdef tabgroup < uim.abstract.virtualContainer & uim.mixin.assignProperties
 
             hTab.Panel.Margin = panelMargin;
 
-            if numel(obj.Children)>=1
-                obj.Children(end+1) = hTab;
+            if numel(obj.Tabs)>=1
+                obj.Tabs(end+1) = hTab;
                 hTab.Panel.Visible = 'off';
             else
-                obj.Children = hTab;
+                obj.Tabs = hTab;
             end
         end
 
         function updateTabTitle(obj, hTab)
-            tabNum = find(ismember(obj.Children, hTab));
+            tabNum = find(ismember(obj.Tabs, hTab));
 
             hBtn = obj.TabButtonGroup(tabNum);
             hBtn.String = hTab.Title;
@@ -219,9 +207,9 @@ classdef tabgroup < uim.abstract.virtualContainer & uim.mixin.assignProperties
 
             % Set panel visibility todo: make a separate method.
             if ~isequal(nextTab, obj.SelectedTab)
-                obj.Children(nextTab).Panel.Visible = 'on';
+                obj.Tabs(nextTab).Panel.Visible = 'on';
                 %obj.TabPanels(nextTab).Visible = 'on';
-                obj.Children(obj.SelectedTab).Panel.Visible = 'off';
+                obj.Tabs(obj.SelectedTab).Panel.Visible = 'off';
                 %obj.TabPanels(obj.SelectedTab).Visible = 'off';
 
                 % Update separator visibility
@@ -234,7 +222,7 @@ classdef tabgroup < uim.abstract.virtualContainer & uim.mixin.assignProperties
                 end
 
                 if ~isempty(obj.SelectionChangedFcn)
-                    args = {obj.Children(obj.SelectedTab), obj.Children(nextTab)};
+                    args = {obj.Tabs(obj.SelectedTab), obj.Tabs(nextTab)};
                     evtData = uim.event.TabSelectionChangedEvent(args{:});
                     obj.SelectionChangedFcn(obj, evtData)
                 end
