@@ -42,7 +42,7 @@ classdef wtoolbar < uim.abstract.Container
     end
 
     properties (Access = protected, Transient)
-        hButtons uim.abstract.virtualContainer
+        hButtons uim.abstract.Component
         ButtonSizeChangedListener event.listener
     end
 
@@ -108,7 +108,7 @@ classdef wtoolbar < uim.abstract.Container
             % Concatenate with varargin at the end. Input parser will
             % choose the last entry (if there are duplicates) during parsing.
 
-            hButton = uim.control.Button(obj, varargin{:});
+            hButton = uim.control.Button_(obj, varargin{:});
 
             % Add listener for SizeChanged event on button
             el = addlistener(hButton, 'SizeChanged', @obj.onButtonSizeChanged);
@@ -116,6 +116,7 @@ classdef wtoolbar < uim.abstract.Container
 
             obj.AllButtonPosition(end+1, :) = hButton.Position;
             obj.hButtons(end+1) = hButton;
+            obj.Children(end+1) = hButton;
             obj.NumButtons = obj.NumButtons+1;
 
             obj.adjustButtonPositions()
@@ -351,7 +352,7 @@ classdef wtoolbar < uim.abstract.Container
             end
 
             for i = 1:numel(obj.hButtons)
-                if isa(obj.hButtons(i), 'uim.control.Button')
+                if isa(obj.hButtons(i), 'uim.control.Button_')
                     obj.hButtons(i).Style = style;
                 end
             end

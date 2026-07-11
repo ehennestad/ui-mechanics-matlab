@@ -23,7 +23,7 @@ classdef wtabgroup < uim.abstract.Container
         % BackgroundDecoration
         TabToolBar
 
-        TabButtonGroup uim.control.Button
+        TabButtonGroup uim.control.Button_
         TabSeparators uim.control.toolbarSeparator
         TabPanels uim.panel
 
@@ -91,12 +91,12 @@ classdef wtabgroup < uim.abstract.Container
         %createTabButton Create new tab button for given tab
 
             buttonOptions = {'FontName', 'Lucida Grande', ...
-                'Type', 'togglebutton', ...
+                'Mode', 'togglebutton', ...
                 'Style', uim.style.tabButton, ...
                 'Padding', [5, 0, 5, 0], ...
                 'HorizontalTextAlignment', 'center', ...
                 'AutoWrapText', true, ...
-                'ButtonDownFcn', @obj.onTabButtonPressed };
+                'Callback', @obj.onTabButtonPressed };
 
             numButtons = numel(obj.Tabs);
             iButton = numButtons + 1; % number for this button

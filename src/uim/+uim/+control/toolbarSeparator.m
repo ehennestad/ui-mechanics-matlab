@@ -1,6 +1,9 @@
-classdef toolbarSeparator < uim.abstract.virtualContainer & uim.mixin.assignProperties
+classdef toolbarSeparator < uim.abstract.Control
+%toolbarSeparator A decorator for separating groups of buttons in a toolbar.
 
-    % todo: is this a virtualContainer....???
+    properties (Constant)
+        Type = 'ToolbarSeparator'
+    end
 
     properties
         Color = ones(1,3) * 0.5
@@ -14,20 +17,18 @@ classdef toolbarSeparator < uim.abstract.virtualContainer & uim.mixin.assignProp
 
     methods
         function obj = toolbarSeparator(varargin)
-            if isa(varargin{1}, 'uim.widget.toolbar') || isa(varargin{1}, 'uim.widget.wtoolbar')
-                obj.Parent = varargin{1};
-                obj.Canvas = obj.Parent.Canvas;
-                varargin = varargin(2:end);
-            else
-                error('UIM:Invalid parent for toolbar separator')
-            end
 
-            obj.parseInputs(varargin{:})
+            assertMsg = 'Parent must be an instance of uim.widget.toolbar_ or uim.widget.wtoolbar';
+            assert(isa(varargin{1}, 'uim.widget.toolbar_') || isa(varargin{1}, 'uim.widget.wtoolbar'), assertMsg)
+
+            obj@uim.abstract.Control(varargin{:})
+
+            obj.hBackground.Visible = 'off';
             obj.plotSeparator()
             obj.Tag = 'Toolbar Separator';
-            obj.Visible = obj.Parent.Visible;
 
             obj.IsConstructed = true;
+            obj.onVisibleChanged()
         end
     end
 
@@ -36,11 +37,8 @@ classdef toolbarSeparator < uim.abstract.virtualContainer & uim.mixin.assignProp
 
             [X, Y] = obj.getPlotData();
 
-            if isa(obj.Canvas, 'matlab.graphics.axis.Axes')
-                h = plot(obj.Canvas, X, Y);
-            else
-                h = plot(obj.Canvas.Axes, X, Y);
-            end
+            h = plot(obj.CanvasAxes, X, Y);
+
             h.Color = obj.Color;
             h.LineWidth = obj.LineWidth;
             h.HitTest = 'off';
@@ -56,9 +54,6 @@ classdef toolbarSeparator < uim.abstract.virtualContainer & uim.mixin.assignProp
 
             y1 = yMean - (obj.Position(4)*obj.Height)/2;
             y2 = yMean + (obj.Position(4)*obj.Height)/2;
-
-%             y1 = obj.Position(2);
-%             y2 = sum(obj.Position([2,4]));
 
             X = [x1, x2];
             Y = [y1, y2];
@@ -86,7 +81,9 @@ classdef toolbarSeparator < uim.abstract.virtualContainer & uim.mixin.assignProp
             if obj.IsConstructed
             end
         end
+    end
 
+    methods (Hidden, Access = protected)
         function onVisibleChanged(obj, ~)
             switch obj.Visible
                 case 'on'
