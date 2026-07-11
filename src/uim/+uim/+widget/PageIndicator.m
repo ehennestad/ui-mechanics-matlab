@@ -1,4 +1,4 @@
-classdef PageIndicator < uim.abstract.virtualContainer & uim.mixin.assignProperties
+classdef PageIndicator < uim.abstract.Control
 %PageIndicator Widget to switch between pages / views.
 %
 %   Creates a "button group" where each button has a label, and pressing
@@ -6,7 +6,10 @@ classdef PageIndicator < uim.abstract.virtualContainer & uim.mixin.assignPropert
 %   button. Can be used for multi tab views or similar.
 
     % Todo: generalize so that it can be used as tab header for tabgroups
-    % Todo: subclass from uim.abstract.Container instead
+
+    properties (Constant)
+        Type = 'PageIndicator'
+    end
 
     properties
        PageNames = {''}
@@ -36,26 +39,13 @@ classdef PageIndicator < uim.abstract.virtualContainer & uim.mixin.assignPropert
         function obj = PageIndicator(hParent, pageNames, varargin)
         %PageIndicator Construct instance of page indicator widget.
 
-            el = listener(hParent, 'SizeChanged', ...
-                @obj.onParentContainerSizeChanged);
-            obj.ParentContainerSizeChangedListener = el;
+            obj@uim.abstract.Control(hParent, varargin{:})
 
-            obj.Parent = hParent;
-            obj.Canvas = hParent;
-            obj.hAxes = obj.Canvas.Axes;
-
-            obj.parseInputs(varargin{:})
             obj.PageNames = pageNames;
 
             obj.createIndicator()
 
             obj.IsConstructed = true;
-
-            % Call updateSize to trigger size update (call before location)
-            obj.updateSize('auto')
-
-            % Call updateLocation to trigger location update
-            obj.updateLocation('auto')
         end
 
         function delete(obj)
@@ -231,7 +221,7 @@ classdef PageIndicator < uim.abstract.virtualContainer & uim.mixin.assignPropert
         end
 
         function relocate(obj, shift)
-            relocate@uim.abstract.virtualContainer(obj, shift)
+            relocate@uim.abstract.Control(obj, shift)
             obj.shiftComponents(shift)
         end
 
@@ -287,9 +277,6 @@ classdef PageIndicator < uim.abstract.virtualContainer & uim.mixin.assignPropert
         function onMouseOverIndicator(obj)
         end
 
-        function onStyleChanged(obj)
-        end
-
         function onAppearanceChanged(obj)
 
             if ~obj.IsConstructed; return; end
@@ -324,16 +311,6 @@ classdef PageIndicator < uim.abstract.virtualContainer & uim.mixin.assignPropert
             set(obj.hPageLabels, 'FontSize', newValue)
         end
 
-        function onVisibleChanged(obj, newValue)
-            if obj.IsConstructed
-                set(obj.hHBar, 'Visible', obj.Visible)
-                set(obj.hPageButtons, 'Visible', obj.Visible)
-
-                set(obj.hVBar(obj.CurrentPage), 'Visible', obj.Visible)
-                set(obj.hPageLabels(obj.CurrentPage), 'Visible', obj.Visible)
-            end
-        end
-
         function setPointerBehavior(obj, h)
         %setPointerBehavior Set pointer behavior of background.
 
@@ -343,6 +320,41 @@ classdef PageIndicator < uim.abstract.virtualContainer & uim.mixin.assignPropert
 
             iptSetPointerBehavior(h, pointerBehavior);
             iptPointerManager(ancestor(h, 'figure'));
+        end
+
+        function onPageButtonPressed(obj, src, ~)
+
+            oldPageNumber = obj.CurrentPage;
+            newPageNumber = find( ismember(obj.hPageButtons, src) );
+
+            if ~obj.BlockChangePage
+                obj.changePage(newPageNumber)
+            end
+
+            evtData = uim.event.EventData('OldPageNumber', oldPageNumber, ...
+                'NewPageNumber', newPageNumber);
+
+            if ~isempty(obj.ChangePageFcn)
+                obj.ChangePageFcn(obj, evtData);
+            end
+        end
+    end
+
+    methods (Access = protected)
+        function onStyleChanged(obj)
+        end
+    end
+
+    methods (Hidden, Access = protected)
+
+        function onVisibleChanged(obj, ~)
+            if obj.IsConstructed
+                set(obj.hHBar, 'Visible', obj.Visible)
+                set(obj.hPageButtons, 'Visible', obj.Visible)
+
+                set(obj.hVBar(obj.CurrentPage), 'Visible', obj.Visible)
+                set(obj.hPageLabels(obj.CurrentPage), 'Visible', obj.Visible)
+            end
         end
 
         function onMouseEntered(obj, hFig, h)
@@ -364,23 +376,6 @@ classdef PageIndicator < uim.abstract.virtualContainer & uim.mixin.assignPropert
             obj.hPageLabels(isCurrent).Visible = 'off';
             if strcmp(obj.TextVisibility, 'on')
                 obj.hPageLabels(obj.CurrentPage).Visible = 'on';
-            end
-        end
-
-        function onPageButtonPressed(obj, src, ~)
-
-            oldPageNumber = obj.CurrentPage;
-            newPageNumber = find( ismember(obj.hPageButtons, src) );
-
-            if ~obj.BlockChangePage
-                obj.changePage(newPageNumber)
-            end
-
-            evtData = uim.event.EventData('OldPageNumber', oldPageNumber, ...
-                'NewPageNumber', newPageNumber);
-
-            if ~isempty(obj.ChangePageFcn)
-                obj.ChangePageFcn(obj, evtData);
             end
         end
     end
