@@ -1,0 +1,14 @@
+{
+    "Namespace" : "uim",
+    "ToolboxOptions": {
+        "Identifier": "c67f5f16-bea4-4bb8-9a0d-2f2e8ef6f453",
+        "ToolboxName": "UI Mechanics for MATLAB",
+        "AuthorName": "Eivind Hennestad",
+        "AuthorEmail": "eivihe@uio.no",
+        "AuthorCompany": "University of Oslo",
+        "Summary": "Composable controls and interactions for MATLAB figures.",
+        "Description": "UI Mechanics (uim) provides reusable interface components and interaction infrastructure for programmatic MATLAB applications. It is designed for scientific viewers, image tools and other graphics-heavy apps that need controls and pointer interactions tightly integrated with plotted data. The toolbox includes composable controls, toolbars, message overlays, layout utilities, styling, and tools for zooming, panning, selection and data interaction. Its core is designed to work across traditional MATLAB figures and modern UI figures without depending on a larger application framework.",
+        "MinimumMatlabRelease": "R2019b",
+        "MaximumMatlabRelease": ""
+    }
+}
