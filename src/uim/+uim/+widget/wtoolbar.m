@@ -1,4 +1,4 @@
-classdef wtoolbar < uim.abstract.WidgetContainer & uim.mixin.assignProperties
+classdef wtoolbar < uim.abstract.Container
 
     % Check out dropbox paper toolbar.
     % Add flag for whether container border should wrap contents or not.
@@ -6,6 +6,14 @@ classdef wtoolbar < uim.abstract.WidgetContainer & uim.mixin.assignProperties
     % todo: add separator...
 
     % Todo: Make sure button size is adapted to toolbar size + padding.
+
+    properties (Constant, Transient)
+        Type = 'Toolbar'
+    end
+
+    properties (SetAccess = protected, Transient)
+        Children uim.abstract.Component
+    end
 
     properties
         Spacing = 8 % move to widget container
@@ -42,34 +50,9 @@ classdef wtoolbar < uim.abstract.WidgetContainer & uim.mixin.assignProperties
 
         function obj = wtoolbar(hParent, varargin)
 
-            obj@uim.abstract.WidgetContainer(hParent, varargin{:})
-
-%             el = listener(hParent, 'SizeChanged', ...
-%                 @obj.onParentContainerSizeChanged);
-%             obj.ParentContainerSizeChangedListener = el;
-%
-%             obj.Parent = hParent;
-%             obj.Canvas = hParent;
-%             obj.hAxes = obj.Canvas.Axes;
-
-            obj.parseInputs(varargin{:})
-
-            obj.createBackground()
+            obj@uim.abstract.Container(hParent, varargin{:})
 
             obj.IsConstructed = true;
-
-            % Todo: This is not perfect. Sometimes size depends on
-            % location...
-
-            % Check if position was set different than default. if so, mode is manual
-
-            % Call updateSize to trigger size update (call before location)
-            obj.updateSize('auto')
-
-            % Call updateLocation to trigger location update
-            obj.updateLocation('auto')
-
-            obj.onStyleChanged()
 
             obj.setNextButtonPosition()
         end
@@ -151,7 +134,7 @@ classdef wtoolbar < uim.abstract.WidgetContainer & uim.mixin.assignProperties
         end
 
         function relocate(obj, shift)
-            relocate@uim.abstract.virtualContainer(obj, shift)
+            relocate@uim.abstract.Component(obj, shift)
             obj.shiftChildren(shift)
         end
 
@@ -164,15 +147,18 @@ classdef wtoolbar < uim.abstract.WidgetContainer & uim.mixin.assignProperties
 
         function updateLocation(obj, mode)
             if nargin < 2; mode = obj.PositionMode; end
-            updateLocation@uim.abstract.virtualContainer(obj, mode)
+            updateLocation@uim.abstract.Component(obj, mode)
             obj.adjustButtonPositions()
         end
 
         function updateSize(obj, mode)
             if nargin < 2; mode = obj.PositionMode; end
-            updateSize@uim.abstract.virtualContainer(obj, mode)
+            updateSize@uim.abstract.Component(obj, mode)
             obj.adjustButtonPositions()
         end
+    end
+
+    methods (Hidden, Access = protected)
 
         function onVisibleChanged(obj, newValue)
             obj.hBackground.Visible = newValue;
@@ -184,33 +170,7 @@ classdef wtoolbar < uim.abstract.WidgetContainer & uim.mixin.assignProperties
 
     methods (Access = protected)
 
-        function parseInputs(obj, varargin)
-            S = obj.getToolbarDefaults;
-
-            propNames = varargin(1:2:end);
-            propValues = varargin(2:2:end);
-
-            for i = 1:numel(propNames)
-                S.(propNames{i}) = propValues{i};
-            end
-
-            C = cat(1, fieldnames(S)', struct2cell(S)');
-            C = C(:)';
-
-            parseInputs@uim.mixin.assignProperties(obj, C{:})
-        end
-    end
-
-    methods (Access = protected)
-
         function setNextButtonPosition(obj)
-
-            switch obj.CanvasMode
-                case 'integrated'
-                    offsetFactor = 1;
-                case 'separate'
-                    offsetFactor = 0;
-            end
 
             if isempty(obj.AllButtonPosition)
                 lastButtonPosition = [obj.CanvasPosition(1:2) + obj.Padding(1:2), 0, 0];
@@ -256,7 +216,7 @@ classdef wtoolbar < uim.abstract.WidgetContainer & uim.mixin.assignProperties
             elseif strcmp(obj.ComponentAlignment, 'center') || strcmp(obj.ComponentAlignment, 'middle')
                 centerPosition = obj.Position(obj.DimL_) + obj.Position(obj.DimL_+2)/2;
                 offset = centerPosition - (minPosition + extent/2);
-                if strcmp(obj.CanvasMode, 'separate')
+                if strcmp(obj.CanvasMode, 'private')
                     offset = offset/2;
                 end
             end
@@ -270,7 +230,7 @@ classdef wtoolbar < uim.abstract.WidgetContainer & uim.mixin.assignProperties
             shift(obj.DimS_) = obj.CanvasPosition(obj.DimS_) - obj.AllButtonPosition(1, obj.DimS_) + obj.Padding(obj.DimS_);
 
             switch obj.CanvasMode
-                case 'integrated'
+                case 'shared'
                     obj.shiftChildren(shift)
 
                     if strcmp(obj.BackgroundMode, 'wrap')
@@ -279,7 +239,7 @@ classdef wtoolbar < uim.abstract.WidgetContainer & uim.mixin.assignProperties
 
                     obj.setNextButtonPosition()
 
-                case 'separate'
+                case 'private'
 
                     axPosition = getpixelposition(obj.Canvas);
                     axPosition(1:2) = axPosition(1:2) + shift;
@@ -352,7 +312,7 @@ classdef wtoolbar < uim.abstract.WidgetContainer & uim.mixin.assignProperties
 
                 switch obj.BackgroundMode
                     case 'full'
-                        [X, Y] = obj.createBoxCoordinates(obj.Size, obj.CornerRadius);
+                        [X, Y] = uim.shape.rectangle(obj.Size, obj.CornerRadius);
                         X = X + obj.CanvasPosition(1);
                         Y = Y + obj.CanvasPosition(2);
                     case 'wrap'
@@ -367,7 +327,7 @@ classdef wtoolbar < uim.abstract.WidgetContainer & uim.mixin.assignProperties
                         minPos(obj.DimL_) = minPositionL - obj.Padding(obj.DimL_);
                         minPos(obj.DimS_) = obj.CanvasPosition(obj.DimS_);
 
-                        [X, Y] = obj.createBoxCoordinates(extent, obj.CornerRadius);
+                        [X, Y] = uim.shape.rectangle(extent, obj.CornerRadius);
                         X = X + minPos(1);
                         Y = Y + minPos(2);
                     otherwise
@@ -513,7 +473,7 @@ classdef wtoolbar < uim.abstract.WidgetContainer & uim.mixin.assignProperties
     end
 
     methods (Static)
-        function S = getToolbarDefaults()
+        function S = getTypeDefaults()
             S.PositionMode = 'auto';
             S.Location = 'northwest';
             S.Margin = [0, 0, 0, 0];

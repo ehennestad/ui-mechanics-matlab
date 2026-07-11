@@ -234,7 +234,7 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
             C = C(:)';
 
             % Special treatment because this has protected setAccess
-            if strcmp('CanvasMode', C(1:2:end))
+            if any(strcmp('CanvasMode', C(1:2:end)))
                 ind = find(strcmp(C(1:2:end), 'CanvasMode'));
                 obj.CanvasMode = C{ind*2};
                 C(ind*2 - [1,0])=[];

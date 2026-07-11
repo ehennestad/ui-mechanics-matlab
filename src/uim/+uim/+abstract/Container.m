@@ -29,7 +29,12 @@ classdef Container < uim.abstract.Component
         function createPrivateCanvas(obj)
 
             % Create an axes which will be the container for this widget.
-            obj.hAxes = axes('Parent', obj.Parent);
+            if isa(obj.Parent, 'uim.UIComponentCanvas')
+                hGraphicsParent = obj.Parent.Axes.Parent;
+            else
+                hGraphicsParent = obj.Parent;
+            end
+            obj.hAxes = axes('Parent', hGraphicsParent);
             hold(obj.hAxes, 'on');
             obj.hAxes.Visible = 'off';
             obj.hAxes.Units = 'pixel';
