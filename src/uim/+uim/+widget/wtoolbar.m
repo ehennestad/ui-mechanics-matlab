@@ -108,7 +108,7 @@ classdef wtoolbar < uim.abstract.Container
             % Concatenate with varargin at the end. Input parser will
             % choose the last entry (if there are duplicates) during parsing.
 
-            hButton = uim.control.Button_(obj, varargin{:});
+            hButton = uim.control.Button(obj, varargin{:});
 
             % Add listener for SizeChanged event on button
             el = addlistener(hButton, 'SizeChanged', @obj.onButtonSizeChanged);
@@ -352,7 +352,7 @@ classdef wtoolbar < uim.abstract.Container
             end
 
             for i = 1:numel(obj.hButtons)
-                if isa(obj.hButtons(i), 'uim.control.Button_')
+                if isa(obj.hButtons(i), 'uim.control.Button')
                     obj.hButtons(i).Style = style;
                 end
             end

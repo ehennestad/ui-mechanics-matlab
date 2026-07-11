@@ -18,8 +18,8 @@ classdef toolbarSeparator < uim.abstract.Control
     methods
         function obj = toolbarSeparator(varargin)
 
-            assertMsg = 'Parent must be an instance of uim.widget.toolbar_ or uim.widget.wtoolbar';
-            assert(isa(varargin{1}, 'uim.widget.toolbar_') || isa(varargin{1}, 'uim.widget.wtoolbar'), assertMsg)
+            assertMsg = 'Parent must be an instance of uim.widget.toolbar or uim.widget.wtoolbar';
+            assert(isa(varargin{1}, 'uim.widget.toolbar') || isa(varargin{1}, 'uim.widget.wtoolbar'), assertMsg)
 
             obj@uim.abstract.Control(varargin{:})
 

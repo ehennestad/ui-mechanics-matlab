@@ -23,7 +23,7 @@ classdef tabgroup < uim.abstract.Container
         % BackgroundDecoration
         TabToolBar
 
-        TabButtonGroup uim.control.Button_
+        TabButtonGroup uim.control.Button
         TabSeparators uim.decorator.Separator
         TabPanels uim.panel
 
@@ -68,7 +68,7 @@ classdef tabgroup < uim.abstract.Container
 
             uicc = obj.Canvas;
 
-            hToolbar = uim.widget.toolbar_(uicc, ...
+            hToolbar = uim.widget.toolbar(uicc, ...
                 'Size', [inf, toolbarHeight], ...
                 'Margin', toolbarMargin, ...
                 'Padding', [1, 1, 1, 1], ...

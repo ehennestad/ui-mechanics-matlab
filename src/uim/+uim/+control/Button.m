@@ -1,323 +1,340 @@
-classdef Button < uim.abstract.virtualContainer & uim.mixin.assignProperties
+classdef Button < uim.abstract.Control
 
-    % todo: subclass from button
+    % Todo:
+    %   [x] How to best implement push and toggle buttons. Mech. action...
+    %   [ ] Maybe also have a mode prop which can be push and toggle...
+    %   [ ] Setting Location prop at construction does not work.
+    %   [ ] Need to update mouseover effect if button is moved when
+    %   pressed.
+    %   [x] Plot both icon and text
+    %   [x] Implement extra appearances for when mouse is pressed and
+    %       released. Should not depend on value...
+    %   [ ] Allow icon to be filepath or raster-image
+    %   [ ] Work more on icon/text placement
+    %   [ ] Implement stylechange on button text & icon
+    %   [ ] Tooltip
+    %   [ ] implement togglebuttonlistener.... What was that about.
+    %   [ ] Why does margin not work when button is places south or
+    %       north...
+    %   [ ] Fix horizontal and vertical text aligning.
 
-    % Implement position
+    % Should icon resize when button resizes? yes...
+    % Should there be property to scale icon to fit within button?
+    % Should button automatically resize to fit text/icon?
 
-    % Need default size...
-
-    % Implement button switch on release.
-
-    % New a getPosition property.
-
-    % % NB. Pickable parts of button background is visible, si if the
-    % backgroundalpha is set to 0, this interface won't work as intended
-    % Implement onVisibleChanged.
-
-    % Where did I implement a button which is released when mouse moves
-    % away?
-
-    properties %(Constant) % Inherited from Component
-        Type = 'pushbutton' % push / toggle % Todo: subclasses..
+    properties (Constant) % Inherited from Component
+        Type = 'Button' % push / toggle % Todo: subclasses..
     end
 
     properties
 
-        String = ''
+        Text = ''
         Icon = ''
-        Value = 0
+        Value = false
 
-        Style = uim.style.buttonLightMode
-        UseDefaultIcon = false
+        Mode = 'pushbutton'
+        MechanicalAction = 'Switch when released' % Switch when pressed, Switch until released, Switch when released
+        % Switch = togglebutton, Latch = pushbutton
+
+        Style = uim.style.buttonDarkMode
+
+        UseDefaultIcon = false %Todo: Rename or reconsider...
         AutoWrapText = false % Similar to BarExtensionMode
+        IconAlignment = 'left';
+        IconSize = [nan, nan];
+        IconTextSpacing = 5;
 
-        ButtonAspectRatio = 1 % Do I need?
-        FixedAspectRatio = true;
+        FixedAspectRatio = true; % Do I need this?? Maybe sometime...
 
-        ButtonDownFcn = []
+        %ButtonDownFcn = []
+        %ButtonReleasedFcn = []
+
+        % These properties should be moved to another class?
         HorizontalTextAlignment = 'left'
+        VerticalTextAlignment = 'middle'
 
         FontName = 'helvetica'
         FontSize = 12
         FontWeight = 'normal'
 
-        Tooltip = ''
-
         ToggleButtonListener event.listener = event.listener.empty
     end
 
+    properties (Dependent)
+        String = '' %#ok<MDEPIN>
+    end
+
     properties (Dependent, Transient)
-        aR = 1 % Needed?
-        Extent %Needed? Not internally. Does any outside function use it?
+        Extent % Needed? Not internally. Does any outside function use it?
     end
 
     properties (Access = protected, Transient)
-        %%%Toolbar % Parent
-        ButtonReleasedListener
-        TooltipPosition = [0, 0]
 
-        %hBackground
-        hForeground
+        hForeground % Todo: remove
 
-        isButtonDown = false
-        isMouseOver = false
-
-        buttonContextMenu
+        hButtonIcon = gobjects(0,1)
+        hButtonText = gobjects(0,1)
+        buttonContextMenu % Move to control.
     end
 
-    properties (Access = private, Dependent)
+    properties (Access = private, Dependent, Transient)
+        MechanicalAction_ % Until I figure out a better solution for mode + mechanical action properties
     end
 
-    methods
+    methods % Structors
 
         function obj = Button(varargin)
 
-            if isa(varargin{1}, 'uim.abstract.virtualContainer') || isa(varargin{1}, 'uim.abstract.Component')
-                obj.Parent = varargin{1};
-                obj.Canvas = obj.Parent.Canvas;
-                varargin = varargin(2:end);
-            elseif isa(varargin{1}, 'uim.UIComponentCanvas')
-                obj.Parent = varargin{1};
-                obj.Canvas = varargin{1};
-                varargin = varargin(2:end);
-            elseif isa(varargin{1}, 'matlab.graphics.axis.Axes')
-                obj.Parent = varargin{1};
-                obj.Canvas = struct('Axes', obj.Parent);
-                varargin = varargin(2:end);
-            end
+            obj@uim.abstract.Control( varargin{:} )
 
-% %             if isa(obj.Canvas, 'matlab.graphics.axis.Axes')
-% %                 obj.Canvas = struct('Axes', obj.Canvas);
-% %             end
+            % Create button foreground, i.e plot text label or icon.
+            obj.create() % Todo...
+            % Create will set up button foreground. This must happen after
+            % all position based properties are set.
 
-            % Concatenate so that varargin comes last. This way, if the
-            % property is supplied as input, that one will be the one which
-            % is used.
-            varargin = cat(2, {'CornerRadius', 3}, varargin);
+            obj.IsConstructed = true; % IsConstructed will trigger the drawing of the component....
 
-            obj.parseInputs(varargin{:})
+            % Configure button interactive behavior.
+            obj.hBackground.ButtonDownFcn = @obj.onMousePressed;
+            obj.hBackground.HitTest = 'on';
+            obj.hBackground.PickableParts = 'all';
 
-            obj.create()
-
-            obj.hBackground.ButtonDownFcn = @obj.onButtonPressed;
-
-            obj.setTooltipPosition()
-
-            setappdata(obj.hBackground, 'InteractiveObject', obj)
-            obj.IsConstructed = true;
-
-            obj.onStyleChanged()
+            % Todo ... This should be done in a resize method...
             obj.autoWrapButtonText()
-            obj.updateBackgroundSize()
+            obj.updateTextLocation() % Should happen in onConstructed...
 
-            obj.updateLocation(obj.PositionMode)
-
+            obj.changeAppearance()
+            % This should be a parent class method
             obj.onVisibleChanged()
-            obj.onHorizontalTextAlignmentChanged()
+            obj.onFontStyleChanged()
         end
 
         function delete(obj)
-            if ~isempty(obj.hBackground) && isvalid(obj.hBackground)
-                delete(obj.hBackground)
+
+            if ~isempty(obj.hButtonText) && isvalid(obj.hButtonText)
+                delete(obj.hButtonText)
             end
 
-            if ~isempty(obj.hForeground) && ~isstruct(obj.hForeground) && isvalid(obj.hForeground)
-                delete(obj.hForeground)
+            if ~isempty(obj.hButtonIcon) && isvalid(obj.hButtonIcon)
+                delete(obj.hButtonIcon)
+            end
+
+            if ~isempty(obj.ToggleButtonListener)
+                delete(obj.ToggleButtonListener)
             end
         end
+    end
 
-    end % structors
-
-    methods( Access = protected )  % Plot and update appearance
-
-% %         function onSizeChanged(obj, oldPosition, newPosition)
-% %             obj.resize()
-% %         end
-% %
-% %         function onLocationChanged(obj, oldPosition, newPosition)
-% %             obj.relocate(newPosition-oldPosition)
-% %         end
+    methods (Hidden, Access = protected)
 
         function create(obj)
-            % Plot background first
-            obj.plotBackground()
 
-            % Plot foreground on top. Important that foreground will not
-            % capture mouseclicks
             obj.plotForeground()
-
-            obj.changeAppearance()
-
-            % Configure behavior for when pointer enters/leaves button.
-            setPointerBehavior(obj)
-
-            %obj.isCreated = true;
-        end
-
-        function plotBackground(obj)
-            % todo: implement corner radius
-% %             persistent X_ Y_
-% %             if isempty(X_)
-% %                 %[X_, Y_] = utilities.createBoxCoordinates(round(obj.Size)); %, 'nPointsCurvature', obj.CornerRadius);
-% %                 [X_, Y_] = obj.createBoxCoordinates(round(obj.Size));
-% %             end
-
-            [X_, Y_] = uim.shape.rectangle(round(obj.Size), obj.CornerRadius);
-
-            X = X_ + obj.Position(1);
-            Y = Y_ + obj.Position(2);
-
-            obj.hBackground = patch(obj.Canvas.Axes, X, Y, 'w');
-            obj.hBackground.PickableParts = 'all';
-            %uistack(obj.hBackground, 'down')
         end
 
         function plotForeground(obj, updateFlag)
         %plotForeground Plot button foreground (Text or icon)
 
+            % Todo:
+
             if nargin < 2; updateFlag = false; end
 
             if updateFlag
                 delete(obj.hForeground)
-                obj.plotIcon();
+                obj.plotButtonIcon();
             else
                 if ~isempty(obj.hForeground); return; end
 
                 if ~isempty(obj.Icon) % Give priority
-                    obj.plotIcon()
-                elseif ~isempty(obj.String)
-                    obj.plotText()
+                    obj.plotButtonIcon()
+                end
+
+                if ~isempty(obj.Text)
+                    obj.plotButtonText()
                 end
             end
         end
 
+        function plotButtonText(obj)
+        %plotButtonText Plot button text
+
+            obj.hButtonText = text(obj.CanvasAxes, 0, 0, obj.Text);
+            obj.hButtonText.VerticalAlignment = 'bottom';
+            obj.hButtonText.Color = obj.ForegroundColor;
+            obj.hButtonText.Interpreter = 'none';
+            obj.hButtonText.FontUnits = 'pixels';
+            obj.hButtonText.FontSize = obj.FontSize;
+            obj.hButtonText.PickableParts = 'none';
+            obj.hButtonText.HitTest = 'off';
+
+            obj.updateTextLocation()
+        end
+
         function updateButtonText(obj)
-            obj.hForeground.String = obj.String;
-            obj.autoWrapButtonText()
+            if isempty(obj.hButtonText)
+                obj.plotButtonText()
+            else
+                obj.hButtonText.String = obj.Text;
+            end
+            %obj.autoWrapButtonText()
             %obj.updateBackgroundSize()
         end
 
-        function plotText(obj)
-        %plotText Plot button text
+        function updateTextLocation(obj)
+        %updateTextLocation Update location of the text within the button
 
-            obj.hForeground = text(obj.Canvas.Axes, 0, 0, obj.String);
-            obj.hForeground.VerticalAlignment = 'middle';
-            obj.hForeground.Color = obj.ForegroundColor;
+            if ~obj.IsConstructed; return; end
 
-            % Todo: Set position based on toolbar orientation
-            obj.hForeground.Position(1) = obj.Position(1) + obj.hForeground.Margin;
-            obj.hForeground.Position(2) = obj.Position(2) + obj.Position(4) / 2 + obj.Padding(2);
+            if isempty(obj.hButtonText); return; end
 
-            obj.hForeground.PickableParts = 'none';
+            % Todo (UI4) Create dependent properties for innerpostion
+            buttonTextWidth = obj.hButtonText.Extent(3);
+            buttonInnerWidth = obj.Position(3);
 
-% %             pixelWidth = obj.hForeground.Extent(3);
-% %             % Todo: Fix this....
-% %             obj.aR = pixelWidth ./ obj.Toolbar.Height;
+            buttonTextHeight = obj.hButtonText.Extent(4);
+            buttonInnerHeight = obj.Position(4) - sum(obj.Padding([2,4]));
+
+            % Align text horizontally within button:
+            switch obj.HorizontalTextAlignment
+                case 'left'
+                    dX = obj.Padding(1);
+                case 'center'
+                    dX = (buttonInnerWidth - buttonTextWidth) / 2;
+                case 'right'
+                    dX = obj.Position(3) - obj.Padding(3) - buttonTextWidth;
+            end
+
+            % Align text vertically within button:
+            switch obj.VerticalTextAlignment
+                case 'bottom'
+                    dY = obj.Padding(2);
+                case 'middle'
+                    dY = (obj.Position(4) - obj.hButtonText.Extent(4))/2;
+                case 'top'
+                    dY = obj.Position(4) - obj.Padding(4) - obj.hButtonText.Extent(4);
+            end
+
+            % Todo: Expand to more cases...
+            if ~isempty(obj.Icon)
+                dX = dX + obj.hButtonIcon.Width + obj.IconTextSpacing;
+            end
+
+            obj.hButtonText.Position(1:2) = obj.Position(1:2) + [dX, dY];
         end
 
         function autoWrapButtonText(obj)
 
             if obj.AutoWrapText
-                pixelWidth = obj.hForeground.Extent(3);
-                obj.Position(3) = pixelWidth + obj.hForeground.Margin*2 + sum(obj.Padding([1,3]));
+                pixelWidth = obj.hButtonText.Extent(3);
+                obj.Position(3) = pixelWidth + obj.hButtonText.Margin*2 + sum(obj.Padding([1,3]));
             end
         end
 
-        function plotIcon(obj)
-        %plotIcon Plot button icon
+        function plotButtonIcon(obj)
+        %plotButtonIcon Plot button icon
 
-            if strcmp(obj.Icon, 'x')
+            if strcmp(obj.Icon, 'x') ||  strcmp(obj.Icon, '>')
                 obj.plotSymbol();
                 return;
             end
 
-            obj.hForeground = uim.graphics.imageVector(obj.Canvas.Axes, obj.Icon);
-
-            % Set height of icon based on toolbar height.
-
-%             switch obj.Parent.Orientation
-%                 case 'horizontal'
-%                     obj.hForeground.Height = obj.Size(2) - sum(obj.Padding([2,4]));
-%                 case 'vertical'
-%                     obj.hForeground.Width = obj.Size(1) - sum(obj.Padding([1,3]));
-%             end
-
-            % Assuming square button size...
-            buttonAr = obj.hForeground.Width / obj.hForeground.Height;
-            if buttonAr >= 1
-                obj.hForeground.Width = obj.Size(1) - sum(obj.Padding([1,3]));
-            else
-                obj.hForeground.Height = obj.Size(2) - sum(obj.Padding([2,4]));
+            % Delete icon graphics if it already exists.
+            if ~isempty(obj.hButtonIcon) && isvalid(obj.hButtonIcon)
+                delete(obj.hButtonIcon)
             end
+
+            % Use the imageVector to plot the icon
+            obj.hButtonIcon = uim.graphics.imageVector(obj.Canvas.Axes, obj.Icon);
 
             % Imagevector are upside down... Should be taken care of
             % somewhere else...
-            obj.hForeground.flipud()
+            obj.hButtonIcon.flipud()
+
+            % Prevent it from capturing clicks
+            obj.hButtonIcon.PickableParts = 'none';
+            obj.hButtonIcon.HitTest = 'off';
+
+            obj.updateIconSize()
 
             % Align icon relative to anchor point.
-            obj.hForeground.VerticalAlignment = 'bottom';
-            obj.hForeground.HorizontalAlignment = 'left';
+            obj.hButtonIcon.VerticalAlignment = 'bottom';
+            obj.hButtonIcon.HorizontalAlignment = 'left';
 
-            % Center icon in middle of button...
-            obj.hForeground.Position = obj.Position(1:2) + (obj.Position(3:4)-[obj.hForeground.Width, obj.hForeground.Height]) / 2;
+            obj.updateIconLocation()
 
-            %obj.hForeground.Position = obj.Position(1:2) + obj.Padding(1:2);
+% %             % Set color
+% %             if ~obj.UseDefaultIcon
+% %                 obj.hForeground.Color = obj.ForegroundColor;
+% %             end
+        end
 
-            % Set color
-            if ~obj.UseDefaultIcon
-                obj.hForeground.Color = obj.ForegroundColor;
+        function updateIconSize(obj)
+        %updateIconSize Update size of the icon within the button
+
+            % Get aspect ratios of icon and button...
+            iconAr = obj.hButtonIcon.Width / obj.hButtonIcon.Height;
+            buttonAr = (obj.Position(3) - sum(obj.Padding([1,3]))) / ...
+                            (obj.Position(4) - sum(obj.Padding([2,4])));
+
+            if all(~isnan(obj.IconSize))
+                if iconAr > 1
+                    obj.hButtonIcon.Width = obj.IconSize(1);
+                else
+                    obj.hButtonIcon.Height = obj.IconSize(2);
+                end
+            else
+                %... in order to scale icon to fit within button
+                if iconAr >= buttonAr
+                    obj.hButtonIcon.Width = obj.Size(1) - sum(obj.Padding([1,3]));
+                else
+                    obj.hButtonIcon.Height = obj.Size(2) - sum(obj.Padding([2,4]));
+                end
             end
-            obj.hForeground.PickableParts = 'none';
-            obj.hForeground.HitTest = 'off';
+        end
 
-            obj.aR = obj.hForeground.Width ./ obj.hForeground.Height;
+        function updateIconLocation(obj)
+        %updateIconLocation Update location of the icon within the button
 
-            if obj.aR ~= 1
-                obj.updateBackgroundSize()
+            if isempty(obj.hButtonIcon); return; end
+
+            try
+                iconSize = [obj.hButtonIcon.Width, obj.hButtonIcon.Height];
+            catch
+                iconSize = [obj.hButtonIcon.MarkerSize, obj.hButtonIcon.MarkerSize];
             end
+
+            % Calculate offset deltaX
+            switch obj.IconAlignment
+                case 'left'
+                    deltaX = obj.Padding(1);
+                case 'center'
+                    deltaX = (obj.Position(3) - iconSize(1)) / 2;
+                case 'right'
+                    deltaX = obj.Position(3) - obj.Padding(3) - iconSize(1);
+            end
+
+            % Calculate offset deltaY
+            deltaY = (obj.Position(4) - iconSize(2)) / 2;
+
+            obj.hButtonIcon.Position = obj.Position(1:2) + [deltaX, deltaY];
         end
 
         function plotSymbol(obj)
 
-            assert(any(strcmp({'x', 'o'}, obj.Icon)), 'Invalid symbol for button')
+            assert(any(strcmp({'x', 'o', '>'}, obj.Icon)), 'Invalid symbol for button')
 
-            x = obj.Position(1);
-            y = obj.Position(2);
-            obj.hForeground = plot(obj.Toolbar.Axes, x, y, obj.Icon);
-            obj.hForeground.MarkerSize = 12;
+            x = obj.Position(1) + obj.Size(1)/2;
+            y = obj.Position(2) + obj.Size(2)/2;
 
-            obj.hForeground.PickableParts = 'none';
-            obj.hForeground.HitTest = 'off';
+            obj.hButtonIcon = plot(obj.Canvas.Axes, x, y, obj.Icon);
+            obj.hButtonIcon.MarkerSize = 12;
+            obj.hButtonIcon.Color = obj.ForegroundColor;
+            obj.hButtonIcon.LineWidth = 2;
 
-            obj.updateForeground()
-        end
+            obj.hButtonIcon.PickableParts = 'none';
+            obj.hButtonIcon.HitTest = 'off';
 
-        function setPointerBehavior(obj)
-        %setPointerBehavior Set pointer behavior of background.
-
-            pointerBehavior.enterFcn    = @obj.onMouseEntered;
-            pointerBehavior.exitFcn     = @obj.onMouseExited;
-            pointerBehavior.traverseFcn = [];%@obj.moving;
-
-            iptSetPointerBehavior(obj.hBackground, pointerBehavior);
-            iptPointerManager(ancestor(obj.hBackground, 'figure'));
-        end
-
-        function setTooltipPosition(obj)
-        %setTooltipPosition Set position of tooltip on the canvas axes.
-
-            if isempty(obj.Tooltip); return; end
-
-            centerX = mean(obj.hBackground.XData);
-            centerY = mean(obj.hBackground.YData);
-
-            obj.TooltipPosition = [centerX, centerY - 0.5*obj.Size(2)-15];
-        end
-
-        function setContextMenuPosition(obj)
-            if ~isempty(obj.buttonContextMenu)
-                obj.buttonContextMenu.Position = obj.Position(1:2);
-            end
+            %obj.updateForeground()
         end
 
         function changeAppearance(obj)
@@ -325,19 +342,29 @@ classdef Button < uim.abstract.virtualContainer & uim.mixin.assignProperties
 
             %if ~obj.IsConstructed; return; end
 
+            % 4 states:
+            %   Mouse is over or not
+            %   Button is activated or not.
+
             if obj.Value
-                if obj.isMouseOver
+                if obj.IsMouseOver && obj.IsMousePressed
+                    newAppearance = 'HighlightedOn';
+                elseif obj.IsMouseOver
                     newAppearance = 'HighlightedOn';
                 else
                     newAppearance = 'On';
                 end
             else
-                if obj.isMouseOver
+                if obj.IsMouseOver && obj.IsMousePressed
+                    newAppearance = 'HighlightedOn';
+                elseif obj.IsMouseOver
                     newAppearance = 'HighlightedOff';
                 else
                     newAppearance = 'Off';
                 end
             end
+
+            % newAppearance
 
             obj.ForegroundColor = obj.Style.(newAppearance).ForegroundColor;
             obj.BackgroundColor = obj.Style.(newAppearance).BackgroundColor;
@@ -345,378 +372,284 @@ classdef Button < uim.abstract.virtualContainer & uim.mixin.assignProperties
             obj.BorderColor = obj.Style.(newAppearance).BorderColor;
             obj.BorderWidth = obj.Style.(newAppearance).BorderWidth;
 
-            if ~isempty(obj.String)
-                if isa(obj.hForeground, 'matlab.graphics.primitive.Text')
-                    try
-                    obj.hForeground.FontWeight = obj.Style.(newAppearance).FontWeight;
-                    end
-                end
+            if isfield(obj.Style.(newAppearance), 'FontWeight')
+                obj.FontWeight = obj.Style.(newAppearance).FontWeight;
             end
 
             % Maybe use on styleChanged instead?
-            if ~obj.UseDefaultIcon
-                obj.updateForeground()
-            end
-            obj.updateBackground()
+%             if ~obj.UseDefaultIcon
+%                 obj.updateForeground()
+%             end
+            obj.onStyleChanged()
+            %obj.updateBackground()
         end
 
-        % Todo: Combine with onStyleChanged
-        function updateBackground(obj)
-            if isempty(obj.hBackground); return; end
-            obj.hBackground.FaceColor = obj.BackgroundColor;
-            obj.hBackground.FaceAlpha = obj.BackgroundAlpha;
-            obj.hBackground.EdgeColor = obj.BorderColor;
-            obj.hBackground.LineWidth = obj.BorderWidth;
+        function onFontStyleChanged(obj)
 
-            % Todo: This should be in this function, while above should be in
-            % onStyleChanged
-            [X_, Y_] = uim.shape.rectangle(round(obj.Size), obj.CornerRadius);
+            if ~obj.IsConstructed; return; end
 
-            X = X_ + obj.Position(1);
-            Y = Y_ + obj.Position(2);
+            if ~isempty(obj.hButtonText)
+                obj.hButtonText.FontName = obj.FontName;
+                obj.hButtonText.FontSize = obj.FontSize;
+                obj.hButtonText.FontWeight = obj.FontWeight;
 
-            set(obj.hBackground, 'XData', X, 'YData', Y)
-        end
-
-        function updateForeground(obj)
-            if isempty(obj.hForeground); return; end
-            obj.hForeground.Color = obj.ForegroundColor;
-        end
-
-        % Todo: This method is inherited from virtualContainer.
-        function updateBackgroundPosition(obj, newPosition)
-        %updateBackgroundPosition Update position of background patch
-
-            if isempty(obj.hBackground); return; end
-
-            shift = newPosition - obj.Position;
-
-            if shift(1) ~= 0
-                obj.hBackground.XData = obj.hBackground.XData + shift(1);
-            end
-
-            if shift(2) ~= 0
-                obj.hBackground.YData = obj.hBackground.YData + shift(2);
+                obj.updateTextLocation()
             end
         end
 
-        function updateForegroundPosition(obj, newPosition)
+        function onMousePressed(obj, ~, event)
+        %onMousePressed Callback to handle user button press
 
-            if isempty(obj.hBackground); return; end
+            onMousePressed@uim.abstract.Control(obj)
 
-            if isa(obj.hForeground, 'uim.graphics.imageVector')
-                %obj.hForeground.Position(1:2) = newPosition + obj.Padding(1:2);
-                obj.hForeground.Position(1:2) = obj.Position(1:2) + (obj.Position(3:4)-[obj.hForeground.Width, obj.hForeground.Height]) / 2;
+            switch obj.MechanicalAction_
 
-            elseif isa(obj.hForeground, 'matlab.graphics.primitive.Text')
-                obj.hForeground.Position(1:2) = newPosition;
-            end
-        end
-
-        function updateBackgroundSize(obj)
-            [X, Y] = uim.shape.rectangle(round(obj.Size), obj.CornerRadius);
-            X = X + obj.Position(1);
-            Y = Y + obj.Position(2); % Center on y.
-
-            obj.hBackground.XData = X;
-            obj.hBackground.YData = Y;
-        end
-    end
-
-    methods( Access = private ) % Event & other callbacks
-
-        function onMouseEntered(obj, hSource, eventData)
-            obj.isMouseOver = true;
-            obj.changeAppearance()
-            if ~isempty(obj.Tooltip)
-                obj.Canvas.showTooltip(obj.Tooltip, obj.TooltipPosition)
-            end
-        end
-
-        function onMouseExited(obj, hSource, eventData)
-            obj.isMouseOver = false;
-            obj.changeAppearance()
-            if ~isempty(obj.Tooltip)
-                obj.Canvas.hideTooltip()
-            end
-        end
-
-        function onButtonPressed(obj, ~, event)
-        %onButtonPressed Event handler for mouse press on button
-            obj.isButtonDown = true;
-
-            switch obj.Type
-                case 'pushbutton'
-                    obj.Value = true;
-                case 'togglebutton'
+                case 'Switch when pressed'
                     obj.Value = ~obj.Value;
-            end
+                    obj.invokeCallback(event)
 
-            if isempty(obj.ButtonReleasedListener)
-                hFig = ancestor(obj.hBackground, 'figure');
-                el = addlistener(hFig, 'WindowMouseRelease', @obj.onButtonReleased);
-                obj.ButtonReleasedListener = el;
-            end
+                case 'Switch until released'
+                    obj.Value = ~obj.Value;
+                    obj.invokeCallback(event)
 
-            obj.changeAppearance()
-
-            if ~isempty(obj.ButtonDownFcn)
-                obj.ButtonDownFcn(obj, event)
+                case 'Latch when pressed'
+                    obj.Value = true;
+                    obj.invokeCallback(event)
+                    obj.Value = false;
             end
         end
 
-        function onButtonReleased(obj, ~, ~)
-        % Event handler for mouse release from button
+        function onMouseReleased(obj, ~, event)
+        %onMouseReleased Callback to handle user button release
 
-            obj.isButtonDown = false;
+            onMouseReleased@uim.abstract.Control(obj)
 
-            if strcmp(obj.Type, 'pushbutton')
-                obj.Value = false;
+            switch obj.MechanicalAction_
+
+                case 'Switch until released'
+                    obj.Value = ~obj.Value;
+                    obj.invokeCallback(event)
+
+                case 'Switch when released'
+                    obj.Value = ~obj.Value;
+                    if obj.IsMouseOver
+                        obj.invokeCallback(event)
+                    end
+
+                case 'Latch when released'
+                    obj.Value = true;
+                    if obj.IsMouseOver
+                        obj.invokeCallback(event)
+                    end
+
+                    if isvalid(obj) % In those weird cases where this is an exit button
+                        obj.Value = false;
+                    end
             end
-
-            obj.changeAppearance()
-
-            % Todo: Run callback if it should be activated on button
-            % release
-
-            delete(obj.ButtonReleasedListener)
-            obj.ButtonReleasedListener = [];
         end
-    end
 
-    methods( Access = public ) % Event & other callbacks
+        function invokeCallback(obj, event)
+
+            if ~isempty(obj.Callback)
+                obj.Callback(obj, event)
+            end
+        end
 
         function onVisibleChanged(obj, ~)
             if ~obj.IsConstructed; return; end
 
+            % Change interactive behavior of background.
             switch obj.Visible
                 case 'on'
                     obj.hBackground.PickableParts = 'all';
-                    obj.hBackground.Visible = 'on';
-                    obj.hForeground.Visible = 'on';
                 case 'off'
                     obj.hBackground.PickableParts = 'visible';
-                    obj.hBackground.Visible = 'off';
-                    obj.hForeground.Visible = 'off';
+            end
+
+            % Set visibility of graphics components.
+            obj.hBackground.Visible =  obj.Visible;
+
+            if ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'uim.graphics.imageVector')
+                obj.hButtonIcon.Visible = obj.Visible;
+            end
+            if ~isempty(obj.hButtonText) && isgraphics(obj.hButtonText)
+                obj.hButtonText.Visible = obj.Visible;
             end
         end
+    end
 
-        function onHorizontalTextAlignmentChanged(obj)
-            if ~obj.IsConstructed; return; end
-
-            if isempty(obj.String); return; end
-
-            buttonWidth = obj.Position(3);
-            textWidth = obj.hForeground.Extent(3)+obj.hForeground.Margin*2;
-
-            switch obj.HorizontalTextAlignment
-
-                case 'left'
-                    obj.hForeground.Position(1) = obj.Position(1) + obj.hForeground.Margin;
-                case 'center'
-                    obj.hForeground.Position(1) = obj.Position(1) + obj.hForeground.Margin + (buttonWidth-textWidth)/2;
-                case 'right'
-                    obj.hForeground.Position(1) = obj.Position(1) + obj.hForeground.Margin + (buttonWidth-textWidth);
-            end
-        end
+    methods (Access = protected)
 
         function onStyleChanged(obj)
-
-            if ~obj.IsConstructed; return; end
-
-            if ~isempty(obj.Icon) % Give priority
-                % Todo: Change foreground colors???
-
-            elseif ~isempty(obj.String)
-                obj.hForeground.FontName = obj.FontName;
-                obj.hForeground.FontSize = obj.FontSize;
-                obj.hForeground.FontWeight = obj.FontWeight;
-            end
-        end
-
-    end  % event handlers
-
-    methods
-
-        function h = getContextMenuHandle(obj)
-        %getContextMenuHandle Return context menu handle for button
-        %
-        %   If context menu does not exist, it is created and placed in the
-        %   lower left corner of the button.
-
-            if isempty(obj.buttonContextMenu)
-                h = uicontextmenu( ancestor(obj.hBackground, 'figure') );
-                h.Position = obj.Position(1:2);
-                obj.buttonContextMenu = h;
-            else
-                h = obj.buttonContextMenu;
-            end
-        end
-
-        function relocate(obj, shift)
+            onStyleChanged@uim.abstract.Component(obj)
 
             if obj.IsConstructed
-                obj.move(shift(1:2))
+
+                if ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'uim.graphics.imageVector')
+                    obj.hButtonIcon.Color = obj.ForegroundColor;
+                end
+
+                if ~isempty(obj.hButtonText) && isgraphics(obj.hButtonText)
+                    obj.hButtonText.Color = obj.ForegroundColor;
+                end
+
+                if ~isempty(obj.hButtonText)
+                    obj.hButtonText.FontWeight = obj.FontWeight;
+                end
             end
         end
 
-        function move(obj, shift)
-            if shift(1) ~= 0
-                obj.hBackground.XData = obj.hBackground.XData+shift(1);
-            end
+        function onSizeChanged(obj, oldPosition, newPosition)
+            onSizeChanged@uim.abstract.Control(obj, oldPosition, newPosition);
+            obj.updateTextLocation()
+            obj.updateIconLocation()
+       end
+    end
 
-            if shift(2) ~= 0
-                obj.hBackground.YData = obj.hBackground.YData+shift(2);
-            end
-
-            if isa(obj.hForeground, 'uim.graphics.imageVector')
-                obj.hForeground.translate(shift)
-            elseif isa(obj.hForeground, 'matlab.graphics.primitive.Text')
-                obj.hForeground.Position(1:2) = obj.hForeground.Position(1:2)+shift;
-            end
-
-            obj.setTooltipPosition()
-            obj.setContextMenuPosition()
-        end
-
-        function [X, Y] = getNormalizedUnits(obj, X, Y)
-            axPos = getpixelposition(obj.Toolbar.Axes);
-            X = X./ axPos(3);
-            Y = Y./ axPos(4);
-        end
-
-        function toggleState(obj, ~, event)
-
-            if obj.Value ~= event.Value
-                obj.Value = event.Value;
-                obj.changeAppearance()
-            end
-        end
+    methods % Public
 
         function addToggleListener(obj, handle, eventName)
            el = listener(handle, eventName, @obj.toggleState);
            obj.ToggleButtonListener = el;
         end
 
-        function hideTooltip(obj)
-            if ~isempty(obj.Tooltip)
-                obj.Canvas.hideTooltip()
+        function relocate(obj, shift)
+            relocate@uim.abstract.Component(obj, shift)
+
+            if ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'uim.graphics.imageVector')
+                obj.hButtonIcon.translate(shift(1:2))
+            elseif ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'matlab.graphics.chart.primitive.Line')
+                obj.hButtonIcon.XData = obj.hButtonIcon.XData + shift(1);
+                obj.hButtonIcon.YData = obj.hButtonIcon.YData + shift(2);
+            end
+
+            if ~isempty(obj.hButtonText) && isa(obj.hButtonText, 'matlab.graphics.primitive.Text')
+                obj.updateTextLocation()
+                %obj.hButtonText.Position(1:2) = obj.hButtonText.Position(1:2)+shift(1:2);
+            end
+
+            obj.setTooltipPosition()
+        end
+
+        function toggleState(obj, ~, event)
+        %toggleState Toggle the state (value) of the button.
+
+        % Todo: make sure mechanical action is switch type...
+
+            if obj.Value ~= event.Value
+                obj.Value = event.Value;
+                obj.changeAppearance()
             end
         end
     end
 
-    methods % Set/get
+    methods % Set/Get
 
         function set.String(obj, value)
-            assert(isa(value, 'char'), 'String property of button must be a character vector')
+            obj.Text = value;
+        end
 
-            obj.String = value;
+        function value = get.String(obj)
+            value = obj.Text;
+        end
+
+        function value = get.Extent(obj)
+
+            if ~isempty(obj.hButtonText)
+                offset = obj.hButtonText.Position(1:2) - obj.Position(1:2);
+                extent = obj.hButtonText.Extent(3:4) + obj.Padding(3:4);
+                value = [obj.Position(1:2), offset + extent];
+                value(3:4) = max([obj.Position(3:4), value(3:4)]);
+            elseif ~isempty(obj.hButtonIcon)
+
+                error('Not implemented')
+            end
+        end
+
+        function set.Text(obj, value)
+
+            errMsg = 'Text property of button must be a character vector or string scalar';
+            assert(isa(value, 'char') || isStringScalar(value), errMsg)
+
+            obj.Text = char(value);
+
             if obj.IsConstructed
                 obj.updateButtonText()
             end
         end
 
-        function set.Style(obj, newStyle)
-            % Todo: consolidate this with onStyleChanged which is doing
-            % something slightly different, but should be the same.
-
-            obj.Style = newStyle;
-            obj.changeAppearance()
-        end
-
         function set.Icon(obj, value)
-%             assert(isa(value, 'char'), 'Icon property of button must be a pathstr')
-%             assert(isfile(value), 'Icon file was not found')
+
+            errMsg1 = 'Icon property of button must be a pathstr';
+            errMsg2 = 'Icon file was not found';
+
+%             assert(isa(value, 'char'), errMsg1)
+%             assert(isfile(value), errMsg2)
 
             obj.Icon = value;
             if obj.IsConstructed
-                obj.plotForeground(true)
+                obj.plotButtonIcon()
             end
+        end
+
+        function set.Value(obj, newValue)
+            obj.Value = newValue;
+            obj.changeAppearance()
+            % todo: Run callback???
         end
 
         function set.FontName(obj, value)
         	obj.FontName = value;
-            obj.onStyleChanged()
+            obj.onFontStyleChanged()
         end
 
         function set.FontSize(obj, value)
             obj.FontSize = value;
-            obj.onStyleChanged()
+            obj.onFontStyleChanged()
         end
 
         function set.FontWeight(obj, value)
             obj.FontWeight = value;
-            obj.onStyleChanged()
+            obj.onFontStyleChanged()
         end
 
         function set.HorizontalTextAlignment(obj, value)
-
+            value = validatestring(value, {'left', 'center', 'right'});
             obj.HorizontalTextAlignment = value;
-            obj.onHorizontalTextAlignmentChanged()
+            obj.updateTextLocation()
         end
 
-        function set.Value(obj, newValue)
-
-            obj.Value = newValue;
-            obj.changeAppearance()
+        function set.VerticalTextAlignment(obj, value)
+            value = validatestring(value, {'top', 'middle', 'bottom'});
+            obj.VerticalTextAlignment = value;
+            obj.updateTextLocation()
         end
 
-%         function set.Position(obj, value)
-%
-%             assert(isnumeric(value) && numel(value == 2), ...
-%                 'Value must be a 2 element vector of numeric type')
-%
-%             obj.updateBackgroundPosition(value)
-%             obj.updateForegroundPosition(value)
-%
-%             obj.Position = value;
-%
-%         end
-
-%         function size = get.Size(obj)
-%            size = obj.Toolbar.Height .* [obj.aR, 1];
-%            size(1) = size(1);% + obj.InnerMargin*2;
-%         end
-
-        function extent = get.Extent(obj)
-            extent = [0,0,obj.Size];
+        function set.IconTextSpacing(obj, value)
+            % Todo: Validate number (integer)...
+            obj.IconTextSpacing = value;
+            obj.updateTextLocation()
         end
 
-        function aR = get.aR(obj)
-            if isempty(obj.hForeground)
-                aR = 1;
-            else
-                switch class(obj.hForeground)
-                    case 'matlab.graphics.primitive.Text'
+        function mechanicalAction = get.MechanicalAction_(obj)
+        % Mode (toggle/push) takes precedent over mechanical action...
 
-                        axPosPix = getpixelposition(obj.Toolbar.Axes);
-                        pixelWidth = obj.hForeground.Extent(3);% .* axPosPix(3);
-                        aR = (pixelWidth + sum(obj.Padding([1,3]))) ./ obj.Toolbar.Height;
-
-                    case 'uim.graphics.imageVector'
-%                         axPosPix = getpixelposition(obj.Toolbar.Axes);
-%                         aR = obj.hForeground.Width*axPosPix(3) ./ (obj.hForeground.Height*axPosPix(4));
-
-                          aR = ( obj.hForeground.Width + sum(obj.Padding([1,3])) ) / ...
-                              ( obj.hForeground.Height + sum(obj.Padding([2,4])) );
-
-                    otherwise
-                        aR = 1;
-                end
+            mechanicalAction = obj.MechanicalAction;
+            if strcmp(obj.Mode, 'pushbutton')
+                mechanicalAction = strrep(mechanicalAction, 'Switch', 'Latch');
+            elseif strcmp(obj.Mode, 'togglebutton')
+                mechanicalAction = strrep(mechanicalAction, 'Latch', 'Switch');
             end
         end
+    end
 
-        function set.aR(obj, newValue)
+    methods (Static)
+
+        function S = getTypeDefaults()
+            S.CornerRadius = 3;
+            S.IsFixedSize = [true, true];
+            %S.PositionMode = 'manual';
+            S.BackgroundColor = 'k';
         end
-
-%         function set.BackgroundColor(obj, newValue)
-%             obj.BackgroundColor = newValue;
-%             obj.updateBackground()
-%         end
-%
-%         function set.BackgroundAlpha(obj, newValue)
-%             obj.BackgroundAlpha = newValue;
-%             obj.updateBackground()
-%         end
     end
 end

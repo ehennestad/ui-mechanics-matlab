@@ -1,14 +1,34 @@
-classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
+classdef toolbar < uim.abstract.Container
 
     % Check out dropbox paper toolbar.
-    % Add flag for whether container border should wrap contents or not.
 
-    % todo: add separator...
+    % todo:
+    %
+    %   [x] add separator... I think this is done
+    %   [ ] Implement orientation functionality. See uim.widget.toolbar
+    %   [ ] Make sure button size is adapted to toolbar size + padding.
+    %   [x] Rename BackgroundMode to ContainerMode (move to container?)
+    %   [ ] Remove DarkMode property. Use Style
+    %   [ ] Move dimL_ and dimS_ to component or container??
+    %   [ ] Move spacing to Container
+    %   [ ] Move componentAlignment to component? Actually, is this the
+    %       same as reference points??? Componentalignment is only relevant
+    %       if containermode is "wrap"
+    %   [ ] Simplify orientation-related properties. I.e now, there is
+    %       IsFixedSize, dimL_, dimS, Orientation. COmment later: YES, this
+    %       is confusing!
+    %   [ ] Style
+    %   [ ] Make it clearer what shiftChildren and repositionButtons do,
+    %   and how they are different...
+    %   [x] Resolve how to combine backgroundmode 'wrap' and canvasMode 'private'
 
-    % Todo: Make sure button size is adapted to toolbar size + padding.
+    properties (Constant, Transient)
+        Type = 'Toolbar'
+    end
 
-    % Todo: If the toolbar background mode is wrap, should recalculate
-    % size, i.e should not use full size...!
+    properties (SetAccess = protected, Transient)
+        Children uim.abstract.Component
+    end
 
     properties
         Spacing = 8 % move to widget container
@@ -16,6 +36,7 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
         ComponentAlignment = 'left' % %center | 'right'
         Style = []
         BackgroundMode = 'wrap' % vs full...
+        BarExtensionMode = 'tight' % vs expanded % Determines if the bar is tight around the buttons or if it is expanded to fill the available length of the container
     end
 
     properties (Dependent)
@@ -37,7 +58,7 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
     end
 
     properties (Access = protected, Transient)
-        hButtons uim.abstract.virtualContainer
+        hButtons uim.abstract.Component
         ButtonSizeChangedListener event.listener
     end
 
@@ -45,34 +66,11 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
 
         function obj = toolbar(hParent, varargin)
 
-            %obj@uim.abstract.virtualContainer(hParent)
+            obj@uim.abstract.Container(hParent, varargin{:})
 
-            el = listener(hParent, 'SizeChanged', ...
-                @obj.onParentContainerSizeChanged);
-            obj.ParentContainerSizeChangedListener = el;
-
-            obj.Parent = hParent;
-            obj.Canvas = hParent;
-            obj.hAxes = obj.Canvas.Axes;
-
-            obj.parseInputs(varargin{:})
-
-            obj.createBackground()
+            % Toolbar specific construction....
 
             obj.IsConstructed = true;
-
-            % Todo: This is not perfect. Sometimes size depends on
-            % location...
-
-            % Check if position was set different than default. if so, mode is manual
-
-            % Call updateSize to trigger size update (call before location)
-            obj.updateSize('auto')
-
-            % Call updateLocation to trigger location update
-            obj.updateLocation('auto')
-
-            obj.onStyleChanged()
 
             obj.setNextButtonPosition()
         end
@@ -87,26 +85,34 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
     methods % Methods to add toolbar objects
 
         function hSep = addSeparator(obj, varargin)
+        %addSeparator Add separator between buttons
 
             separatorPosition = obj.NextButtonPosition;
+
             % todo: switch orientation...
             separatorPosition(3) = 0;
 
             varargin = [{'Position', separatorPosition, ...
-                        'Size', separatorPosition(3:4) }, varargin];
+                         'Size', separatorPosition(3:4), ...
+                         'PositionMode', 'manual', ...
+                         'SizeMode', 'manual'}, varargin, ...
+                         'Visible', obj.Visible];
 
-            hSep = uim.control.toolbarSeparator(obj, varargin{:});
+            hSep = uim.decorator.Separator(obj, varargin{:});
 
             % Add listener for SizeChanged event on button
             el = addlistener(hSep, 'SizeChanged', @obj.onButtonSizeChanged);
             obj.ButtonSizeChangedListener(end+1) = el;
 
             obj.AllButtonPosition(end+1, :) = hSep.Position;
+
+            % Todo: Fix this!
             try
                 obj.hButtons(end+1) = hSep;
             catch
                 obj.hButtons = cat(2, obj.hButtons, hSep);
             end
+
             obj.NumButtons = obj.NumButtons+1;
 
             obj.adjustButtonPositions()
@@ -125,7 +131,9 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
                         'Size', obj.NextButtonPosition(3:4), ...
                         'Padding', [3,3,3,3], ...
                         'Visible', obj.Visible, varargin, ...
-                        'PositionMode', 'manual'];
+                        'PositionMode', 'manual', ...
+                        'Visible', obj.Visible];
+
             % Concatenate with varargin at the end. Input parser will
             % choose the last entry (if there are duplicates) during parsing.
 
@@ -137,14 +145,21 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
 
             obj.AllButtonPosition(end+1, :) = hButton.Position;
             obj.hButtons(end+1) = hButton;
+            obj.Children(end+1) = hButton;
+
             obj.NumButtons = obj.NumButtons+1;
+
             obj.adjustButtonPositions()
             obj.setNextButtonPosition()
 
-            if isempty(obj.Children)
-                obj.Children = hButton;
-            else
-                obj.Children(end+1) = hButton;
+            if strcmp(obj.BarExtensionMode, 'tight')
+                obj.updateSize()
+            end
+
+            % Update location after buttons are created..
+            if strcmp(obj.PositionMode, 'auto')
+                %todo: how to do this?
+                %obj.updateLocation()
             end
 
             if ~nargout
@@ -160,11 +175,12 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
         end
 
         function relocate(obj, shift)
-            relocate@uim.abstract.virtualContainer(obj, shift)
+            relocate@uim.abstract.Component(obj, shift)
             obj.shiftChildren(shift)
         end
 
         function onButtonSizeChanged(obj, src, ~)
+        %onButtonSizeChanged Update buttonsize and reposition all other buttons
 
             isButton = ismember(obj.hButtons, src);
             obj.AllButtonPosition(isButton, :) = src.Position;
@@ -173,49 +189,64 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
 
         function updateLocation(obj, mode)
             if nargin < 2; mode = obj.PositionMode; end
-            updateLocation@uim.abstract.virtualContainer(obj, mode)
-            obj.adjustButtonPositions()
+            updateLocation@uim.abstract.Component(obj, mode)
+
+            switch obj.BarExtensionMode
+                case 'expanded'
+                    obj.adjustButtonPositions()
+            end
         end
 
         function updateSize(obj, mode)
             if nargin < 2; mode = obj.PositionMode; end
-            updateSize@uim.abstract.virtualContainer(obj, mode)
-            obj.adjustButtonPositions()
-        end
+            if ~obj.IsConstructed; return; end
 
-        function onVisibleChanged(obj, newValue)
-            obj.hBackground.Visible = newValue;
-            for i = 1:obj.NumButtons
-                obj.hButtons(i).Visible = newValue;
+            switch obj.BarExtensionMode
+                case 'expanded'
+                    updateSize@uim.abstract.Component(obj, mode)
+                    obj.adjustButtonPositions()
+
+                case 'tight'
+                    obj.setBarSizeToTight()
             end
         end
     end
 
     methods (Access = protected)
 
-        function parseInputs(obj, varargin)
-            S = obj.getToolbarDefaults;
+        function setBarSizeToTight(obj)
+        % setBarSizeToTight - Make toolbar size tight around buttons.
 
-            propNames = varargin(1:2:end);
-            propValues = varargin(2:2:end);
+            dimL = obj.DimL_;
+            dimS = obj.DimS_;
 
-            for i = 1:numel(propNames)
-                S.(propNames{i}) = propValues{i};
+            if obj.NumButtons == 0
+                minPositionL = 0;
+                maxPositionL = 0;
+            else
+                minPositionL = min(obj.AllButtonPosition(:, dimL), [], 1);
+                maxPositionL = max( sum(obj.AllButtonPosition(:, [dimL, dimL+2]),2), [], 1);
             end
 
-            C = cat(1, fieldnames(S)', struct2cell(S)');
-            C = C(:)';
+            extent = zeros(1,2);
+            extent(dimL) = maxPositionL - minPositionL + sum(obj.Padding([dimL, dimL+2]));
+            if obj.NumButtons == 0
+                extent(dimS) = obj.CanvasPosition(dimS+2);
+            else
+                extent(dimS) = max(obj.AllButtonPosition(:, dimS+2), [], 1);
+            end
 
-            parseInputs@uim.mixin.assignProperties(obj, C{:})
+            minPos = zeros(1,2);
+            minPos(dimL) = minPositionL - obj.Padding(dimL);
+            minPos(dimS) = obj.CanvasPosition(dimS);
+
+            obj.Position_(3:4) = extent;
         end
-    end
-
-    methods (Access = protected)
 
         function setNextButtonPosition(obj)
 
-            if isempty(obj.AllButtonPosition)
-                lastButtonPosition = [obj.Position(1:2)+obj.Padding(1:2),0,0];
+            if isempty(obj.AllButtonPosition) % Initialize
+                lastButtonPosition = [obj.CanvasPosition(1:2) + obj.Padding(1:2), 0, 0];
             else
                 lastButtonPosition = obj.AllButtonPosition(end, :);
             end
@@ -226,54 +257,77 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
             spacing = obj.Spacing .* double(obj.NumButtons>0);
 
             pos(i) = sum(lastButtonPosition([i,i+2])) + spacing;
-            pos(j) = obj.Position(j) + obj.Padding(j);
+            pos(j) = obj.CanvasPosition(j) + obj.Padding(j);
             pos(3:4) = obj.NewButtonSize;
-
-%             switch obj.orientation
-%                 case 'horizontal'
-%                     pos(1) = sum(lastButtonPosition([1,3])) + obj.Spacing;
-%                     pos(2) = obj.Margin(2);
-%                 case 'vertical'
-%                     pos(2) = sum(lastButtonPosition([2,4])) + obj.Spacing;
-%                     pos(1) = obj.Margin(1);
-%             end
 
             obj.NextButtonPosition = pos;
         end
 
         function adjustButtonPositions(obj)
-        % Use when adding more buttons (i.e if they are centered ro right-aligned)
+        %adjustButtonPositions Adjust positions of buttons
+        %
+        %   Use when adding more buttons (i.e if they are centered or
+        %   right-aligned)
+
             if ~obj.IsConstructed; return; end
             if obj.NumButtons == 0; return; end
+
+            % Resolve what is the long and short dimension (x=1, y=2)
+            dimL = obj.DimL_;
+            dimS = obj.DimS_;
+
             shift = [0, 0];
 
-            minPosition = min(obj.AllButtonPosition(:, obj.DimL_), [], 1);
-            maxPosition = max( sum(obj.AllButtonPosition(:, [obj.DimL_, obj.DimL_+2]),2), [], 1);
+            minPosition = min(obj.AllButtonPosition(:, dimL), [], 1);
+            maxPosition = max( sum(obj.AllButtonPosition(:, [dimL, dimL+2]),2), [], 1);
             extent = maxPosition - minPosition;
 
-            if strcmp(obj.ComponentAlignment, 'left') || strcmp(obj.ComponentAlignment, 'top')
-                targetPosition = obj.Position(obj.DimL_) + obj.Padding(obj.DimL_);
+            if any( strcmp(obj.ComponentAlignment, {'left', 'top'}) )
+                targetPosition = obj.CanvasPosition(dimL) + obj.Padding(dimL);
                 offset = targetPosition - minPosition;
 
-            elseif strcmp(obj.ComponentAlignment, 'center') || strcmp(obj.ComponentAlignment, 'middle')
-                centerPosition = obj.Position(obj.DimL_) + obj.Position(obj.DimL_+2)/2;
+            elseif any( strcmp(obj.ComponentAlignment, {'center', 'middle'}) )
+                centerPosition = obj.CanvasPosition(dimL) + obj.Position(dimL+2)/2;
                 offset = centerPosition - (minPosition + extent/2);
+
+%                 if strcmp(obj.CanvasMode, 'private') % Todo: Debug
+%                     offset = offset/2;
+%                 end
             end
 
-            if strcmp(obj.ComponentAlignment, 'right') || strcmp(obj.ComponentAlignment, 'bottom')
-                targetPosition = sum(obj.Position([obj.DimL_,obj.DimL_+2])) - obj.Padding(obj.DimL_+2) - extent;
+            if  any( strcmp(obj.ComponentAlignment, {'right', 'bottom'}) )
+                targetPosition = sum(obj.CanvasPosition([dimL, dimL+2])) - obj.Padding(dimL+2) - extent;
                 offset = targetPosition-minPosition;
             end
 
-            shift(obj.DimL_) = offset;
-            shift(obj.DimS_) = obj.Position(obj.DimS_) - obj.AllButtonPosition(1, obj.DimS_) + obj.Padding(obj.DimS_);
-            obj.shiftChildren(shift)
+            shift(dimL) = offset;
+            shift(dimS) = obj.CanvasPosition(dimS) - obj.AllButtonPosition(1, dimS) + obj.Padding(dimS);
 
-            if strcmp(obj.BackgroundMode, 'wrap')
-                obj.updateBackground()
+            if any(shift ~= 0)
+                obj.shiftChildren(shift)
             end
 
+            %shift
+
             obj.setNextButtonPosition()
+
+            % todo: take care of when backgroundmode is wrap
+
+            switch obj.CanvasMode
+                case 'shared'
+
+                    if strcmp(obj.BackgroundMode, 'wrap')
+                        obj.redrawBackground()
+                    end
+
+                    %obj.setNextButtonPosition()
+
+                case 'private'
+
+                    axPosition = getpixelposition(obj.CanvasAxes);
+                    axPosition(1:2) = axPosition(1:2) + shift;
+                    setpixelposition(obj.CanvasAxes, axPosition);
+            end
         end
 
         function repositionButtons(obj)
@@ -286,12 +340,14 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
             toolbarLocation = obj.Position(obj.DimL_) + obj.Padding(obj.DimL_);
             toolbarSize = obj.Position(obj.DimL_+2) - obj.Padding(obj.DimL_) - obj.Padding(obj.DimL_+2);
 
-            if strcmp(obj.ComponentAlignment, 'left') || strcmp(obj.ComponentAlignment, 'top')
-                anchorPoint = toolbarLocation;
-            elseif strcmp(obj.ComponentAlignment, 'center') || strcmp(obj.ComponentAlignment, 'middle')
-                anchorPoint = toolbarLocation + toolbarSize/2 - buttonExtents/2;
-            elseif strcmp(obj.ComponentAlignment, 'right') || strcmp(obj.ComponentAlignment, 'bottom')
-                anchorPoint = toolbarLocation + toolbarSize - buttonExtents;
+            anchorPoint = toolbarLocation;
+
+            if any( strcmp(obj.ComponentAlignment, {'left', 'top'}) )
+                % Pass
+            elseif any( strcmp(obj.ComponentAlignment, {'center', 'middle'}) )
+                anchorPoint = anchorPoint + toolbarSize/2 - buttonExtents/2;
+            elseif any( strcmp(obj.ComponentAlignment, {'right', 'bottom'}) )
+                anchorPoint = anchorPoint + toolbarSize - buttonExtents;
             end
 
             % Start replacing buttons starting from left/top
@@ -302,13 +358,13 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
             end
 
             if strcmp(obj.BackgroundMode, 'wrap')
-                obj.updateBackground()
+                obj.redrawBackground()
             end
 
             setNextButtonPosition(obj)
         end
 
-        function changeSpacing(obj, deltaSpacing)
+        function onSpacingChanged(obj, deltaSpacing)
 
             if ~obj.IsConstructed; return; end
 
@@ -321,7 +377,7 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
             end
 
             if strcmp(obj.BackgroundMode, 'wrap')
-                obj.updateBackground()
+                obj.redrawBackground()
             end
         end
 
@@ -333,36 +389,46 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
             end
         end
 
-        function updateBackground(obj)
+        function redrawBackground(obj)
 
             if ~isempty(obj.hBackground) && obj.IsConstructed
-
-                %S = struct('nPointsCurvature', obj.CornerRadius);
+                redrawBackground@uim.abstract.Component(obj)
+                return
 
                 switch obj.BackgroundMode
                     case 'full'
-                        [X, Y] = obj.createBoxCoordinates(obj.Size, obj.CornerRadius);
-                        X = X + obj.Position(1);
-                        Y = Y + obj.Position(2);
+                        redrawBackground@uim.abstract.Component(obj)
+
+%                         [X, Y] = uim.shape.rectangle(obj.Size, obj.CornerRadius);
+%                         X = X + obj.Position(1);
+%                         Y = Y + obj.Position(2);
                     case 'wrap'
-                        minPositionL = min(obj.AllButtonPosition(:, obj.DimL_), [], 1);
-                        maxPositionL = max( sum(obj.AllButtonPosition(:, [obj.DimL_, obj.DimL_+2]),2), [], 1);
+
+                        if obj.NumButtons == 0
+                            minPositionL = 0;
+                            maxPositionL = 0;
+                        else
+                            minPositionL = min(obj.AllButtonPosition(:, obj.DimL_), [], 1);
+                            maxPositionL = max( sum(obj.AllButtonPosition(:, [obj.DimL_, obj.DimL_+2]),2), [], 1);
+                        end
 
                         extent = zeros(1,2);
                         extent(obj.DimL_) = maxPositionL - minPositionL + sum(obj.Padding([obj.DimL_, obj.DimL_+2]));
-                        extent(obj.DimS_) = obj.Position(obj.DimS_+2);
+                        extent(obj.DimS_) = obj.CanvasPosition(obj.DimS_+2);
 
                         minPos = zeros(1,2);
                         minPos(obj.DimL_) = minPositionL - obj.Padding(obj.DimL_);
-                        minPos(obj.DimS_) = obj.Position(obj.DimS_);
+                        minPos(obj.DimS_) = obj.CanvasPosition(obj.DimS_);
 
-                        [X, Y] = obj.createBoxCoordinates(extent, obj.CornerRadius);
+                        [X, Y] = uim.shape.rectangle(extent, obj.CornerRadius);
                         X = X + minPos(1);
                         Y = Y + minPos(2);
-                    otherwise
-                end
 
-                set(obj.hBackground, 'XData', X, 'YData', Y)
+                        set(obj.hBackground, 'XData', X, 'YData', Y)
+
+                    otherwise
+                        error('This should not happen!')
+                end
             end
 
             %drawnow limitrate
@@ -400,6 +466,13 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
             obj.hBackground.FaceAlpha = obj.BackgroundAlpha;
             obj.hBackground.FaceColor = obj.BackgroundColor;
         end
+
+        function onVisibleChanged(obj, newValue)
+            obj.hBackground.Visible = newValue;
+            for i = 1:obj.NumButtons
+                obj.hButtons(i).Visible = newValue;
+            end
+        end
     end
 
     methods % Set/get
@@ -424,7 +497,7 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
 
             if newValue ~= obj.Spacing
                 deltaSpacing = newValue - obj.Spacing;
-                obj.changeSpacing(deltaSpacing);
+                obj.onSpacingChanged(deltaSpacing);
                 obj.Spacing = newValue;
             end
         end
@@ -436,13 +509,20 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
             end
         end
 
+        function set.BarExtensionMode(obj, newValue)
+            validatestring(newValue, {'tight', 'expanded'});
+            obj.BarExtensionMode = newValue;
+            obj.updateLocation(obj.PositionMode)
+            obj.updateSize()
+        end
+
         function set.BackgroundMode(obj, newValue)
 
             validatestring(newValue, {'full', 'wrap'});
 
             if ~isequal(newValue, obj.BackgroundMode)
                 obj.BackgroundMode = newValue;
-                obj.updateBackground()
+                obj.redrawBackground()
             end
         end
 
@@ -502,7 +582,7 @@ classdef toolbar < uim.abstract.virtualContainer & uim.mixin.assignProperties
     end
 
     methods (Static)
-        function S = getToolbarDefaults()
+        function S = getTypeDefaults()
             S.PositionMode = 'auto';
             S.Location = 'northwest';
             S.Margin = [0, 0, 0, 0];
