@@ -314,10 +314,8 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
             end
         end
 
-        % Todo: Consider if this is necessary...
         function set.Size(obj, newValue)
             % Todo: check with minimum size
-            obj.switchSizeMode('manual')
             obj.Position_(3:4) = newValue;
             if strcmp(obj.PositionMode, 'auto')
                 obj.setAutoLocation()
@@ -753,7 +751,7 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
 
     methods (Hidden, Access = protected)
 
-        function onVisibleChanged(obj)
+        function onVisibleChanged(obj, ~)
             % Subclass should override
         end
     end

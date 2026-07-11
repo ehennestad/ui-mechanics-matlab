@@ -43,7 +43,7 @@ classdef Container < uim.abstract.Component
 
             axis(obj.hAxes, 'equal')
 
-            if ~any(isnan(obj.Position))
+            if all(isfinite(obj.Position))
                 obj.hAxes.Position = obj.Position;
                 obj.hAxes.YLim = [1, obj.Position(4)];
                 obj.hAxes.XLim = [1, obj.Position(3)];
