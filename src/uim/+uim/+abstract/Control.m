@@ -37,7 +37,7 @@ classdef Control < uim.abstract.Component
         function delete(obj)
 
             % Reset pointerbehavior
-            if isvalid(obj.hBackground)
+            if ~isempty(obj.hBackground) && isvalid(obj.hBackground)
                 iptSetPointerBehavior(obj.hBackground, [])
             end
 
