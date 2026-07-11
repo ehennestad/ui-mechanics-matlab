@@ -391,16 +391,9 @@ classdef toolbar < uim.abstract.Container
         function redrawBackground(obj)
 
             if ~isempty(obj.hBackground) && obj.IsConstructed
-                redrawBackground@uim.abstract.Component(obj)
-                return
-
                 switch obj.BackgroundMode
                     case 'full'
                         redrawBackground@uim.abstract.Component(obj)
-
-%                         [X, Y] = uim.shape.rectangle(obj.Size, obj.CornerRadius);
-%                         X = X + obj.Position(1);
-%                         Y = Y + obj.Position(2);
                     case 'wrap'
 
                         if obj.NumButtons == 0
