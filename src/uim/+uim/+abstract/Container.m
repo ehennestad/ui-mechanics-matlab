@@ -34,8 +34,21 @@ classdef Container < uim.abstract.Component
             else
                 hGraphicsParent = obj.Parent;
             end
-            obj.hAxes = axes('Parent', hGraphicsParent);
+
+            matlabVersion = version('-release');
+            doDisableToolbar = str2double(matlabVersion(1:4))>2018 || ...
+                                       strcmp(matlabVersion, '2018b');
+
+            if doDisableToolbar
+                args = {'Toolbar', []};
+            else
+                args = {};
+            end
+
+            obj.hAxes = axes('Parent', hGraphicsParent, args{:});
             hold(obj.hAxes, 'on');
+
+            set(obj.hAxes, 'XTick', [], 'YTick', [])
             obj.hAxes.Visible = 'off';
             obj.hAxes.Units = 'pixel';
             obj.hAxes.HandleVisibility = 'off';
@@ -47,6 +60,10 @@ classdef Container < uim.abstract.Component
                 obj.hAxes.Position = obj.Position;
                 obj.hAxes.YLim = [1, obj.Position(4)];
                 obj.hAxes.XLim = [1, obj.Position(3)];
+            end
+
+            if doDisableToolbar
+                disableDefaultInteractivity(obj.hAxes)
             end
 
             obj.Canvas = obj.hAxes;

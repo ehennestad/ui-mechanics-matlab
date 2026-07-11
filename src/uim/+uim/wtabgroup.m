@@ -66,7 +66,7 @@ classdef wtabgroup < uim.abstract.Container
 
             toolbarMargin = obj.Margin - [0,0,0,toolbarHeight/2];
 
-            uicc = getappdata(obj.Parent, 'UIComponentCanvas');
+            uicc = obj.Canvas;
 
             hToolbar = uim.widget.wtoolbar(obj.Parent, ...
                 'CanvasMode', 'private', ...

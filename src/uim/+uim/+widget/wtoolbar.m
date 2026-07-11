@@ -73,7 +73,8 @@ classdef wtoolbar < uim.abstract.Container
             separatorPosition(3) = 0;
 
             varargin = [{'Position', separatorPosition, ...
-                        'Size', separatorPosition(3:4) }, varargin];
+                        'Size', separatorPosition(3:4) }, varargin, ...
+                        'Visible', obj.Visible];
 
             hSep = uim.control.toolbarSeparator(obj, varargin{:});
 
