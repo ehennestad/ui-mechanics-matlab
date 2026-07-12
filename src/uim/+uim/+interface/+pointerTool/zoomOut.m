@@ -44,10 +44,10 @@ classdef zoomOut < uim.interface.abstractPointer & uim.interface.zoom
             end
         end
 
-        function onButtonMotion(obj, ~, ~)
+        function onButtonMotion(~, ~, ~)
         end
 
-        function onButtonUp(obj, ~, ~)
+        function onButtonUp(~, ~, ~)
         end
     end
 end

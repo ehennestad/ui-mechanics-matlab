@@ -810,9 +810,6 @@ methods
             obj.imageSize_ = [h, w];
             obj.updateScaleFactor()
 
-            numOriginalPixelsX = obj.pixelWidth ./ obj.scaleFactor(1);
-            numOriginalPixelsY = obj.pixelHeight ./ obj.scaleFactor(2);
-
             %obj.hAxes.XLim = ([0, numOriginalPixelsX] + 0.5 );
             %obj.hAxes.YLim = ([0, numOriginalPixelsY] + 0.5 );
         end
@@ -876,9 +873,6 @@ methods
             [y, x] = ind2sub(fullSize, obj.tileIndices{tileNum(i)} );
             x = x ./ obj.scaleFactor(1);
             y = y ./ obj.scaleFactor(2);
-            tileCenter = [mean(x(:)), mean(y(:))];
-
-            tileCenter = obj.getTileCenter( tileNum(i) );
             tileCenter = obj.getTileCenterAxesCoords( tileNum(i) );
 
             % Calculate and update position
