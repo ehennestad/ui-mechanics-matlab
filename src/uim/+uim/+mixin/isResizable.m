@@ -279,12 +279,6 @@ classdef isResizable < uim.handle
 
     methods (Static)
 
-        function rect2pos(rectCoords)
-        end
-
-        function pos2rect(posCoords)
-        end
-
         function BW = rect2mask(rectCoords, maskSize)
 
             maskSize = round(maskSize);
@@ -298,9 +292,6 @@ classdef isResizable < uim.handle
             if pos(4) > maskSize(2); pos(4)=maskSize(2); end
 
             BW(pos(2):pos(4), pos(1):pos(3)) = true;
-        end
-
-        function newPosition = getChildPosition(oldPosition, deltaPosition)
         end
     end
 end
