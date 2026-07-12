@@ -235,10 +235,6 @@ classdef toolbar < uim.abstract.Container
                 extent(dimS) = max(obj.AllButtonPosition(:, dimS+2), [], 1);
             end
 
-            minPos = zeros(1,2);
-            minPos(dimL) = minPositionL - obj.Padding(dimL);
-            minPos(dimS) = obj.CanvasPosition(dimS);
-
             obj.Position_(3:4) = extent;
         end
 

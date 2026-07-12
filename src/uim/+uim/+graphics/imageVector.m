@@ -252,11 +252,19 @@ classdef imageVector < handle
             end
         end
 
+        function newValue = get.Clipping(obj)
+            newValue = obj.hPolygon(1).Clipping;
+        end
+
         function set.Visible(obj, newValue)
 
             for i = 1:numel(obj.hPolygon)
                 obj.hPolygon(i).Visible = newValue;
             end
+        end
+
+        function newValue = get.Visible(obj)
+            newValue = obj.hPolygon(1).Visible;
         end
 
         function set.HorizontalAlignment(obj, value)
@@ -374,6 +382,10 @@ classdef imageVector < handle
 
             deltaAngle = value - obj.currentAngle;
             obj.rotate(deltaAngle)
+        end
+
+        function angle = get.Angle(obj)
+            angle = obj.currentAngle;
         end
 
         function set.Alpha(obj, newValue)

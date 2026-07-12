@@ -191,9 +191,6 @@ classdef Button < uim.abstract.Control
             buttonTextWidth = obj.hButtonText.Extent(3);
             buttonInnerWidth = obj.Position(3);
 
-            buttonTextHeight = obj.hButtonText.Extent(4);
-            buttonInnerHeight = obj.Position(4) - sum(obj.Padding([2,4]));
-
             % Align text horizontally within button:
             switch obj.HorizontalTextAlignment
                 case 'left'
@@ -580,11 +577,8 @@ classdef Button < uim.abstract.Control
 
         function set.Icon(obj, value)
 
-            errMsg1 = 'Icon property of button must be a pathstr';
-            errMsg2 = 'Icon file was not found';
-
-%             assert(isa(value, 'char'), errMsg1)
-%             assert(isfile(value), errMsg2)
+%             assert(isa(value, 'char'), 'Icon property of button must be a pathstr')
+%             assert(isfile(value), 'Icon file was not found')
 
             obj.Icon = value;
             if obj.IsConstructed
