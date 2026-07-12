@@ -37,7 +37,7 @@ classdef scrollerBar < uim.handle
         BarColor = ones(1,3)*0.65;  % Color of the bar
         TrackColor = ones(1,3)*0.4; % Color of the track which the bar slides on
 
-        EnableMouseScroll = 'off'
+        EnableMouseScroll matlab.lang.OnOffSwitchState = 'off'
         Callback = []               % Callback function for when bar is moving.
         StopMoveCallback = []       % Callback function for when bar stops moving.
         Visible = 'on'
@@ -125,6 +125,8 @@ classdef scrollerBar < uim.handle
         end % /set.Value
 
         function set.Maximum(obj, newValue)
+            assert(isnumeric(newValue) && isscalar(newValue) && newValue > 0, ...
+                'Maximum must be a positive scalar number')
             obj.Maximum = newValue;
             obj.redraw()
         end
@@ -163,7 +165,6 @@ classdef scrollerBar < uim.handle
         end
 
         function set.EnableMouseScroll(obj, newValue)
-            newValue = validatestring(newValue, {'on', 'off'});
             obj.EnableMouseScroll = newValue;
             obj.onEnableMouseScrollValueChanged()
         end
@@ -555,8 +556,10 @@ classdef scrollerBar < uim.handle
         end
 
         function onStyleChanged(obj)
-            obj.hScrollbar(1).FaceColor = obj.TrackColor;
-            obj.hScrollbar(2).FaceColor = obj.BarColor;
+            if obj.isInitialized
+                obj.hScrollbar(1).FaceColor = obj.TrackColor;
+                obj.hScrollbar(2).FaceColor = obj.BarColor;
+            end
         end
 
         function onEnableMouseScrollValueChanged(obj)
