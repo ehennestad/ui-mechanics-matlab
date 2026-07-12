@@ -74,6 +74,20 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyGreaterThan(webPosition(3:4), [0, 0]);
         end
 
+        function childOfPrivateCanvasContainerSharesItsAxes(testCase)
+            hFigure = figure("Visible", "off", "Position", [100, 100, 500, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure, "Units", "normalized", ...
+                "Position", [0, 0, 1, 1]);
+
+            toolbar = uim.widget.toolbar(hPanel, "Location", "northeast", ...
+                "CanvasMode", "private");
+            button = toolbar.addButton("Text", "Run");
+
+            testCase.verifyEqual(button.Canvas, toolbar.Canvas);
+            testCase.verifyClass(button.Canvas, "matlab.graphics.axis.Axes");
+        end
+
         function imageAndRoiGraphicsRun(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
