@@ -58,9 +58,9 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
 %       [x] Remove hAxes property and replace with CanvasAxes
 %       [ ] Implement a set.Parent method
 %       [ ] Implement a set.IsFixedSize method
-%       [ ] Implement a getpixelposition method.
+%       [x] Implement a getpixelposition method.
 %       [ ] Implement a set methods for PositionMode, SizeMode
-%       [ ] Implement a set methods for MinimumSize, MaximumSize
+%       [x] Implement a set methods for MinimumSize, MaximumSize
 %       [ ] Make a component style... which is basically all the
 %           backgroundstyles...
 
@@ -325,7 +325,6 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
         end
 
         function set.Size(obj, newValue)
-            % Todo: check with minimum size
             obj.Position_(3:4) = newValue;
             if strcmp(obj.PositionMode, 'auto')
                 obj.setAutoLocation()
@@ -349,11 +348,14 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
 
             oldPosition = obj.Position_;
 
+            % Clamp size to the allowed range. This is the single path
+            % every size change (set.Size, set.Position, updateSize's
+            % auto-computation) ultimately flows through.
+            newPosition(3:4) = min(max(newPosition(3:4), obj.MinimumSize), obj.MaximumSize);
+
             % Check if it was size and/or location that changed.
             isSizeChanged = any(newPosition(3:4) ~= obj.Position_(3:4));
             isLocationChanged = any(newPosition(1:2) ~= obj.Position_(1:2));
-
-            % Todo: compare with min and max allowed size
 
             obj.Position_= newPosition;
 
@@ -426,6 +428,16 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
         function set.CornerRadius(obj, newValue)
             obj.CornerRadius = newValue;
             obj.onShapeChanged()
+        end
+
+        function set.MinimumSize(obj, newValue)
+            obj.MinimumSize = newValue;
+            obj.Size = obj.Size; % Re-clamp the current size to the new bound.
+        end
+
+        function set.MaximumSize(obj, newValue)
+            obj.MaximumSize = newValue;
+            obj.Size = obj.Size; % Re-clamp the current size to the new bound.
         end
 
         function set.Visible(obj, newValue)
@@ -515,8 +527,6 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
             if ~obj.IsFixedSize(2)
                 newSize(2) = parentSize(2) - sum(obj.Margin([2,4]));
             end
-
-            % Todo: Consider minimum and maximum size
 
             obj.Position_(3:4) = newSize;
         end
