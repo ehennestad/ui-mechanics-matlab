@@ -280,9 +280,6 @@ classdef slidebar < handle
 
         function [xCoords, yCoords] = getBarCoordinates(obj)
             if obj.hasAxes
-                xCoords = [obj.Min; obj.Max];
-                yCoords = [0.5; 0.5];
-
                 barWidth = 3;
 
                 [edgeX, edgeY] = uim.shape.rectangle([obj.Position(3), barWidth], barWidth/2);
@@ -293,12 +290,9 @@ classdef slidebar < handle
                 yCoords = coords(:,2)';
 
             else
-                xCoords = [obj.Position(1)+obj.Padding(1); sum(obj.Position([1,3]))-obj.Padding(3)];
-                yCoords = ones(2,1) .* obj.Position(2) + obj.Position(4) / 2;
+                barLength = obj.Position(3)-sum(obj.Padding([1,3]));
 
-                length = obj.Position(3)-sum(obj.Padding([1,3]));
-
-                [xCoords, yCoords] = uim.shape.rectangle([length, 3], 1.5);
+                [xCoords, yCoords] = uim.shape.rectangle([barLength, 3], 1.5);
                 xCoords = xCoords + obj.Position(1)+obj.Padding(1);
                 yCoords = yCoords + obj.Position(2) + obj.Position(4) / 2 - 1;
             end
