@@ -25,12 +25,9 @@ classdef zoomIn < uim.interface.abstractPointer & uim.interface.zoom & ...
     methods
 
         function obj = zoomIn(hAxes)
-
-            obj.hAxes = hAxes;
+            obj@uim.interface.abstractPointer(hAxes)
             obj.xLimOrig = obj.hAxes.XLim;
             obj.yLimOrig = obj.hAxes.YLim;
-
-            obj.hFigure = ancestor(hAxes, 'figure');
         end
 
         function setPointerSymbol(obj)

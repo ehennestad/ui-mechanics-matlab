@@ -44,6 +44,18 @@ classdef abstractPointer < handle & matlab.mixin.Heterogeneous
         onButtonUp(obj, src, event)
     end
 
+    methods
+
+        function obj = abstractPointer(hAxes)
+        %abstractPointer Attach hAxes and its parent figure to the tool
+
+            if nargin > 0
+                obj.hAxes = hAxes;
+                obj.hFigure = ancestor(hAxes, 'figure');
+            end
+        end
+    end
+
     methods % Public methods
 
         function wasCaptured = onKeyPress(~, ~, ~)

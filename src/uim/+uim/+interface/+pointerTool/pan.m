@@ -18,11 +18,9 @@ classdef pan < uim.interface.abstractPointer
     methods
 
         function obj = pan(hAxes)
-            obj.hAxes = hAxes;
+            obj@uim.interface.abstractPointer(hAxes)
             obj.xLimOrig = obj.hAxes.XLim;
             obj.yLimOrig = obj.hAxes.YLim;
-
-            obj.hFigure = ancestor(hAxes, 'figure');
         end
 
         function setPointerSymbol(obj)

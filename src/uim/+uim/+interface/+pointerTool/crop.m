@@ -28,11 +28,9 @@ classdef crop < uim.interface.abstractPointer
     methods
 
         function obj = crop(hAxes)
-            obj.hAxes = hAxes;
+            obj@uim.interface.abstractPointer(hAxes)
             obj.xLimOrig = obj.hAxes.XLim;
             obj.yLimOrig = obj.hAxes.YLim;
-
-            obj.hFigure = ancestor(hAxes, 'figure');
             obj.hRectangleSizeText = text(obj.hAxes, 'Color', obj.textColor);
         end
 
