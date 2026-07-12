@@ -83,12 +83,12 @@ classdef crop < uim.interface.abstractPointer
 
         function setPointerSymbol(obj)
         end
-        function onButtonDown(obj, ~, ~)
+        function onButtonDown(~, ~, ~)
         end
-        function onButtonMotion(obj, ~, ~)
+        function onButtonMotion(~, ~, ~)
             % Update rectangle size text
         end
-        function onButtonUp(obj, ~, ~)
+        function onButtonUp(~, ~, ~)
         end
     end
 
@@ -134,16 +134,6 @@ classdef crop < uim.interface.abstractPointer
             % Create an alphamask for image, where cropped part is in focus
             vertexX = rcc(1) + [0, rcc(3), rcc(3), 0];
             vertexY = rcc(2) + [0, 0, rcc(4), rcc(4)];
-
-            hImage = findobj(obj.hAxes, 'Type', 'Image');
-
-            if numel(hImage) > 1
-                hImage = hImage(end); % Pick the first one that was added.
-            end
-
-            imSize = size(hImage.CData);
-            imSize = imSize(1:2);
-            imSizeXY = fliplr(imSize);
 
             imSizeXY = [obj.xLimOrig(2), obj.yLimOrig(2)];
 
