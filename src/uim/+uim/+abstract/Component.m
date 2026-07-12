@@ -160,6 +160,11 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
 
             if isa(hParent, 'uim.abstract.Container')
                 obj.Parent = hParent.getGraphicsContainer();
+                if strcmp(hParent.CanvasMode, 'private')
+                    % Draw in the same private axes as the parent
+                    % container, rather than its outer graphics parent.
+                    obj.Canvas = hParent.Canvas;
+                end
             elseif isa(hParent, 'uim.UIComponentCanvas')
                 obj.Parent = hParent;
             elseif isgraphics(hParent)
@@ -243,7 +248,10 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
 
         function assignComponentCanvas(obj)
         %assignComponentCanvas Assign component canvas
-            if isa(obj.Parent, 'uim.UIComponentCanvas')
+            if ~isempty(obj.Canvas)
+                % Canvas already inherited from a private-canvas parent
+                % Container (see Component's constructor).
+            elseif isa(obj.Parent, 'uim.UIComponentCanvas')
                 obj.Canvas = obj.Parent;
             else
                 obj.Canvas = getappdata(obj.Parent, 'UIComponentCanvas');
@@ -254,7 +262,11 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
                 end
             end
 
-            obj.hAxes = obj.Canvas.Axes;
+            if isa(obj.Canvas, 'matlab.graphics.axis.Axes')
+                obj.hAxes = obj.Canvas;
+            else
+                obj.hAxes = obj.Canvas.Axes;
+            end
         end
 
         function createBackground(obj) % Subclasses can override
