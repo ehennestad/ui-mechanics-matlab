@@ -41,7 +41,7 @@ classdef ToolTip < uim.handle
             obj.ParentDestroyedListener = el;
         end
 
-        function delete(obj)
+        function delete(~)
         end
     end
 

@@ -100,7 +100,7 @@ classdef FrameMarker < uim.mixin.assignProperties
             iptPointerManager(ancestor(h, 'figure'));
         end
 
-        function updateFrameMarker(obj, flag)
+        function updateFrameMarker(obj, ~)
         % Update line indicating current frame in plot.
 
             if ~obj.IsConstructed; return; end

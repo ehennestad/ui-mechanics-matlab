@@ -240,7 +240,7 @@ classdef rangeslider < uim.abstract.Control & matlab.mixin.SetGet
 
     methods (Hidden, Access = protected)
 
-        function onVisibleChanged(obj, newValue)
+        function onVisibleChanged(obj, ~)
 
             if ~obj.IsConstructed; return; end
 
@@ -542,14 +542,14 @@ classdef rangeslider < uim.abstract.Control & matlab.mixin.SetGet
             end
         end
 
-        function onMouseEnterKnob(obj, hSource, evtData)
+        function onMouseEnterKnob(obj, hSource, ~)
 
             if ~obj.IsKnobPressed
                 hSource.FaceColor = ones(1,3) * 0.95;
             end
         end
 
-        function onMouseExitKnob(obj, hSource, evtData)
+        function onMouseExitKnob(obj, hSource, ~)
             if ~obj.IsKnobPressed
                 hSource.FaceColor = ones(1,3) * 0.8;
             end

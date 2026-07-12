@@ -593,7 +593,7 @@ classdef scalebar < handle
 
     methods (Access = private) % Internal updating
 
-        function validateAxes(obj, hAxes)
+        function validateAxes(~, hAxes)
             assert(isa(hAxes, 'matlab.graphics.axis.Axes') && isvalid(hAxes), ...
                 'First argument must be a valid axes object')
         end
@@ -861,7 +861,7 @@ function [nvPairs, varargin] = getnvpairs(varargin)
 %
 %   [nvPairs, varargin] = getnvpairs(varargin)
 
-    if numel(varargin)==1 && iscell(varargin{1})
+    if isscalar(varargin) && iscell(varargin{1})
         % Assume varargin is passed on directly and need to be unpacked
         varargin = varargin{1};
     end

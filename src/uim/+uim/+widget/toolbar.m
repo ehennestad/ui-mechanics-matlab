@@ -40,9 +40,9 @@ classdef toolbar < uim.abstract.Container
     end
 
     properties (Dependent)
-        Height = 30 % move to widget container
-        Width = 30 % move to widget container
-        Orientation = ''
+        Height % move to widget container
+        Width % move to widget container
+        Orientation
     end
 
     properties (Dependent, Transient, Access = private)

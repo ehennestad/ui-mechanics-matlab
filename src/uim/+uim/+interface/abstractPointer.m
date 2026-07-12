@@ -46,11 +46,11 @@ classdef abstractPointer < handle & matlab.mixin.Heterogeneous
 
     methods % Public methods
 
-        function wasCaptured = onKeyPress(obj, ~, ~)
+        function wasCaptured = onKeyPress(~, ~, ~)
             wasCaptured = false;
         end
 
-        function wasCaptured = onKeyRelease(obj, ~, ~)
+        function wasCaptured = onKeyRelease(~, ~, ~)
             wasCaptured = false;
         end
 
