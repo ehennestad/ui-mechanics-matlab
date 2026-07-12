@@ -638,12 +638,6 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
             obj.SizeMode = newMode;
         end % protected?
 
-        % Todo: remove
-        function updateBackgroundSize(obj)
-            obj.redrawBackground()
-            %drawnow limitrate
-        end
-
         function redrawBorder(obj)
             % Should this be done together with redrawBackground
         end
@@ -679,11 +673,6 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
 
                 set(obj.hBackground, 'XData', X, 'YData', Y)
             end
-        end
-
-        % Todo: remove
-        function updateBackground(obj)
-            warning('this should be removed')
         end
 
         function onConstructed(obj)
