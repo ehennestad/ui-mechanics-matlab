@@ -135,15 +135,7 @@ classdef UIComponentCanvas < handle & uim.mixin.assignProperties
         % Important. HitTest and Pickable parts need to be on and visible
         % for children of the axes to be able to capture mouseclicks.!
 
-            matlabVersion = version('-release');
-            doDisableToolbar = str2double(matlabVersion(1:4))>2018 || ...
-                                       strcmp(matlabVersion, '2018b');
-
-            if doDisableToolbar
-                args = {'Toolbar', []};
-            else
-                args = {};
-            end
+            args = uim.utility.getAxesToolbarArgs();
 
             obj.Axes = axes(obj.Parent, args{:});
 
@@ -166,7 +158,7 @@ classdef UIComponentCanvas < handle & uim.mixin.assignProperties
 
             obj.setAxesLimits()
 
-            if doDisableToolbar
+            if ~isempty(args)
                 disableDefaultInteractivity(obj.Axes)
             end
         end
@@ -433,15 +425,7 @@ classdef UIComponentCanvas < handle & uim.mixin.assignProperties
                 n = 1;% Number of axes to create (Todo)
             end
 
-            matlabVersion = version('-release');
-            doDisableToolbar = str2double(matlabVersion(1:4))>2018 || ...
-                                       strcmp(matlabVersion, '2018b');
-
-            if doDisableToolbar
-                args = {'Toolbar', []};
-            else
-                args = {};
-            end
+            args = uim.utility.getAxesToolbarArgs();
 
             hAxes = axes(hParent, args{:});
 
@@ -454,7 +438,7 @@ classdef UIComponentCanvas < handle & uim.mixin.assignProperties
             axis(hAxes, 'equal')
             hold(hAxes, 'on')
 
-            if doDisableToolbar
+            if ~isempty(args)
                 disableDefaultInteractivity(hAxes)
             end
         end

@@ -35,15 +35,7 @@ classdef Container < uim.abstract.Component
                 hGraphicsParent = obj.Parent;
             end
 
-            matlabVersion = version('-release');
-            doDisableToolbar = str2double(matlabVersion(1:4))>2018 || ...
-                                       strcmp(matlabVersion, '2018b');
-
-            if doDisableToolbar
-                args = {'Toolbar', []};
-            else
-                args = {};
-            end
+            args = uim.utility.getAxesToolbarArgs();
 
             obj.hAxes = axes('Parent', hGraphicsParent, args{:});
             hold(obj.hAxes, 'on');
@@ -62,7 +54,7 @@ classdef Container < uim.abstract.Component
                 obj.hAxes.XLim = [1, obj.Position(3)];
             end
 
-            if doDisableToolbar
+            if ~isempty(args)
                 disableDefaultInteractivity(obj.hAxes)
             end
 
