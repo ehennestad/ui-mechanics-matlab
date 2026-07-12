@@ -59,7 +59,7 @@ classdef PlaybackControl < uim.mixin.assignProperties
     end
 
     properties (Dependent)
-        CurrentChannels = 1;
+        CurrentChannels
         CurrentPlane
         ChannelColors
     end
@@ -82,6 +82,8 @@ classdef PlaybackControl < uim.mixin.assignProperties
         hChannelIndicator
 
         channelColors_
+        currentChannels_
+        currentPlane_
         knob
         play
         incr
@@ -252,12 +254,32 @@ classdef PlaybackControl < uim.mixin.assignProperties
         function set.CurrentChannels(obj, newValue)
             if ~isempty(obj.hChannelIndicator)
         	    obj.hChannelIndicator.CurrentChannels = newValue;
+            else
+                obj.currentChannels_ = newValue;
+            end
+        end
+
+        function value = get.CurrentChannels(obj)
+            if ~isempty(obj.hChannelIndicator)
+                value = obj.hChannelIndicator.CurrentChannels;
+            else
+                value = obj.currentChannels_;
             end
         end
 
         function set.CurrentPlane(obj, newValue)
             if ~isempty(obj.hPlaneSwitcher)
                 obj.hPlaneSwitcher.CurrentPlane = newValue;
+            else
+                obj.currentPlane_ = newValue;
+            end
+        end
+
+        function value = get.CurrentPlane(obj)
+            if ~isempty(obj.hPlaneSwitcher)
+                value = obj.hPlaneSwitcher.CurrentPlane;
+            else
+                value = obj.currentPlane_;
             end
         end
 
@@ -301,15 +323,6 @@ classdef PlaybackControl < uim.mixin.assignProperties
             if isa(parentHandle, 'matlab.graphics.axis.Axes')
                 %hAxes(2) = parentHandle;
                 obj.SliderAxes = parentHandle;
-
-                offsetPx = 80;
-                if strcmp(obj.SliderAxes.Units, 'normalized')
-                    axPosition = getpixelposition(obj.SliderAxes);
-                    axWidthPx = axPosition(3);
-                    offset = offsetPx/axWidthPx;
-                else
-                    offset = offsetPx;
-                end
 
                 obj.ButtonAxes = axes('Parent', parentHandle.Parent);
 
@@ -941,23 +954,6 @@ classdef PlaybackControl < uim.mixin.assignProperties
                     set(obj.hRangeButtons, 'PickableParts', 'none')
                 end
             end
-        end
-
-        function onPositionChanged(obj, newPos)
-            % Not used!
-            offsetPx = 80;
-            if strcmp(obj.SliderAxes.Units, 'normalized')
-                obj.SliderAxes.Units = 'pixel';
-                axWidthPx = obj.SliderAxes.Position(3);
-                obj.SliderAxes.Units = 'normalized';
-                offset = offsetPx/axWidthPx;
-            else
-                offset = offsetPx;
-            end
-
-            obj.SliderAxes.Position = newPos;
-
-            obj.Position = newPos;
         end
 
         function onLocationChanged(obj)
