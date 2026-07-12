@@ -95,21 +95,8 @@ classdef zoom < handle
                 yLimNew = yLimNew + shiftY;
             end
 
-            if diff(xLimNew) > diff(obj.xLimOrig)
-                xLimNew = obj.xLimOrig;
-            elseif xLimNew(1) <= obj.xLimOrig(1)
-                xLimNew = xLimNew - xLimNew(1) + obj.xLimOrig(1);
-            elseif xLimNew(2) > obj.xLimOrig(2)
-                xLimNew = xLimNew - (xLimNew(2) - obj.xLimOrig(2));
-            end
-
-            if diff(yLimNew) > diff(obj.yLimOrig)
-                yLimNew = obj.yLimOrig;
-            elseif yLimNew(1) <= obj.yLimOrig(1)
-                yLimNew = yLimNew - yLimNew(1) + obj.yLimOrig(1);
-            elseif yLimNew(2) > obj.yLimOrig(2)
-                yLimNew = yLimNew - (yLimNew(2) - obj.yLimOrig(2));
-            end
+            xLimNew = obj.clampRangeToOriginal(xLimNew, obj.xLimOrig);
+            yLimNew = obj.clampRangeToOriginal(yLimNew, obj.yLimOrig);
 
             setNewImageLimits(obj, xLimNew, yLimNew)
         end
@@ -131,21 +118,8 @@ classdef zoom < handle
                 xLimNew = xLimNew + [-1, 1] * (yRange*axAR-xRange)/2;
             end
 
-            if diff(xLimNew) > diff(obj.xLimOrig)
-                xLimNew = obj.xLimOrig;
-            elseif xLimNew(1) <= obj.xLimOrig(1)
-                xLimNew = xLimNew - xLimNew(1) + obj.xLimOrig(1);
-            elseif xLimNew(2) > obj.xLimOrig(2)
-                xLimNew = xLimNew - (xLimNew(2) - obj.xLimOrig(2));
-            end
-
-            if diff(yLimNew) > diff(obj.yLimOrig)
-                yLimNew = obj.yLimOrig;
-            elseif yLimNew(1) <= obj.yLimOrig(1)
-                yLimNew = yLimNew - yLimNew(1) + obj.yLimOrig(1);
-            elseif yLimNew(2) > obj.yLimOrig(2)
-                yLimNew = yLimNew - (yLimNew(2) - obj.yLimOrig(2));
-            end
+            xLimNew = obj.clampRangeToOriginal(xLimNew, obj.xLimOrig);
+            yLimNew = obj.clampRangeToOriginal(yLimNew, obj.yLimOrig);
 
             set(obj.hAxes, 'XLim', xLimNew, 'YLim', yLimNew)
             %plotZoomRegion(obj, xLimNew, yLimNew)
@@ -182,6 +156,25 @@ classdef zoom < handle
             else
                 set(obj.ax, 'YLim', newLimits);
                 obj.updateFrameMarker('update_y')
+            end
+        end
+    end
+
+    methods (Static, Access = private)
+
+        function limNew = clampRangeToOriginal(limNew, limOrig)
+        %clampRangeToOriginal Clamp a [min,max] range within its original bounds
+        %
+        %   Snaps back to limOrig if limNew is wider than limOrig,
+        %   otherwise shifts limNew (preserving its width) so it does
+        %   not extend past either edge of limOrig.
+
+            if diff(limNew) > diff(limOrig)
+                limNew = limOrig;
+            elseif limNew(1) <= limOrig(1)
+                limNew = limNew - limNew(1) + limOrig(1);
+            elseif limNew(2) > limOrig(2)
+                limNew = limNew - (limNew(2) - limOrig(2));
             end
         end
     end
