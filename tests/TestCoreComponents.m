@@ -128,6 +128,34 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyGreaterThan(diff(hAxes.YLim), diff([1, 4]));
         end
 
+        function slidebarRendersTicksInAxesMode(testCase)
+            % Mirrors the construction pattern PlaneSwitcher.m actually uses
+            % (a non-axes Parent, which makes slidebar create its own
+            % private pixel-unit axes internally), but with ticks enabled.
+            hFigure = figure("Visible", "off", "Position", [100, 100, 400, 300]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure);
+
+            slider = uim.widget.slidebar("Parent", hPanel, "Units", "pixel", ...
+                "Position", [10, 10, 200, 20], "Min", 0, "Max", 10, "TickLength", 5);
+
+            hAxes = findall(hPanel, "Type", "axes");
+            tickLines = findall(hAxes, "Type", "line");
+
+            testCase.verifyEqual(numel(tickLines), 9);
+            for i = 1:numel(tickLines)
+                xData = get(tickLines(i), "XData");
+                yData = get(tickLines(i), "YData");
+                testCase.verifyTrue(all(isfinite(xData(~isnan(xData)))));
+                testCase.verifyTrue(all(isfinite(yData(~isnan(yData)))));
+            end
+
+            % Resizing should redraw ticks without error.
+            slider.Position = [10, 10, 150, 20];
+            tickLines = findall(hAxes, "Type", "line");
+            testCase.verifyEqual(numel(tickLines), 9);
+        end
+
         function imageAndRoiGraphicsRun(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);

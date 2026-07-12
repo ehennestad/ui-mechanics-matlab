@@ -173,7 +173,7 @@ classdef slidebar < handle
             obj.hBackground.Visible = obj.Visible;
             obj.hText.Visible = 'off';
 
-            %Add listener on axes resize
+            % Add listener on axes resize
             if obj.hasAxes
                 addlistener(obj.hAxes, 'Position', 'PostSet', ...
                     @(s,e) obj.onPositionChanged);
@@ -197,8 +197,6 @@ classdef slidebar < handle
         end
 
         function plotTicks(obj)
-            if obj.hasAxes; return; end % Todo....
-
             [x, y] = getTickCoordinates(obj);
             obj.hTicks = plot(obj.hAxes, x, y, '-', 'Color',  obj.BarColor, 'LineWidth', obj.TickWidth);
 
@@ -283,7 +281,7 @@ classdef slidebar < handle
                 barWidth = 3;
 
                 [edgeX, edgeY] = uim.shape.rectangle([obj.Position(3), barWidth], barWidth/2);
-                %edgeX = edgeX + obj.Position(1);
+                % edgeX = edgeX + obj.Position(1);
                 edgeY = edgeY + obj.Position(4)/2 - barWidth/2;
                 coords = uim.utility.px2du(obj.hAxes, [edgeX', edgeY']);
                 xCoords = coords(:,1)';
@@ -329,8 +327,10 @@ classdef slidebar < handle
             yCoords = repmat([y1;y2;nan], 1, numTicks);
 
             if obj.hasAxes
-                coords = uim.utility.px2du(obj.hAxes, [xCoords', yCoords']);
-                % Todo:
+                pixelPoints = [xCoords(:), yCoords(:)];
+                dataPoints = uim.utility.px2du(obj.hAxes, pixelPoints);
+                xCoords = reshape(dataPoints(:,1), size(xCoords));
+                yCoords = reshape(dataPoints(:,2), size(yCoords));
             end
         end
 
@@ -443,7 +443,7 @@ classdef slidebar < handle
                     [xCoords, ~] = obj.getKnobCoordinates();
                     obj.hSlider.XData = xCoords;        %#ok<MCSUP>
                     obj.updateValuetipString()
-                    %newValue
+                    % newValue
                 end
             end
         end
