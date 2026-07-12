@@ -284,8 +284,6 @@ classdef pointerManager < handle
 
         function wasCaptured = onKeyRelease(obj, src, event)
             wasCaptured = false;
-
-            wasCaptured = false;
             if ~isempty(obj.currentPointerTool)
                 wasCaptured = obj.currentPointerTool.onKeyRelease(src, event);
             end
@@ -359,7 +357,7 @@ classdef pointerManager < handle
             end
         end
 
-        function tf = isCursorInsideAxes(obj, hAx)
+        function tf = isCursorInsideAxes(~, hAx)
 
             currentPoint = hAx.CurrentPoint(1, 1:2);
 
@@ -388,7 +386,7 @@ classdef pointerManager < handle
             obj.MouseDownPointerTool = [];
         end
 
-        function mouseMotionDummyCallback(obj, ~, ~)
+        function mouseMotionDummyCallback(~, ~, ~)
             % Assign this if the WindowButtonMotionFcn of a figure is empty
 
             % The figure's CurrentPoint property is only updated if a

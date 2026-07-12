@@ -167,9 +167,6 @@ classdef tabgroup < uim.abstract.Container
             hBtn.String = hTab.Title;
         end
 
-        % Tab selected
-        function onTabSelected(obj, ~, ~)
-        end
     end
 
     methods (Access = private)

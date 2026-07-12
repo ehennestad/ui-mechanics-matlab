@@ -785,13 +785,13 @@ classdef PlaybackControl < uim.mixin.assignProperties
             iptPointerManager(ancestor(h, 'figure'));
         end
 
-        function onMouseEnteredRangeButton(obj, h, varargin)
+        function onMouseEnteredRangeButton(obj, ~, varargin)
         %onMouseEntered Callback for mouse entering button
             obj.isMouseOnButton = true;
             obj.hFigure.Pointer = 'left';
         end
 
-        function onMouseExitedRangeButton(obj, h, varargin)
+        function onMouseExitedRangeButton(obj, ~, varargin)
         %onMouseEntered Callback for mouse leaving button
             obj.isMouseOnButton = false;
             if ~obj.knobDown
