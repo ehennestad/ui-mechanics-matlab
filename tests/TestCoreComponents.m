@@ -88,6 +88,46 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyClass(button.Canvas, "matlab.graphics.axis.Axes");
         end
 
+        function axisZoomDragsAndClampsAxisLimits(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", ...
+                "Position", [100, 100, 400, 300]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes("Parent", hFigure, "Units", "pixels", ...
+                "Position", [50, 50, 300, 200], "XLim", [0, 10], "YLim", [0, 5]);
+
+            pointerTool = uim.interface.pointerTool.axisZoom(hAxes);
+            testCase.verifyEqual(pointerTool.xLimOrig, [0, 10]);
+            testCase.verifyEqual(pointerTool.yLimOrig, [0, 5]);
+
+            % Dragging right from a zoomed-in view widens XLim (zoom out).
+            hAxes.XLim = [3, 7];
+            pointerTool.PreviousMousePoint = [150, 150];
+            hFigure.CurrentPoint = [180, 150];
+            pointerTool.dragXLimits();
+            testCase.verifyGreaterThan(diff(hAxes.XLim), diff([3, 7]));
+
+            % Dragging left narrows XLim (zoom in).
+            hAxes.XLim = [3, 7];
+            pointerTool.PreviousMousePoint = [180, 150];
+            hFigure.CurrentPoint = [150, 150];
+            pointerTool.dragXLimits();
+            testCase.verifyLessThan(diff(hAxes.XLim), diff([3, 7]));
+
+            % Limits never expand past the axes' original limits.
+            hAxes.XLim = [0, 10];
+            pointerTool.PreviousMousePoint = [150, 150];
+            hFigure.CurrentPoint = [5000, 150];
+            pointerTool.dragXLimits();
+            testCase.verifyEqual(hAxes.XLim, [0, 10]);
+
+            % dragYLimits mirrors the same behavior on the Y axis.
+            hAxes.YLim = [1, 4];
+            pointerTool.PreviousMousePoint = [150, 150];
+            hFigure.CurrentPoint = [150, 180];
+            pointerTool.dragYLimits("left");
+            testCase.verifyGreaterThan(diff(hAxes.YLim), diff([1, 4]));
+        end
+
         function imageAndRoiGraphicsRun(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);

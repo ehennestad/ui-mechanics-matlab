@@ -3,7 +3,6 @@ classdef axisZoom < uim.interface.abstractPointer
 %   Tool for changing limits of axis (XLim or YLim) by dragging the axis.
 
 %   TODO:
-%       [ ] Inherit from a zoom class
 %       [ ] Options for constraining zoom to original limits (implement)
 %       [ ] Options for syncing two axis (if axes has dual axis along the
 %           dimensions)
@@ -31,7 +30,7 @@ classdef axisZoom < uim.interface.abstractPointer
 
     methods
 
-        function obj = pan(hAxes)
+        function obj = axisZoom(hAxes)
             obj.hAxes = hAxes;
             obj.xLimOrig = obj.hAxes.XLim;
             obj.yLimOrig = obj.hAxes.YLim;
@@ -44,7 +43,7 @@ classdef axisZoom < uim.interface.abstractPointer
                 case 'y'
                     obj.hFigure.Pointer = 'top';
                 case 'x'
-                    obj.Figure.Pointer = 'left';
+                    obj.hFigure.Pointer = 'left';
                 otherwise
                     % Should be manages elsewhere
             end
@@ -54,10 +53,10 @@ classdef axisZoom < uim.interface.abstractPointer
 
             if evt.Button == 3; return; end
 
-            if strcmp(obj.Figure.SelectionType, 'normal')
+            if strcmp(obj.hFigure.SelectionType, 'normal')
                 obj.isMouseDown = true;
-                obj.PreviousMouseClickPoint = obj.Figure.CurrentPoint;
-                obj.PreviousMousePoint = obj.Figure.CurrentPoint;
+                obj.PreviousMouseClickPoint = obj.hFigure.CurrentPoint;
+                obj.PreviousMousePoint = obj.hFigure.CurrentPoint;
             end
 
             obj.isActive = true;
@@ -72,7 +71,7 @@ classdef axisZoom < uim.interface.abstractPointer
                 if isBusy
                     return
                 end
-                isBusy = true; %#ok<NASGU>
+                isBusy = true;
                 currentPoint = obj.hFigure.CurrentPoint;
                 shift = currentPoint - obj.previousPoint;
 
@@ -96,28 +95,24 @@ classdef axisZoom < uim.interface.abstractPointer
             obj.isActive = false;
         end
 
-        function changeAxisLimits(obj, shift)
-        % Move image in ax according to shift
-        end
-
         function dragYLimits(obj, location)
 
-            currentPoint = obj.Figure.CurrentPoint;
+            currentPoint = obj.hFigure.CurrentPoint;
 
-            currentYAxisLocation = obj.ax.YAxisLocation;
+            currentYAxisLocation = obj.hAxes.YAxisLocation;
             switchYAxis = ~strcmp(currentYAxisLocation, location);
 
             if switchYAxis
-                yyaxis(obj.ax, location)
+                yyaxis(obj.hAxes, location)
             end
 
             deltaY = currentPoint(2) - obj.PreviousMousePoint(2);
-            deltaY = deltaY / obj.ax.Position(4);
+            deltaY = deltaY / obj.hAxes.Position(4);
 
-            yLimRange = uim.utility.range(obj.ax.YLim);
+            yLimRange = uim.utility.range(obj.hAxes.YLim);
             yLimDiff = yLimRange .* deltaY;
 
-            newYLim = [obj.ax.YLim(1)-yLimDiff, obj.ax.YLim(2)+yLimDiff];
+            newYLim = [obj.hAxes.YLim(1)-yLimDiff, obj.hAxes.YLim(2)+yLimDiff];
             obj.setNewYLims(newYLim)
 
 % %             if switchYAxis % Switch back...
@@ -137,6 +132,27 @@ classdef axisZoom < uim.interface.abstractPointer
 
             newXLim = [obj.hAxes.XLim(1)-xLimDiff, obj.hAxes.XLim(2)+xLimDiff];
             obj.setNewXLims(newXLim)
+        end
+    end
+
+    methods (Access = private)
+
+        function setNewXLims(obj, newLimits)
+        % setNewXLims Set axes XLim, clamped to the original limits
+
+            newLimits(1) = max([obj.xLimOrig(1), newLimits(1)]);
+            newLimits(2) = min([obj.xLimOrig(2), newLimits(2)]);
+
+            set(obj.hAxes, 'XLim', newLimits);
+        end
+
+        function setNewYLims(obj, newLimits)
+        % setNewYLims Set axes YLim, clamped to the original limits
+
+            newLimits(1) = max([obj.yLimOrig(1), newLimits(1)]);
+            newLimits(2) = min([obj.yLimOrig(2), newLimits(2)]);
+
+            set(obj.hAxes, 'YLim', newLimits);
         end
     end
 end
