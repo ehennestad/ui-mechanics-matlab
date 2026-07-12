@@ -310,8 +310,6 @@ classdef toolbar < uim.abstract.Container
 
             obj.setNextButtonPosition()
 
-            % todo: take care of when backgroundmode is wrap
-
             switch obj.CanvasMode
                 case 'shared'
 

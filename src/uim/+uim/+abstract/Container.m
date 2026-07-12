@@ -1,9 +1,9 @@
 classdef Container < uim.abstract.Component
 %Container A container for placing other components within.
 %
-%   This container is virtual...
-%
-%   Todo: implement so that it can live in its own canvas.
+%   A container's CanvasMode determines where it draws: 'shared' (the
+%   default) uses its parent's canvas; 'private' gives it its own
+%   dedicated axes, created via createPrivateCanvas.
 
     properties (Abstract, SetAccess = protected, Transient)
         Children uim.abstract.Component

@@ -156,8 +156,6 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
 
     methods % Structors
 
-        % todo :modify this so it works for button, and other controls that
-        % might be parented in another virtualContainer...
         function obj = Component(hParent, varargin)
 
             if isa(hParent, 'uim.abstract.Container')
