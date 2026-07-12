@@ -817,9 +817,10 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
         end
 
         function locationPoint = location2point(containerSize, locationKey)
-            % todo: merge with getLocationPoint method. Should this be a
-            % methods of this class or virtual container or just a
-            % utilities function?
+        %location2point Convert a location key (e.g. 'northeast') to a
+        %point within a container of the given size.
+        %
+        %   Also used by uim.UIComponentCanvas.getLocationPoint.
 
             locationPoint = [1,1]; % Southwest
 

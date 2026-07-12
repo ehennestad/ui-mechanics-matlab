@@ -421,35 +421,7 @@ classdef UIComponentCanvas < handle & uim.mixin.assignProperties
         end
 
         function locationPoint = getLocationPoint(obj, locationKey)
-
-            pixelSize = obj.PixelSize;
-
-            locationPoint = [1,1]; % Southwest
-            %locationPoint = [obj.Axes.XLim(1), obj.Axes.YLim(1)]; % Southwest
-
-            if contains(locationKey, 'north')
-                locationPoint(2) = pixelSize(2);
-            end
-
-            if contains(locationKey, 'east')
-                locationPoint(1) = pixelSize(1);
-            end
-
-            % Center along x-dimension
-            if strcmp(locationKey, 'south') || strcmp(locationKey, 'north')
-                locationPoint(1) = pixelSize(1)/2;
-            end
-
-            % Center along y-dimension
-            if strcmp(locationKey, 'west') || strcmp(locationKey, 'east')
-                locationPoint(2) = pixelSize(2)/2;
-            end
-
-            if strcmp(locationKey, 'center')
-                locationPoint = pixelSize/2;
-            end
-
-            locationPoint = round( locationPoint );
+            locationPoint = uim.abstract.Component.location2point(obj.PixelSize, locationKey);
         end
     end
 
