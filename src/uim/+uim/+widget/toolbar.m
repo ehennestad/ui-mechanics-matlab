@@ -216,8 +216,24 @@ classdef toolbar < uim.abstract.Container
         function setBarSizeToTight(obj)
         % setBarSizeToTight - Make toolbar size tight around buttons.
 
-            dimL = obj.DimL_;
             dimS = obj.DimS_;
+
+            [~, extent] = obj.getButtonExtentAlongLength();
+
+            if obj.NumButtons == 0
+                extent(dimS) = obj.CanvasPosition(dimS+2);
+            else
+                extent(dimS) = max(obj.AllButtonPosition(:, dimS+2), [], 1);
+            end
+
+            obj.Position_(3:4) = extent;
+        end
+
+        function [minPositionL, extent] = getButtonExtentAlongLength(obj)
+        % getButtonExtentAlongLength - Get button min position and total
+        % extent along the toolbar's length dimension (DimL_).
+
+            dimL = obj.DimL_;
 
             if obj.NumButtons == 0
                 minPositionL = 0;
@@ -229,13 +245,6 @@ classdef toolbar < uim.abstract.Container
 
             extent = zeros(1,2);
             extent(dimL) = maxPositionL - minPositionL + sum(obj.Padding([dimL, dimL+2]));
-            if obj.NumButtons == 0
-                extent(dimS) = obj.CanvasPosition(dimS+2);
-            else
-                extent(dimS) = max(obj.AllButtonPosition(:, dimS+2), [], 1);
-            end
-
-            obj.Position_(3:4) = extent;
         end
 
         function setNextButtonPosition(obj)
@@ -390,16 +399,7 @@ classdef toolbar < uim.abstract.Container
                         redrawBackground@uim.abstract.Component(obj)
                     case 'wrap'
 
-                        if obj.NumButtons == 0
-                            minPositionL = 0;
-                            maxPositionL = 0;
-                        else
-                            minPositionL = min(obj.AllButtonPosition(:, obj.DimL_), [], 1);
-                            maxPositionL = max( sum(obj.AllButtonPosition(:, [obj.DimL_, obj.DimL_+2]),2), [], 1);
-                        end
-
-                        extent = zeros(1,2);
-                        extent(obj.DimL_) = maxPositionL - minPositionL + sum(obj.Padding([obj.DimL_, obj.DimL_+2]));
+                        [minPositionL, extent] = obj.getButtonExtentAlongLength();
                         extent(obj.DimS_) = obj.CanvasPosition(obj.DimS_+2);
 
                         minPos = zeros(1,2);
