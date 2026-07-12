@@ -58,7 +58,7 @@ classdef scrollerBar < uim.handle
         isCursorOnBar = false
 
         isTrackVisible = false;
-        ParentSizeChangedListener
+        ParentSizeChangedListener event.listener
 
         CallbacksEnabled = true
         MouseScrollListener event.listener
