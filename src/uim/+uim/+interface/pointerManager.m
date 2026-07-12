@@ -372,11 +372,6 @@ classdef pointerManager < handle
             tf = ~any(any(diff([axLim(1:2); currentPoint; axLim(3:4)]) < 0));
         end
 
-        function tf = pointerEnteredAxes(obj)
-        end
-
-        function tf = pointerExitedAxes(obj)
-        end
     end
 
     methods (Access = private)

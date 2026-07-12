@@ -708,14 +708,6 @@ methods
         pos(2) = origImSize(1)*(iRow-1) + pad(2)*(iRow-1) + origImSize(1)/2;
 
         pos = pos + 0.5;
-
-        return
-        fullSize = [obj.pixelHeight, obj.pixelWidth];
-
-        [y, x] = ind2sub(fullSize, obj.tileIndices{tileNum} );
-        tileCenter = [mean(x(:)), mean(y(:))];
-
-        pos = tileCenter ./ obj.scaleFactor;
     end
 
 % % Methods to set properties
