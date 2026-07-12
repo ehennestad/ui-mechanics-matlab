@@ -118,6 +118,16 @@ classdef slidebar < handle
                 obj.hAxes = obj.Parent;
             end
 
+            % If using a caller-supplied axes, make sure hold is on for the
+            % duration of construction so that each new graphics object
+            % does not clear the ones already plotted (NextPlot default
+            % behavior when hold is off). createAxes() already turns hold
+            % on for a private axes that slidebar owns exclusively.
+            if ~obj.hasAxes
+                wasHoldOn = ishold(obj.hAxes);
+                hold(obj.hAxes, 'on');
+            end
+
             % Slider and especially the slider track is thin, and its easy
             % to miss when pressing it. Patch background so that
             % mousepresses are still captured by this widget on close miss.
@@ -177,6 +187,10 @@ classdef slidebar < handle
             if obj.hasAxes
                 addlistener(obj.hAxes, 'Position', 'PostSet', ...
                     @(s,e) obj.onPositionChanged);
+            end
+
+            if ~obj.hasAxes && ~wasHoldOn
+                hold(obj.hAxes, 'off');
             end
         end
 

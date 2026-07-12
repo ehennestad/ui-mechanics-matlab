@@ -156,6 +156,26 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyEqual(numel(tickLines), 9);
         end
 
+        function slidebarWithTicksRendersInCallerSuppliedAxes(testCase)
+            % When the caller passes an existing axes directly as Parent,
+            % construction must not clear graphics already plotted (the
+            % background patch) via the axes' default hold-off behavior.
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes("Parent", hFigure, "XLim", [0, 10], "YLim", [0, 1]);
+            wasHoldOn = ishold(hAxes);
+
+            slider = uim.widget.slidebar("Parent", hAxes, "Min", 0, "Max", 10, ...
+                "TickLength", 0.05, "Position", [1, 0.2, 8, 0.6]);
+
+            testCase.verifyClass(slider, "uim.widget.slidebar");
+            tickLines = findall(hAxes, "Type", "line");
+            testCase.verifyEqual(numel(tickLines), 9);
+
+            % Hold state should be restored to what it was before construction.
+            testCase.verifyEqual(ishold(hAxes), wasHoldOn);
+        end
+
         function imageAndRoiGraphicsRun(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
