@@ -44,7 +44,7 @@ classdef iconSet < uim.handle
 
                 % Use builtin if a property is requested.
                 case '.'
-                    if ~isempty(obj.iconNames) && numel(s)==1 && contains(s.subs, obj.iconNames)
+                    if ~isempty(obj.iconNames) && isscalar(s) && contains(s.subs, obj.iconNames)
                         if ~nargout
                             varargout = {obj.iconData.(s.subs)};
                         else
@@ -112,10 +112,10 @@ classdef iconSet < uim.handle
                 obj.saveIcons(S)
             end
 
-            iconNames = fieldnames(S);
+            newIconNames = fieldnames(S);
 
-            for i = 1:numel(iconNames)
-                obj.iconData.(iconNames{i}) = S.(iconNames{i});
+            for i = 1:numel(newIconNames)
+                obj.iconData.(newIconNames{i}) = S.(newIconNames{i});
             end
 
             obj.iconNames = fieldnames(obj.iconData);
@@ -222,7 +222,7 @@ classdef iconSet < uim.handle
                         polyShape = arrayfun(@(h) h.Shape, hP, 'uni', 0);
                         colors = arrayfun(@(h) h.FaceColor, hP, 'uni', 0);
 
-                        V = struct('Shape', polyShape, 'Color', colors); %#ok<NASGU>
+                        V = struct('Shape', polyShape, 'Color', colors);
                         delete(hP)
 
                         hV = uim.graphics.imageVector(ax, V);

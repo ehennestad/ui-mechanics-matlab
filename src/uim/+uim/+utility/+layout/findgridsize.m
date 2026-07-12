@@ -1,8 +1,4 @@
-function [nRows, nCols] = findgridsize(n, squareAr, fullAr)
-
-if nargin < 2
-    squareAr = 1; % SquareAspecratio...?
-end
+function [nRows, nCols] = findgridsize(n, ~, fullAr)
 
 if nargin < 3
     lowerlim = 4/3;
@@ -18,7 +14,7 @@ while ~finished
 
     factors = factor(n);
 
-    if numel(factors) == 1
+    if isscalar(factors)
         n=n+1;
         continue
     end
@@ -57,7 +53,7 @@ while ~finished
     hits = ratio < upperlim & ratio > lowerlim;
 
     if any(hits)
-        candidates = candidates(find(hits), :);
+        candidates = candidates(hits, :);
         nCols = candidates(1, 1); nRows = candidates(1, 2);
         finished = true;
     else

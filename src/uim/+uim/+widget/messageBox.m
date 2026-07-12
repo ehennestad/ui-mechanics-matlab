@@ -84,7 +84,7 @@ classdef messageBox < uim.mixin.isResizable
     end % \structor methods
 
     methods (Access = protected)
-        function setDefaultButtonDownFcn(obj, fcnHandle)
+        function setDefaultButtonDownFcn(~, ~)
         end
 
         function resize(obj, newPosition, ~)
@@ -464,7 +464,7 @@ classdef messageBox < uim.mixin.isResizable
             obj.clearMessage(doFade)
         end
 
-            function onMouseEnteredButton(obj, hSource, eventData)
+            function onMouseEnteredButton(obj, ~, ~)
                 obj.isMouseOver = true;
                 obj.xButtonBg.FaceAlpha = 0.15;
                 obj.xButtonBg.EdgeColor = ones(1,3) * 0.4;
@@ -474,7 +474,7 @@ classdef messageBox < uim.mixin.isResizable
     %             end
             end
 
-            function onMouseExitedButton(obj, hSource, eventData)
+            function onMouseExitedButton(obj, ~, ~)
                 obj.isMouseOver = false;
                 obj.xButtonBg.FaceAlpha = 0;
                 obj.xButtonBg.EdgeColor = 'none';

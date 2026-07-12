@@ -8,7 +8,7 @@ classdef EventData < event.EventData & dynamicprops
             end
 
             inputs = nameValuePairs;
-            if numel(inputs) == 1 && iscell(inputs{1})
+            if isscalar(inputs) && iscell(inputs{1})
                 inputs = inputs{1};
             end
             if mod(numel(inputs), 2) ~= 0

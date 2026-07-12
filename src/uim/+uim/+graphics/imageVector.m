@@ -106,7 +106,7 @@ classdef imageVector < handle
                 polyShape{i} = p2;
             end
 
-            V = struct('Shape', polyShape, 'Color', colors); %#ok<NASGU>
+            V = struct('Shape', polyShape, 'Color', colors);
         end
 
         function rotate(obj, angle)
@@ -174,8 +174,6 @@ classdef imageVector < handle
 
         function translate(obj, shift)
 
-            mVer = version;
-
             % if strcmp(mVer(1:5), '9.4.0')
                 for i = 1:obj.numShapes
                     obj.hPolygon(i).Shape.Vertices = obj.hPolygon(i).Shape.Vertices + shift;
@@ -191,16 +189,13 @@ classdef imageVector < handle
 
         function scale(obj, scaleFactor)
 
-            if numel(scaleFactor) == 1
+            if isscalar(scaleFactor)
                 scaleFactor = repmat(scaleFactor, 1, 2);
             end
 
             for i = 1:obj.numShapes
                 obj.hPolygon(i).Shape = scale(obj.hPolygon(i).Shape, scaleFactor);
             end
-        end
-
-        function place(obj, position, varargin)
         end
 
         function reposition(obj, newAlignment)
@@ -342,28 +337,28 @@ classdef imageVector < handle
         function set.Position(obj, value)
 
             bbox = obj.boundingBox;
-            currentPosition = [0,0];
+            anchorPosition = [0,0];
 
             switch obj.VerticalAlignment
                 case 'top'
-                    currentPosition(2) = bbox(2)+bbox(4);
+                    anchorPosition(2) = bbox(2)+bbox(4);
                 case 'bottom'
-                    currentPosition(2) = bbox(2);
+                    anchorPosition(2) = bbox(2);
                 case 'middle'
-                    currentPosition(2) = bbox(2)+bbox(4)/2;
+                    anchorPosition(2) = bbox(2)+bbox(4)/2;
             end
 
             switch obj.HorizontalAlignment
 
                 case 'left'
-                    currentPosition(1) = bbox(1);
+                    anchorPosition(1) = bbox(1);
                 case 'right'
-                    currentPosition(1) = bbox(1)+bbox(3);
+                    anchorPosition(1) = bbox(1)+bbox(3);
                 case 'center'
-                    currentPosition(1) = bbox(1)+bbox(3)/2;
+                    anchorPosition(1) = bbox(1)+bbox(3)/2;
             end
 
-            shift = value - currentPosition;
+            shift = value - anchorPosition;
             obj.translate(shift);
 
             obj.currentPosition = obj.boundingBox(1:2) + obj.boundingBox(3:4)/2;
