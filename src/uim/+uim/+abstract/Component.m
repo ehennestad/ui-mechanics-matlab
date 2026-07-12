@@ -477,7 +477,7 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
             obj.redrawBorder()
         end
 
-        function relocate(obj, shift)
+        function relocate(obj, ~)
             obj.redrawBackground()
             %obj.moveBackground(shift)
         end
@@ -662,8 +662,6 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
             %drawnow limitrate
         end
 
-        function moveBorder(obj, shift)
-        end
     end
 
     methods (Access = protected)
@@ -758,7 +756,7 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
 
     methods (Hidden, Access = protected)
 
-        function onVisibleChanged(obj, ~)
+        function onVisibleChanged(~, ~)
             % Subclass should override
         end
     end

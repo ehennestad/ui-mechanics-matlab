@@ -118,7 +118,7 @@ classdef Control < uim.abstract.Component
         function changeAppearance(obj)
         end
 
-        function onMouseEntered(obj, hSource, eventData)
+        function onMouseEntered(obj, ~, ~)
 
             if ~isvalid(obj); return; end
 
@@ -134,7 +134,7 @@ classdef Control < uim.abstract.Component
             end
         end
 
-        function onMouseExited(obj, hSource, eventData)
+        function onMouseExited(obj, ~, ~)
 
             % Need this here in case the obj was deleted while the pointer
             % was still on it.

@@ -69,16 +69,16 @@ classdef Container < uim.abstract.Component
             obj.Canvas = obj.hAxes;
         end
 
-        function onChildAdded(obj, newChild)
+        function onChildAdded(~, ~)
         end
 
-        function onChildRemoved(obj, removedChild)
+        function onChildRemoved(~, ~)
         end
 
-        function moveChildren(obj)
+        function moveChildren(~)
         end
 
-        function resizeChildren(obj)
+        function resizeChildren(~)
         end
     end
 end

@@ -32,15 +32,9 @@ classdef assignProperties < uim.handle & matlab.mixin.SetGet
 
             keep = ~isTransient & isPublic;
 
-            % Get names and default values for the properties to keep.
+            % Get names of the properties to keep.
             propArray = mc.PropertyList(keep);
             propertyNames = {propArray.Name};
-            defaultValues = cell(1, length(propArray));
-
-            hasDefaults = [propArray.HasDefault];
-            defaultValues(hasDefaults) = {propArray(hasDefaults).DefaultValue};
-
-            %defaultValues = {mc.PropertyList(~isTransient & isPublic).DefaultValue};
 
             S = uim.utility.nameValuePairsToStruct(nvPairs);
 
