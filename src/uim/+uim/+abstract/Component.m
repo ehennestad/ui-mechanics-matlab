@@ -137,6 +137,7 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
         ParentContainerSizeChangedListener event.listener
         ParentContainerLocationChangedListener event.listener
         ParentContainerDestroyedListener event.listener
+        CanvasDestroyedListener event.listener
         IsConstructed = false
         IsDrawCompleted = false
         hAxes  % Make this dependent property?
@@ -179,6 +180,9 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
 
             obj.assignComponentCanvas()
 
+            obj.CanvasDestroyedListener = addlistener(obj.Canvas, ...
+                'ObjectBeingDestroyed', @(s,e) obj.delete());
+
             obj.createBackground()
 
             obj.IsConstructed_ = true;
@@ -188,12 +192,6 @@ classdef Component < uim.handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
 
             % Call updateLocation to trigger location update
             obj.updateLocation(obj.PositionMode)
-
-            % Todo: add listener. If uicc is deleted, delete this class as
-            % well.
-
-            %obj.Canvas = hParent;
-            %obj.hAxes = obj.Canvas.Axes;
         end
 
         function delete(obj)
