@@ -83,45 +83,49 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 
     properties % Position properties
 
-        PositionMode = 'auto'        % Calculate position based on layout or use the values of the Position property.
-        SizeMode = 'auto'            % Calculate size based on layout or used the values of the Position property.
+        PositionMode (1,:) char {mustBeMember(PositionMode, {'auto', 'manual'})} = 'auto'  % Calculate position based on layout or use the values of the Position property.
+        SizeMode (1,:) char {mustBeMember(SizeMode, {'auto', 'manual'})} = 'auto'          % Calculate size based on layout or used the values of the Position property.
 
         Margin (1,4) double = [0,0,0,0]           % In pixels (left, bottom, right, top)
         Padding (1,4) double = [0,0,0,0]          % In pixels (left, bottom, right, top)
 
-        Location = 'southwest'       % Location of component in the parent container. See layout description above.
+        % Location of component in the parent container. See layout
+        % description above. Compass points (compound or bare) plus 'center'.
+        Location (1,:) char {mustBeMember(Location, {'north', 'south', ...
+            'east', 'west', 'northeast', 'northwest', 'southeast', ...
+            'southwest', 'center'})} = 'southwest'
 
         % Anchor points....
-        HorizontalAlignment = 'left' % Horizontal reference point (anchor point) in the parent container. See layout description above.
-        VerticalAlignment = 'bottom' % Vertical reference point (anchor point) in the parent container. See layout description above.
+        HorizontalAlignment (1,:) char {mustBeMember(HorizontalAlignment, {'left', 'center', 'right'})} = 'left'    % Horizontal reference point (anchor point) in the parent container. See layout description above.
+        VerticalAlignment (1,:) char {mustBeMember(VerticalAlignment, {'bottom', 'middle', 'top'})} = 'bottom'      % Vertical reference point (anchor point) in the parent container. See layout description above.
 
         IsFixedSize (1,2) logical = [false, false]     % True/false (x, y) Is size fixed?
 
-        MinimumSize = [10, 10]
-        MaximumSize = [inf, inf]
+        MinimumSize (1,2) double = [10, 10]
+        MaximumSize (1,2) double = [inf, inf]
     end
 
     properties % Style properties
         BackgroundColor = 'none'
         ForegroundColor = 'w'
-        BackgroundAlpha = 0.3
+        BackgroundAlpha (1,1) double {mustBeGreaterThanOrEqual(BackgroundAlpha, 0), mustBeLessThanOrEqual(BackgroundAlpha, 1)} = 0.3
         BorderColor = 'none'
-        BorderWidth = 0.5
-        CornerRadius = 0
+        BorderWidth (1,1) double {mustBeNonnegative} = 0.5
+        CornerRadius (1,1) double {mustBeNonnegative} = 0
     end
 
     properties % Graphics objects properties
-        Visible = 'on'
-        Tag = ''
+        Visible (1,:) char {mustBeMember(Visible, {'on', 'off'})} = 'on'
+        Tag (1,:) char = ''
         UserData = []
     end
 
     properties (SetAccess = protected)
-        CanvasMode = 'shared' % vs 'private' % Should be container property.
+        CanvasMode (1,:) char = 'shared' % vs 'private' % Should be container property.
     end
 
     properties (Access = protected, Dependent, Transient)
-        CanvasPosition % Position in Canvas
+        CanvasPosition (1,4) double % Position in Canvas
     end
 
     properties (Access = protected, Transient) % Internal properties
@@ -133,15 +137,15 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
         ParentContainerLocationChangedListener event.listener
         ParentContainerDestroyedListener event.listener
         CanvasDestroyedListener event.listener
-        IsConstructed = false
-        IsDrawCompleted = false
+        IsConstructed (1,1) logical = false
+        IsDrawCompleted (1,1) logical = false
         CanvasAxes
         Background
         Border
     end
 
     properties (Hidden, Access = private, Transient)
-        IsConstructed_ = false % Constructed flag internal to the component superclass
+        IsConstructed_ (1,1) logical = false % Constructed flag internal to the component superclass
     end
 
     events
@@ -291,8 +295,6 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
     methods % Set/Get
 
         function set.IsConstructed(obj, newValue)
-
-            assert(islogical(newValue), 'Property value must be a logical')
             obj.IsConstructed = newValue;
 
             if obj.IsConstructed
@@ -437,10 +439,6 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
         end
 
         function set.Visible(obj, newValue)
-            assert(strcmp(newValue, 'on') || strcmp(newValue, 'off'), ...
-                'uim:InvalidPropertyValue', ...
-                'Visible property can be set to ''on'' or ''off'' ')
-
             if ~isequal(obj.Visible, newValue)
                 obj.Visible = newValue;
                 obj.onVisibleChanged(newValue)
