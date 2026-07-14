@@ -66,38 +66,38 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
     properties (Access = private) % Widget components
 
-        hFigure % Window which figure is located in. % Make dependent...
+        Figure % Window which figure is located in. % Make dependent...
 
         ParentApp
         SliderAxes  %SliderAxes
         ButtonAxes %ButtonAxes
 
-        hBar1
-        hBar2
+        Bar1
+        Bar2
 
-        hActiveRangeBar
-        hRangeButtons
+        ActiveRangeBar
+        RangeButtons
 
-        hPlaneSwitcher
-        hChannelIndicator
+        PlaneSwitcher
+        ChannelIndicator
 
-        channelColors_
-        currentChannels_
-        currentPlane_
-        knob
-        play
-        incr
-        decr
+        ChannelColors_
+        CurrentChannels_
+        CurrentPlane_
+        Knob
+        PlayButton
+        IncrButton
+        DecrButton
 
-        tincr
+        Tincr
 
-        h % Struct for keeping all handles which visibility should be turned on and off
+        Handles % Struct for keeping all handles which visibility should be turned on and off
     end
 
     properties (Access = private) % Widget states and internals
         IsConstructed = false
-        knobDown = false
-        isMouseOnButton = false
+        IsKnobDown = false
+        IsMouseOnButton = false
 
         Position_ = [1, 1, 20, 200]; %Initial position
 
@@ -113,7 +113,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         function obj = PlaybackControl(parentGui, parentHandle, varargin)
 
             obj.ParentApp = parentGui;
-            obj.hFigure = obj.ParentApp.Figure;
+            obj.Figure = obj.ParentApp.Figure;
 
             el = addlistener(obj.ParentApp, 'currentFrameNo', 'PostSet', @obj.changeValue);
             obj.FrameChangedListener = el;
@@ -148,20 +148,20 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         %switchPlayPauseIcon Switch icon of play button on play/pause
 
             buttonPosition = 10;
-            if obj.NumPlanes > 1 && ~isempty(obj.hPlaneSwitcher)
+            if obj.NumPlanes > 1 && ~isempty(obj.PlaneSwitcher)
                 buttonPosition = buttonPosition + 20;
             end
 
             buttonHeight = 11;
             switch mode
                 case 'play'
-                    obj.play.Tag = 'Play';
-                    obj.play.XData = buttonPosition + [0, 0, 10];
-                    obj.play.YData = [1, -1, 0] .* buttonHeight/2;
+                    obj.PlayButton.Tag = 'Play';
+                    obj.PlayButton.XData = buttonPosition + [0, 0, 10];
+                    obj.PlayButton.YData = [1, -1, 0] .* buttonHeight/2;
                 case 'pause'
-                    obj.play.Tag = 'Pause';
-                    obj.play.XData = [0, 5;  2.5, 7.5; 2.5, 7.5;  0, 5] + buttonPosition;
-                    obj.play.YData = [1,1; 1,1; -1,-1; -1,-1] .* buttonHeight/2;
+                    obj.PlayButton.Tag = 'Pause';
+                    obj.PlayButton.XData = [0, 5;  2.5, 7.5; 2.5, 7.5;  0, 5] + buttonPosition;
+                    obj.PlayButton.YData = [1,1; 1,1; -1,-1; -1,-1] .* buttonHeight/2;
             end
         end
 
@@ -252,54 +252,54 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         end
 
         function set.CurrentChannels(obj, newValue)
-            if ~isempty(obj.hChannelIndicator)
-        	    obj.hChannelIndicator.CurrentChannels = newValue;
+            if ~isempty(obj.ChannelIndicator)
+        	    obj.ChannelIndicator.CurrentChannels = newValue;
             else
-                obj.currentChannels_ = newValue;
+                obj.CurrentChannels_ = newValue;
             end
         end
 
         function value = get.CurrentChannels(obj)
-            if ~isempty(obj.hChannelIndicator)
-                value = obj.hChannelIndicator.CurrentChannels;
+            if ~isempty(obj.ChannelIndicator)
+                value = obj.ChannelIndicator.CurrentChannels;
             else
-                value = obj.currentChannels_;
+                value = obj.CurrentChannels_;
             end
         end
 
         function set.CurrentPlane(obj, newValue)
-            if ~isempty(obj.hPlaneSwitcher)
-                obj.hPlaneSwitcher.CurrentPlane = newValue;
+            if ~isempty(obj.PlaneSwitcher)
+                obj.PlaneSwitcher.CurrentPlane = newValue;
             else
-                obj.currentPlane_ = newValue;
+                obj.CurrentPlane_ = newValue;
             end
         end
 
         function value = get.CurrentPlane(obj)
-            if ~isempty(obj.hPlaneSwitcher)
-                value = obj.hPlaneSwitcher.CurrentPlane;
+            if ~isempty(obj.PlaneSwitcher)
+                value = obj.PlaneSwitcher.CurrentPlane;
             else
-                value = obj.currentPlane_;
+                value = obj.CurrentPlane_;
             end
         end
 
         function set.ChannelColors(obj, newValue)
-            if ~isempty(obj.hChannelIndicator)
-                obj.hChannelIndicator.ChannelColors = newValue;
+            if ~isempty(obj.ChannelIndicator)
+                obj.ChannelIndicator.ChannelColors = newValue;
             else
-                obj.channelColors_ = newValue;
+                obj.ChannelColors_ = newValue;
             end
         end
 
         function value = get.ChannelIndicatorWidget(obj)
-            value = obj.hChannelIndicator;
+            value = obj.ChannelIndicator;
         end
 
         function chColors = get.ChannelColors(obj)
-            if ~isempty(obj.hChannelIndicator)
-                chColors = obj.hChannelIndicator.ChannelColors;
+            if ~isempty(obj.ChannelIndicator)
+                chColors = obj.ChannelIndicator.ChannelColors;
             else
-                chColors = obj.channelColors_;
+                chColors = obj.ChannelColors_;
             end
         end
 
@@ -400,7 +400,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
         function redrawSliderComponents(obj)
 
-            if isempty(obj.knob) % Return if components are not created yet
+            if isempty(obj.Knob) % Return if components are not created yet
                 return
             end
 
@@ -423,7 +423,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
             buttonXPos = 10 + [0, 17, 34, 50];
 
-            if obj.NumPlanes > 1 && ~isempty(obj.hPlaneSwitcher)
+            if obj.NumPlanes > 1 && ~isempty(obj.PlaneSwitcher)
                 buttonXPos = buttonXPos + 20;
             end
 
@@ -435,46 +435,46 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             xIncr = buttonXPos(3) + [0, 5.5;  0, 5.5;  5.5, 11];
             [yDecr, yIncr] = deal( [1,1; -1,-1; 0,0] .* buttonHeightB/2 );
 
-            if ~isempty(obj.play) % Buttons already exist
-                set(obj.play, 'XData', xPlay, 'YData', yPlay);
-                set(obj.decr, 'XData', xDecr, 'YData', yDecr);
-                set(obj.incr, 'XData', xIncr, 'YData', yIncr);
-                obj.tincr.Position(1) = buttonXPos(4);
+            if ~isempty(obj.PlayButton) % Buttons already exist
+                set(obj.PlayButton, 'XData', xPlay, 'YData', yPlay);
+                set(obj.DecrButton, 'XData', xDecr, 'YData', yDecr);
+                set(obj.IncrButton, 'XData', xIncr, 'YData', yIncr);
+                obj.Tincr.Position(1) = buttonXPos(4);
                 return
             end
 
             % Create buttons using patch objects
-            obj.play = patch(obj.ButtonAxes, xPlay, yPlay, obj.ButtonColor);
-            obj.decr = patch(obj.ButtonAxes, xDecr, yDecr, obj.ButtonColor);
-            obj.incr = patch(obj.ButtonAxes, xIncr, yIncr, obj.ButtonColor);
+            obj.PlayButton = patch(obj.ButtonAxes, xPlay, yPlay, obj.ButtonColor);
+            obj.DecrButton = patch(obj.ButtonAxes, xDecr, yDecr, obj.ButtonColor);
+            obj.IncrButton = patch(obj.ButtonAxes, xIncr, yIncr, obj.ButtonColor);
 
-            obj.play.Tag = 'Play';
-            obj.decr.Tag = 'Decr';
-            obj.incr.Tag = 'Incr';
+            obj.PlayButton.Tag = 'Play';
+            obj.DecrButton.Tag = 'Decr';
+            obj.IncrButton.Tag = 'Incr';
 
             % Create text label to indicate playback speed
-            obj.tincr = text(obj.ButtonAxes, buttonXPos(4), 1, '');
-            obj.tincr.VerticalAlignment = 'middle';
-            obj.tincr.HorizontalAlignment = 'left';
-            obj.tincr.Color = [0.5,0.5,0.5];
-            obj.tincr.FontUnits = 'pixel';
+            obj.Tincr = text(obj.ButtonAxes, buttonXPos(4), 1, '');
+            obj.Tincr.VerticalAlignment = 'middle';
+            obj.Tincr.HorizontalAlignment = 'left';
+            obj.Tincr.Color = [0.5,0.5,0.5];
+            obj.Tincr.FontUnits = 'pixel';
 
             % Set some common button (patch) properties
-            hButtons = [obj.play, obj.incr, obj.decr];
+            hButtons = [obj.PlayButton, obj.IncrButton, obj.DecrButton];
             set(hButtons, 'FaceAlpha', 1, 'EdgeColor', 'none', ...
                 'ButtonDownFcn', @obj.onPlaybackButtonPressed )
 
             % Assign handles to the h property
-            obj.h.playButton = obj.play;
-            obj.h.nextButton = obj.incr;
-            obj.h.prevButton = obj.decr;
-            obj.h.speedLabel = obj.tincr;
+            obj.Handles.playButton = obj.PlayButton;
+            obj.Handles.nextButton = obj.IncrButton;
+            obj.Handles.prevButton = obj.DecrButton;
+            obj.Handles.speedLabel = obj.Tincr;
 
             % Set pointerbehavior to give patches a "button" feel @
             % mouseover
-            setPointerBehavior(obj, obj.play)
-            setPointerBehavior(obj, obj.incr)
-            setPointerBehavior(obj, obj.decr)
+            setPointerBehavior(obj, obj.PlayButton)
+            setPointerBehavior(obj, obj.IncrButton)
+            setPointerBehavior(obj, obj.DecrButton)
         end
 
         function drawSliderButton(obj)
@@ -493,33 +493,33 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                     Y = 0;
             end
 
-            if ~isempty(obj.knob)
-                set(obj.knob, 'XData', X, 'YData', Y); return
+            if ~isempty(obj.Knob)
+                set(obj.Knob, 'XData', X, 'YData', Y); return
             end
 
             knobColor = [0.6,0.6,0.6];
 
             switch sliderButtonShape
                 case 'disk'
-                    obj.knob = patch(obj.SliderAxes, X, Y, knobColor);
-                    obj.knob.FaceAlpha = 1;
-                    obj.knob.EdgeColor = [0.1,0.1,0.1];
+                    obj.Knob = patch(obj.SliderAxes, X, Y, knobColor);
+                    obj.Knob.FaceAlpha = 1;
+                    obj.Knob.EdgeColor = [0.1,0.1,0.1];
 
                 case 'diamond'
-                    obj.knob = plot(obj.SliderAxes, X, Y, 'Color', knobColor);
-                    obj.knob.Marker = 'd';
-                    obj.knob.MarkerFaceColor = [0.8,0.8,0.8];
-                    obj.knob.MarkerEdgeColor = [0.2,0.2,0.2];
-                    obj.knob.MarkerSize = 7;
+                    obj.Knob = plot(obj.SliderAxes, X, Y, 'Color', knobColor);
+                    obj.Knob.Marker = 'd';
+                    obj.Knob.MarkerFaceColor = [0.8,0.8,0.8];
+                    obj.Knob.MarkerEdgeColor = [0.2,0.2,0.2];
+                    obj.Knob.MarkerSize = 7;
             end
 
-            obj.knob.LineWidth = 1;
-            obj.knob.ButtonDownFcn = @obj.knobPressed;
-            obj.knob.Clipping = 'off';
-            obj.knob.Tag = 'Button';
+            obj.Knob.LineWidth = 1;
+            obj.Knob.ButtonDownFcn = @obj.knobPressed;
+            obj.Knob.Clipping = 'off';
+            obj.Knob.Tag = 'Button';
 
-            setPointerBehavior(obj, obj.knob)
-            obj.h.SliderButton = obj.knob;
+            setPointerBehavior(obj, obj.Knob)
+            obj.Handles.SliderButton = obj.Knob;
         end
 
         function drawSliderBar(obj)
@@ -529,19 +529,19 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
             [X, Y] = obj.getBarCoordinates('SliderBar');
 
-            if isfield(obj.h, 'scrollBar1') % Bar already exists
-                set(obj.h.scrollBar1, 'XData', X, 'YData', Y)
+            if isfield(obj.Handles, 'scrollBar1') % Bar already exists
+                set(obj.Handles.scrollBar1, 'XData', X, 'YData', Y)
                 return
             end
 
             trackColor = [0.3,0.3,0.3];
 
-            obj.h.scrollBar1 = patch(obj.SliderAxes, X, Y, trackColor);
-            obj.h.scrollBar1.FaceAlpha = 0.6;
-            obj.h.scrollBar1.EdgeColor = 'none';
-            obj.h.scrollBar1.Tag = 'Scrollbar';
-            obj.h.scrollBar1.ButtonDownFcn = @obj.onPlaybackButtonPressed;
-            obj.h.scrollBar1.Clipping = 'off';
+            obj.Handles.scrollBar1 = patch(obj.SliderAxes, X, Y, trackColor);
+            obj.Handles.scrollBar1.FaceAlpha = 0.6;
+            obj.Handles.scrollBar1.EdgeColor = 'none';
+            obj.Handles.scrollBar1.Tag = 'Scrollbar';
+            obj.Handles.scrollBar1.ButtonDownFcn = @obj.onPlaybackButtonPressed;
+            obj.Handles.scrollBar1.Clipping = 'off';
         end
 
         function drawIndicatorBar(obj)
@@ -552,18 +552,18 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
             [X, Y] = obj.getBarCoordinates('IndicatorBar');
 
-            if isfield(obj.h, 'scrollBar2') % Bar already exists
-                set(obj.h.scrollBar2, 'XData', X, 'YData', Y)
+            if isfield(obj.Handles, 'scrollBar2') % Bar already exists
+                set(obj.Handles.scrollBar2, 'XData', X, 'YData', Y)
                 return
             end
 
-            obj.h.scrollBar2 = patch(obj.SliderAxes, X, Y, barColor);
+            obj.Handles.scrollBar2 = patch(obj.SliderAxes, X, Y, barColor);
 
-            obj.h.scrollBar2.FaceAlpha = 0.5;
-            obj.h.scrollBar2.EdgeColor = 'none';
-            obj.h.scrollBar2.Clipping = 'off';
-            obj.h.scrollBar2.HitTest = 'off';
-            obj.h.scrollBar2.PickableParts = 'none';
+            obj.Handles.scrollBar2.FaceAlpha = 0.5;
+            obj.Handles.scrollBar2.EdgeColor = 'none';
+            obj.Handles.scrollBar2.Clipping = 'off';
+            obj.Handles.scrollBar2.HitTest = 'off';
+            obj.Handles.scrollBar2.PickableParts = 'none';
         end
 
         function drawActiveRangeBar(obj)
@@ -572,19 +572,19 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
             [X, Y] = obj.getBarCoordinates('ActiveRangeBar');
 
-            if ~isempty(obj.hActiveRangeBar) % Bar already exists
-                set(obj.hActiveRangeBar, 'XData', X, 'YData', Y)
+            if ~isempty(obj.ActiveRangeBar) % Bar already exists
+                set(obj.ActiveRangeBar, 'XData', X, 'YData', Y)
                 return
             end
 
-            obj.hActiveRangeBar = patch(obj.SliderAxes, X, Y, 'g');
+            obj.ActiveRangeBar = patch(obj.SliderAxes, X, Y, 'g');
 
-            obj.hActiveRangeBar.FaceAlpha = 0.5;
-            obj.hActiveRangeBar.EdgeColor = 'none';
-            obj.hActiveRangeBar.HitTest = 'off';
-            obj.hActiveRangeBar.PickableParts = 'none';
+            obj.ActiveRangeBar.FaceAlpha = 0.5;
+            obj.ActiveRangeBar.EdgeColor = 'none';
+            obj.ActiveRangeBar.HitTest = 'off';
+            obj.ActiveRangeBar.PickableParts = 'none';
 
-            obj.h.ActiveRangeBar = obj.hActiveRangeBar;
+            obj.Handles.ActiveRangeBar = obj.ActiveRangeBar;
         end
 
         function drawRangeButtons(obj)
@@ -592,8 +592,8 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             for i = 1:2
                 X = obj.getSliderXposition(obj.ActiveRange(i));
 
-                if numel(obj.hRangeButtons) == 2
-                    set(obj.hRangeButtons(i), 'XData', X);
+                if numel(obj.RangeButtons) == 2
+                    set(obj.RangeButtons(i), 'XData', X);
                 else
                     hBtn = plot(obj.SliderAxes, X, 0, 'ow');
                     hBtn.Visible = 'off';
@@ -601,7 +601,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                     hBtn.ButtonDownFcn = @(s,e, h) obj.rangeButtonPressed(hBtn);
                     obj.setPointerBehaviorActiveRangeSlider(hBtn)
 
-                    obj.hRangeButtons(i) = hBtn;
+                    obj.RangeButtons(i) = hBtn;
                 end
             end
         end
@@ -680,36 +680,36 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
             switch src.Tag
                 case 'Play'
-                    obj.play.Tag = 'Pause';
+                    obj.PlayButton.Tag = 'Pause';
                     obj.switchPlayPauseIcon('pause')
                     obj.ParentApp.playVideo([], []);
 
                 case 'Pause'
-                    obj.play.Tag = 'Play';
+                    obj.PlayButton.Tag = 'Play';
                     obj.ParentApp.isPlaying = false;
                     obj.switchPlayPauseIcon('play')
 
                 case 'Incr'
                     obj.ParentApp.playbackspeed = obj.ParentApp.playbackspeed * 2;
                     if obj.ParentApp.playbackspeed == 1
-                        obj.tincr.String = '';
+                        obj.Tincr.String = '';
                     else
                         if mod(obj.ParentApp.playbackspeed, 1) == 0
-                            obj.tincr.String = sprintf( '%dx', obj.ParentApp.playbackspeed);
+                            obj.Tincr.String = sprintf( '%dx', obj.ParentApp.playbackspeed);
                         else
-                            obj.tincr.String = sprintf( '%.1fx', obj.ParentApp.playbackspeed);
+                            obj.Tincr.String = sprintf( '%.1fx', obj.ParentApp.playbackspeed);
                         end
                     end
 
                 case 'Decr'
                     obj.ParentApp.playbackspeed = obj.ParentApp.playbackspeed / 2;
                     if obj.ParentApp.playbackspeed == 1
-                        obj.tincr.String = '';
+                        obj.Tincr.String = '';
                     else
                         if mod(obj.ParentApp.playbackspeed, 1) == 0
-                            obj.tincr.String = sprintf( '%dx', obj.ParentApp.playbackspeed);
+                            obj.Tincr.String = sprintf( '%dx', obj.ParentApp.playbackspeed);
                         else
-                            obj.tincr.String = sprintf( '%.1fx', obj.ParentApp.playbackspeed);
+                            obj.Tincr.String = sprintf( '%.1fx', obj.ParentApp.playbackspeed);
                         end
                     end
                 case 'Next'
@@ -751,8 +751,8 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                 h.MarkerSize = 8;
             end
 
-            obj.isMouseOnButton = true;
-            obj.hFigure.Pointer = 'hand';
+            obj.IsMouseOnButton = true;
+            obj.Figure.Pointer = 'hand';
         end
 
         function onMouseExited(obj, h, varargin)
@@ -760,15 +760,15 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             if isa(h, 'matlab.graphics.primitive.Patch')
                 h.FaceColor = ones(1,3) * 0.6;
             elseif isa(h, 'matlab.graphics.chart.primitive.Line')
-                if ~obj.knobDown
+                if ~obj.IsKnobDown
                     h.MarkerFaceColor = ones(1,3)*0.8;
                     h.MarkerSize = 7;
                 end
             end
 
-            obj.isMouseOnButton = false;
-            if ~obj.knobDown
-                obj.hFigure.Pointer = 'arrow';
+            obj.IsMouseOnButton = false;
+            if ~obj.IsKnobDown
+                obj.Figure.Pointer = 'arrow';
             end
         end
 
@@ -787,15 +787,15 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
         function onMouseEnteredRangeButton(obj, ~, varargin)
         %onMouseEntered Callback for mouse entering button
-            obj.isMouseOnButton = true;
-            obj.hFigure.Pointer = 'left';
+            obj.IsMouseOnButton = true;
+            obj.Figure.Pointer = 'left';
         end
 
         function onMouseExitedRangeButton(obj, ~, varargin)
         %onMouseEntered Callback for mouse leaving button
-            obj.isMouseOnButton = false;
-            if ~obj.knobDown
-                obj.hFigure.Pointer = 'arrow';
+            obj.IsMouseOnButton = false;
+            if ~obj.IsKnobDown
+                obj.Figure.Pointer = 'arrow';
             end
         end
 
@@ -809,12 +809,12 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             el = listener(obj.ParentApp.Figure, 'WindowMouseRelease', @obj.knobReleased);
             obj.WindowMouseReleaseListener = el;
 
-            obj.knobDown = true;
+            obj.IsKnobDown = true;
         end
 
         function knobMoving(obj, ~, ~)
 
-            if obj.knobDown % Just in case???
+            if obj.IsKnobDown % Just in case???
                 mousePoint = obj.SliderAxes.CurrentPoint(1);
                 xPoint = mousePoint(1);
 
@@ -832,15 +832,15 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
         function knobReleased(obj, ~, ~)
 
-            obj.knobDown = false;
+            obj.IsKnobDown = false;
 
             obj.resetWindowMouseListeners()
 
-            obj.knob.MarkerFaceColor = ones(1,3)*0.8;
-            obj.knob.MarkerSize = 7;
+            obj.Knob.MarkerFaceColor = ones(1,3)*0.8;
+            obj.Knob.MarkerSize = 7;
 
-            if ~obj.isMouseOnButton
-                obj.hFigure.Pointer = 'arrow';
+            if ~obj.IsMouseOnButton
+                obj.Figure.Pointer = 'arrow';
             end
         end
 
@@ -856,12 +856,12 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                 'WindowMouseRelease', @(s,e,h) obj.rangeButtonReleased());
             obj.WindowMouseReleaseListener = el;
 
-            obj.knobDown = true;
+            obj.IsKnobDown = true;
         end
 
         function rangeButtonMoving(obj, hBtn)
 
-            if obj.knobDown % Just in case???
+            if obj.IsKnobDown % Just in case???
                 mousePoint = obj.SliderAxes.CurrentPoint(1);
                 xPoint = mousePoint(1);
 
@@ -870,7 +870,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                 if newValue < obj.Minimum; newValue = obj.Minimum; end
                 if newValue > obj.Maximum; newValue = obj.Maximum; end
 
-                ind = find(ismember(obj.hRangeButtons, hBtn));
+                ind = find(ismember(obj.RangeButtons, hBtn));
                 obj.ActiveRange(ind) = newValue;
 
                 set(hBtn, 'XData', xPoint)
@@ -880,11 +880,11 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
         function rangeButtonReleased(obj)
 
-            obj.knobDown = false;
+            obj.IsKnobDown = false;
             obj.resetWindowMouseListeners()
 
-            if ~obj.isMouseOnButton
-                obj.hFigure.Pointer = 'arrow';
+            if ~obj.IsMouseOnButton
+                obj.Figure.Pointer = 'arrow';
             end
 
             % Activate callback function for when active range changed
@@ -924,7 +924,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
             if ~obj.IsConstructed; return; end
 
-            comps = struct2cell(obj.h);
+            comps = struct2cell(obj.Handles);
             set([comps{:}], 'Visible', obj.Visible)
 
             obj.SliderAxes.Visible = obj.Visible;
@@ -933,7 +933,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             if obj.Visible
                 obj.RangeSelectorEnabled = obj.RangeSelectorEnabled;
             else
-                set(obj.hRangeButtons, 'PickableParts', 'none')
+                set(obj.RangeButtons, 'PickableParts', 'none')
             end
         end
 
@@ -945,13 +945,13 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                 obj.drawActiveRangeBar()
                 obj.drawRangeButtons()
 
-                obj.hActiveRangeBar.Visible = 'on';
+                obj.ActiveRangeBar.Visible = 'on';
 
-                set(obj.hRangeButtons, 'PickableParts', 'all')
+                set(obj.RangeButtons, 'PickableParts', 'all')
             else
-                if ~isempty(obj.hActiveRangeBar)
-                    obj.hActiveRangeBar.Visible = 'off';
-                    set(obj.hRangeButtons, 'PickableParts', 'none')
+                if ~isempty(obj.ActiveRangeBar)
+                    obj.ActiveRangeBar.Visible = 'off';
+                    set(obj.RangeButtons, 'PickableParts', 'none')
                 end
             end
         end
@@ -961,11 +961,11 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
             dx = 80;
 
-            if obj.NumChannels > 1 && ~isempty(obj.hChannelIndicator)
-                dx = dx + obj.BarPadding + obj.hChannelIndicator.Position(3);
+            if obj.NumChannels > 1 && ~isempty(obj.ChannelIndicator)
+                dx = dx + obj.BarPadding + obj.ChannelIndicator.Position(3);
             end
 
-            if obj.NumPlanes > 1 && ~isempty(obj.hPlaneSwitcher)
+            if obj.NumPlanes > 1 && ~isempty(obj.PlaneSwitcher)
                 dx = dx + 20;
             end
 
@@ -979,14 +979,14 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
             dx = 80;
 
-            if obj.NumChannels > 1 && ~isempty(obj.hChannelIndicator)
-                dx = dx + obj.BarPadding + obj.hChannelIndicator.Position(3);
+            if obj.NumChannels > 1 && ~isempty(obj.ChannelIndicator)
+                dx = dx + obj.BarPadding + obj.ChannelIndicator.Position(3);
             end
 
-            if obj.NumPlanes > 1 && ~isempty(obj.hPlaneSwitcher)
+            if obj.NumPlanes > 1 && ~isempty(obj.PlaneSwitcher)
                 dx = dx + 20;
-                if ~isempty(obj.hChannelIndicator)
-                    obj.hChannelIndicator.Position(1) = 80+30;
+                if ~isempty(obj.ChannelIndicator)
+                    obj.ChannelIndicator.Position(1) = 80+30;
                 end
             end
 
@@ -1025,18 +1025,18 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             if ~obj.IsConstructed; return; end
 
             if obj.NumChannels == 1
-                if isempty(obj.hChannelIndicator)
+                if isempty(obj.ChannelIndicator)
                     return
                 else
-                    delete(obj.hChannelIndicator)
-                    obj.hChannelIndicator=[];
+                    delete(obj.ChannelIndicator)
+                    obj.ChannelIndicator=[];
                     obj.onSizeChanged()
                     return
                 end
             end
 
             % Todo: make method...
-            if isempty(obj.hChannelIndicator)
+            if isempty(obj.ChannelIndicator)
 
                 pos = [80+obj.BarPadding, obj.Position_(2), 10, obj.Position_(4)];
 
@@ -1050,10 +1050,10 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                     params = [params, {'ChannelColors', obj.ChannelColors}];
                 end
 
-                obj.hChannelIndicator = uim.widget.ChannelIndicator( ...
+                obj.ChannelIndicator = uim.widget.ChannelIndicator( ...
                     obj.ParentApp, obj.ButtonAxes, params{:});
             else
-                obj.hChannelIndicator.NumChannels = obj.NumChannels;
+                obj.ChannelIndicator.NumChannels = obj.NumChannels;
             end
 
             % Resize axes...
@@ -1064,18 +1064,18 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             if ~obj.IsConstructed; return; end
 
             if obj.NumPlanes == 1
-                if isempty(obj.hPlaneSwitcher)
+                if isempty(obj.PlaneSwitcher)
                     return
                 else
-                    delete(obj.hPlaneSwitcher)
-                    obj.hPlaneSwitcher = [];
+                    delete(obj.PlaneSwitcher)
+                    obj.PlaneSwitcher = [];
                     obj.onSizeChanged()
                     return
                 end
             end
 
             % Todo: make method...
-            if isempty(obj.hPlaneSwitcher)
+            if isempty(obj.PlaneSwitcher)
 
                 pos = [10, obj.Position_(2), 20, obj.Position_(4)];
 
@@ -1085,10 +1085,10 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                     'Callback', @(ind) obj.ParentApp.changePlane(ind), ...
                     'ForegroundColor', obj.ButtonColor };
 
-                obj.hPlaneSwitcher = uim.widget.PlaneSwitcher( ...
+                obj.PlaneSwitcher = uim.widget.PlaneSwitcher( ...
                     obj.ParentApp, obj.ButtonAxes, params{:});
             else
-                obj.hPlaneSwitcher.NumPlanes = obj.NumPlanes;
+                obj.PlaneSwitcher.NumPlanes = obj.NumPlanes;
             end
 
             % Resize axes...

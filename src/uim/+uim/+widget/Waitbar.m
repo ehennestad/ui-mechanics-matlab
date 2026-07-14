@@ -20,10 +20,10 @@ classdef Waitbar < uim.mixin.NameValueAssignable
     end
 
     properties (Access = private)
-        hAxes
+        Axes
         Position_ = [1,1,100,10]
-        hBarRemaining
-        hBarCompleted
+        BarRemaining
+        BarCompleted
         ParentSizeChangedListener
     end
 
@@ -32,8 +32,8 @@ classdef Waitbar < uim.mixin.NameValueAssignable
         function obj = Waitbar(hParent, varargin)
 
             if isa(hParent, 'matlab.graphics.axis.Axes')
-                obj.hAxes = hParent;
-                obj.ParentSizeChangedListener = listener(obj.hAxes, ...
+                obj.Axes = hParent;
+                obj.ParentSizeChangedListener = listener(obj.Axes, ...
                     'SizeChanged', @obj.onParentSizeChanged);
 
             else
@@ -47,8 +47,8 @@ classdef Waitbar < uim.mixin.NameValueAssignable
         end
 
         function delete(obj)
-            delete(obj.hBarRemaining)
-            delete(obj.hBarCompleted)
+            delete(obj.BarRemaining)
+            delete(obj.BarCompleted)
             delete(obj.ParentSizeChangedListener)
         end
     end
@@ -93,18 +93,18 @@ classdef Waitbar < uim.mixin.NameValueAssignable
             [Xa, Ya] = obj.getBarCoordinates('completed');
             [Xb, Yb] = obj.getBarCoordinates('remaining');
 
-            if isempty(obj.hBarCompleted)
+            if isempty(obj.BarCompleted)
 
-                obj.hBarRemaining = plot(obj.hAxes, Xb,Yb);
-                obj.hBarCompleted = plot(obj.hAxes, Xa,Ya);
+                obj.BarRemaining = plot(obj.Axes, Xb,Yb);
+                obj.BarCompleted = plot(obj.Axes, Xa,Ya);
 
-                set([obj.hBarCompleted, obj.hBarRemaining], 'HitTest', ...
+                set([obj.BarCompleted, obj.BarRemaining], 'HitTest', ...
                     'off', 'PickableParts', 'none', 'Clipping', 'off')
 
                 obj.onAppearanceChanged()
             else
-                obj.hBarCompleted.XData = Xa;
-                obj.hBarRemaining.XData = Xb;
+                obj.BarCompleted.XData = Xa;
+                obj.BarRemaining.XData = Xb;
                 drawnow limitrate
             end
         end
@@ -125,7 +125,7 @@ classdef Waitbar < uim.mixin.NameValueAssignable
                     Y = y0 - obj.BarWidthRemaining/2 .* [1; 1];
             end
 
-            [X, Y] = uim.utility.px2du(obj.hAxes, [X, Y]);
+            [X, Y] = uim.utility.px2du(obj.Axes, [X, Y]);
         end
     end
 
@@ -133,21 +133,21 @@ classdef Waitbar < uim.mixin.NameValueAssignable
 
         function onAppearanceChanged(obj)
 
-            if isempty(obj.hBarCompleted); return; end
+            if isempty(obj.BarCompleted); return; end
 
-            obj.hBarRemaining.LineWidth = obj.BarWidthRemaining;
-            obj.hBarCompleted.LineWidth = obj.BarWidthCompleted;
+            obj.BarRemaining.LineWidth = obj.BarWidthRemaining;
+            obj.BarCompleted.LineWidth = obj.BarWidthCompleted;
 
-            obj.hBarRemaining.Color = obj.BarColorRemaining;
-            obj.hBarCompleted.Color = obj.BarColorCompleted;
+            obj.BarRemaining.Color = obj.BarColorRemaining;
+            obj.BarCompleted.Color = obj.BarColorCompleted;
         end
 
         function onEnableChanged(obj)
         end
 
         function onVisibleChanged(obj)
-            obj.hBarRemaining.Visible = obj.Visible;
-            obj.hBarCompleted.Visible = obj.Visible;
+            obj.BarRemaining.Visible = obj.Visible;
+            obj.BarCompleted.Visible = obj.Visible;
         end
 
         function onParentSizeChanged(obj, ~, ~)

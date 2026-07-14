@@ -21,19 +21,19 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
     properties (Access = protected)
 
         ParentApp
-        hFigure % Window which figure is located in. % Make dependent...
-        hAxes
+        Figure % Window which figure is located in. % Make dependent...
+        Axes
 
-        isAxesInternal
+        IsAxesInternal
 
-        hPlaneSwitcherToggleButton = gobjects(0);
-        hPlaneSwitcherSlidebar = gobjects(0);
+        PlaneSwitcherToggleButton = gobjects(0);
+        PlaneSwitcherSlider = gobjects(0);
     end
 
     properties (Access = private) % Widget states and internals
         IsConstructed = false
-        isMouseOnButton = false
-        isMouseButtonPressed = false
+        IsMouseOnButton = false
+        IsMouseButtonPressed = false
 
         Position_ = [1, 1, 20, 20]; %Initial position
 
@@ -47,7 +47,7 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
         function obj = PlaneSwitcher(parentGui, hParent, varargin)
 
             obj.ParentApp = parentGui;
-            obj.hFigure = obj.ParentApp.Figure;
+            obj.Figure = obj.ParentApp.Figure;
 
             obj.resolveParent(hParent)
 
@@ -59,8 +59,8 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
         end
 
         function delete(obj)
-            delete(obj.hPlaneSwitcherToggleButton)
-            delete(obj.hPlaneSwitcherSlidebar)
+            delete(obj.PlaneSwitcherToggleButton)
+            delete(obj.PlaneSwitcherSlider)
         end
     end
 
@@ -116,16 +116,16 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
         function resolveParent(obj, hParent)
 
             if isa(hParent, 'matlab.graphics.axis.Axes')
-                obj.hAxes = hParent;
-                obj.isAxesInternal = false;
+                obj.Axes = hParent;
+                obj.IsAxesInternal = false;
             else
                 obj.createAxes()
-                obj.isAxesInternal = true;
+                obj.IsAxesInternal = true;
             end
         end
 
         function createAxes(obj, hParent)
-            obj.hAxes = uim.UIComponentCanvas.createComponentAxes(hParent);
+            obj.Axes = uim.UIComponentCanvas.createComponentAxes(hParent);
         end
 
         function createWidgetComponents(obj)
@@ -140,8 +140,8 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
             Y = 0;
 
             % Create button or update position.
-            if isempty(obj.hPlaneSwitcherToggleButton)
-                h = text(obj.hAxes, X, Y, 'Z');
+            if isempty(obj.PlaneSwitcherToggleButton)
+                h = text(obj.Axes, X, Y, 'Z');
                 h.HorizontalAlignment = 'right';
                 h.VerticalAlignment = 'middle';
                 h.FontSize = 14;
@@ -152,10 +152,10 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 
                 obj.setPointerBehavior(h)
 
-                obj.hPlaneSwitcherToggleButton = h;
+                obj.PlaneSwitcherToggleButton = h;
 
             else
-                obj.hPlaneSwitcherToggleButton.Position(1:2) = [X,Y];
+                obj.PlaneSwitcherToggleButton.Position(1:2) = [X,Y];
             end
         end
 
@@ -172,8 +172,8 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
                     'BarColor', ones(1,3)*0.45, 'TickLength', 0, ...
                     'TooltipExpression', 'Z = %d');
 
-            obj.hPlaneSwitcherSlidebar = hSlider;
-            obj.hPlaneSwitcherSlidebar.Visible = 'off';
+            obj.PlaneSwitcherSlider = hSlider;
+            obj.PlaneSwitcherSlider.Visible = 'off';
             % Todo
         end
     end
@@ -189,7 +189,7 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
         function onPlaneSwitcherToggleButtonPushed(obj)
 
             % Todo: Toggle rangebar visibility
-            if isempty(obj.hPlaneSwitcherSlidebar)
+            if isempty(obj.PlaneSwitcherSlider)
                 obj.drawPlaneSwitcherSlidebar()
                 return
             end
@@ -198,10 +198,10 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
                 return
             end
 
-            if strcmp(obj.hPlaneSwitcherSlidebar.Visible, 'on')
-                obj.hPlaneSwitcherSlidebar.Visible = 'off';
+            if strcmp(obj.PlaneSwitcherSlider.Visible, 'on')
+                obj.PlaneSwitcherSlider.Visible = 'off';
             else
-                obj.hPlaneSwitcherSlidebar.Visible = 'on';
+                obj.PlaneSwitcherSlider.Visible = 'on';
             end
         end
     end
@@ -212,7 +212,7 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 
             if ~obj.IsConstructed; return; end
 
-            %obj.hAxes.Visible = obj.Visible;
+            %obj.Axes.Visible = obj.Visible;
 
             if obj.Visible
             else
@@ -227,20 +227,20 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 
             if ~obj.IsConstructed; return; end
 
-            if obj.isAxesInternal
-                obj.hAxes.Position(3:4) = obj.Position_(3:4);
+            if obj.IsAxesInternal
+                obj.Axes.Position(3:4) = obj.Position_(3:4);
 
-                axWidth = obj.hAxes.Position(3);
-                axHeight = obj.hAxes.Position(4);
+                axWidth = obj.Axes.Position(3);
+                axHeight = obj.Axes.Position(4);
 
                 newYLim = [-1, 1] .* (axHeight/2);
-                if ~all( newYLim == obj.hAxes.YLim  )
-                    obj.hAxes.YLim = newYLim;
+                if ~all( newYLim == obj.Axes.YLim  )
+                    obj.Axes.YLim = newYLim;
                 end
 
                 newXLim = [1, axWidth];
-                if ~all( newXLim == obj.hAxes.XLim )
-                    obj.hAxes.XLim = newXLim;
+                if ~all( newXLim == obj.Axes.XLim )
+                    obj.Axes.XLim = newXLim;
                 end
             else
                 % Do nothing...
@@ -256,7 +256,7 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
             if numel(obj.CurrentPlane) > 1
                 return
             else
-                obj.hPlaneSwitcherSlidebar.Value = obj.CurrentPlane;
+                obj.PlaneSwitcherSlider.Value = obj.CurrentPlane;
             end
         end
     end
@@ -279,37 +279,37 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
         function onMouseEntered(obj, h, varargin)
         %onMouseEntered Callback for mouse entering button
 
-            obj.isMouseOnButton = true;
+            obj.IsMouseOnButton = true;
 
             if isa(h, 'matlab.graphics.primitive.Text')
                 obj.changeButtonAppearance()
             end
 
-            obj.hFigure.Pointer = 'hand';
+            obj.Figure.Pointer = 'hand';
         end
 
         function onMouseExited(obj, h, varargin)
         %onMouseEntered Callback for mouse leaving button
 
-            obj.isMouseOnButton = false;
+            obj.IsMouseOnButton = false;
 
             if isa(h, 'matlab.graphics.primitive.Text')
                 obj.changeButtonAppearance()
             end
 
-            if ~obj.isMouseButtonPressed
-                obj.hFigure.Pointer = 'arrow';
+            if ~obj.IsMouseButtonPressed
+                obj.Figure.Pointer = 'arrow';
             end
         end
 
         function changeButtonAppearance(obj)
 
-            if obj.isMouseOnButton          % Mouse on
+            if obj.IsMouseOnButton          % Mouse on
                 onColor = min( [obj.ForegroundColor+0.15; [1,1,1]] );
-                obj.hPlaneSwitcherToggleButton.Color = onColor;
+                obj.PlaneSwitcherToggleButton.Color = onColor;
             else                                        % Mouse off
                 offColor = obj.ForegroundColor;
-                obj.hPlaneSwitcherToggleButton.Color = offColor;
+                obj.PlaneSwitcherToggleButton.Color = offColor;
             end
         end
     end

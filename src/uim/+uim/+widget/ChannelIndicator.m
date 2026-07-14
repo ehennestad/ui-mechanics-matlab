@@ -45,19 +45,19 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
     properties (Access = protected)
 
         ParentApp
-        hFigure % Window which figure is located in. % Make dependent...
-        hAxes
+        Figure % Window which figure is located in. % Make dependent...
+        Axes
 
-        isAxesInternal
+        IsAxesInternal
 
-        hChannelIndicators = gobjects(0)
-        hChannelForeground = gobjects(0)
+        ChannelIndicators = gobjects(0)
+        ChannelForeground = gobjects(0)
     end
 
     properties (Access = private) % Widget states and internals
         IsConstructed = false
-        isMouseOnButton = false
-        isMouseButtonPressed = false
+        IsMouseOnButton = false
+        IsMouseButtonPressed = false
 
         LastChannelPressed
 
@@ -77,7 +77,7 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         function obj = ChannelIndicator(parentGui, hParent, varargin)
 
             obj.ParentApp = parentGui;
-            obj.hFigure = obj.ParentApp.Figure;
+            obj.Figure = obj.ParentApp.Figure;
 
             obj.resolveParent(hParent)
 
@@ -145,7 +145,7 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
             obj.postSetChannelColors(oldColors)
         end
         function postSetChannelColors(obj, oldColors)
-            if ~isempty(obj.hChannelIndicators)
+            if ~isempty(obj.ChannelIndicators)
                 for i = 1:numel(oldColors)
                     if ~isequal(oldColors{i}, obj.ChannelColors{i})
                         obj.updateIndicatorColor(i, obj.ChannelColors{i})
@@ -196,10 +196,10 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         end
 
         function selectChannel(obj, channelNum)
-            set(obj.hChannelIndicators, 'EdgeColor', ones(1,3)*0.8);
-            set(obj.hChannelIndicators(channelNum), 'LineWidth', 0.5);
-            set(obj.hChannelIndicators(channelNum), 'EdgeColor', ones(1,3));
-            set(obj.hChannelIndicators(channelNum), 'LineWidth', 1);
+            set(obj.ChannelIndicators, 'EdgeColor', ones(1,3)*0.8);
+            set(obj.ChannelIndicators(channelNum), 'LineWidth', 0.5);
+            set(obj.ChannelIndicators(channelNum), 'EdgeColor', ones(1,3));
+            set(obj.ChannelIndicators(channelNum), 'LineWidth', 1);
         end
     end
 
@@ -208,16 +208,16 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         function resolveParent(obj, hParent)
 
             if isa(hParent, 'matlab.graphics.axis.Axes')
-                obj.hAxes = hParent;
-                obj.isAxesInternal = false;
+                obj.Axes = hParent;
+                obj.IsAxesInternal = false;
             else
                 obj.createAxes()
-                obj.isAxesInternal = true;
+                obj.IsAxesInternal = true;
             end
         end
 
         function createAxes(obj, hParent)
-            obj.hAxes = uim.UIComponentCanvas.createComponentAxes(hParent);
+            obj.Axes = uim.UIComponentCanvas.createComponentAxes(hParent);
         end
 
         function createWidgetComponents(obj)
@@ -240,24 +240,24 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
                 X = X - r + dx + (pad + 2*r) * (i-1);
                 Y = Y - r;
 
-                if numel(obj.hChannelIndicators) < i
-                    obj.hChannelIndicators(i) = patch(obj.hAxes, X, Y, 'w');
-                    obj.hChannelIndicators(i).EdgeColor = ones(1,3)*0.8;
-                    obj.hChannelIndicators(i).FaceColor = obj.ChannelColors{i};
-                    obj.hChannelIndicators(i).FaceAlpha = 0.7;
-                    obj.hChannelIndicators(i).ButtonDownFcn = @(s, e, num) obj.onChannelIndicatorPressed(i);
-                    obj.setPointerBehavior(obj.hChannelIndicators(i))
-                    obj.hChannelIndicators(i).Tag = 'ChannelIndicator';
-                    obj.hChannelIndicators(i).ContextMenu = obj.ContextMenu;
+                if numel(obj.ChannelIndicators) < i
+                    obj.ChannelIndicators(i) = patch(obj.Axes, X, Y, 'w');
+                    obj.ChannelIndicators(i).EdgeColor = ones(1,3)*0.8;
+                    obj.ChannelIndicators(i).FaceColor = obj.ChannelColors{i};
+                    obj.ChannelIndicators(i).FaceAlpha = 0.7;
+                    obj.ChannelIndicators(i).ButtonDownFcn = @(s, e, num) obj.onChannelIndicatorPressed(i);
+                    obj.setPointerBehavior(obj.ChannelIndicators(i))
+                    obj.ChannelIndicators(i).Tag = 'ChannelIndicator';
+                    obj.ChannelIndicators(i).ContextMenu = obj.ContextMenu;
 
                 else
-                    set(obj.hChannelIndicators(i), 'XData', X, 'YData', Y)
+                    set(obj.ChannelIndicators(i), 'XData', X, 'YData', Y)
                 end
             end
         end
 
         function createContextMenu(obj)
-            hMenu = uicontextmenu(obj.hFigure);
+            hMenu = uicontextmenu(obj.Figure);
 
             colorLabels = obj.getColorOptions();
             for i = 1:numel(colorLabels)
@@ -292,17 +292,17 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
                 x0 = dx + (pad + 2*r) * (i-1);
                 y0 = 0;
 
-                if numel(obj.hChannelForeground) < i
-                    obj.hChannelForeground(i) = plot(obj.hAxes, X+x0, Y+y0, 'w');
-                    obj.hChannelForeground(i).LineWidth = 1;
-                    obj.hChannelForeground(i).Color = ones(1,3)*0.8;
-                    obj.hChannelForeground(i).PickableParts = 'none';
-                    obj.hChannelForeground(i).HitTest = 'off';
-                    obj.hChannelForeground(i).Tag = 'ButtonForeground';
-                    set(obj.hChannelForeground(i), 'Visible', 'off')
-                    obj.setPointerBehavior(obj.hChannelForeground(i))
+                if numel(obj.ChannelForeground) < i
+                    obj.ChannelForeground(i) = plot(obj.Axes, X+x0, Y+y0, 'w');
+                    obj.ChannelForeground(i).LineWidth = 1;
+                    obj.ChannelForeground(i).Color = ones(1,3)*0.8;
+                    obj.ChannelForeground(i).PickableParts = 'none';
+                    obj.ChannelForeground(i).HitTest = 'off';
+                    obj.ChannelForeground(i).Tag = 'ButtonForeground';
+                    set(obj.ChannelForeground(i), 'Visible', 'off')
+                    obj.setPointerBehavior(obj.ChannelForeground(i))
                 else
-                    set(obj.hChannelForeground(i), 'XData', X+x0, 'YData', Y+y0)
+                    set(obj.ChannelForeground(i), 'XData', X+x0, 'YData', Y+y0)
                 end
 
                 obj.changeIndicatorAppearance(i)
@@ -312,28 +312,28 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         function changeIndicatorAppearance(obj, channelNum)
 
             if ismember(channelNum, obj.CurrentChannels) % Channel on
-                obj.hChannelForeground(channelNum).Visible = 'off';
-                if obj.isMouseOnButton(channelNum)          % Mouse on
-                    obj.hChannelIndicators(channelNum).FaceAlpha = 0.8;
+                obj.ChannelForeground(channelNum).Visible = 'off';
+                if obj.IsMouseOnButton(channelNum)          % Mouse on
+                    obj.ChannelIndicators(channelNum).FaceAlpha = 0.8;
                 else                                        % Mouse off
-                    obj.hChannelIndicators(channelNum).FaceAlpha = 0.95;
+                    obj.ChannelIndicators(channelNum).FaceAlpha = 0.95;
                 end
 
             else                                         % Channel off
-                obj.hChannelForeground(channelNum).Visible = 'on';
-                if obj.isMouseOnButton(channelNum)          % Mouse on
-                    obj.hChannelIndicators(channelNum).FaceAlpha = 0.7;
-                    obj.hChannelForeground(channelNum).Color = ones(1,3)*0.9;
+                obj.ChannelForeground(channelNum).Visible = 'on';
+                if obj.IsMouseOnButton(channelNum)          % Mouse on
+                    obj.ChannelIndicators(channelNum).FaceAlpha = 0.7;
+                    obj.ChannelForeground(channelNum).Color = ones(1,3)*0.9;
                 else                                        % Mouse off
-                    obj.hChannelIndicators(channelNum).FaceAlpha = 0.5;
-                    obj.hChannelForeground(channelNum).Color = ones(1,3)*0.8;
+                    obj.ChannelIndicators(channelNum).FaceAlpha = 0.5;
+                    obj.ChannelForeground(channelNum).Color = ones(1,3)*0.8;
                 end
             end
-            %set(obj.hChannelForeground, 'Visible', 'off')
+            %set(obj.ChannelForeground, 'Visible', 'off')
         end
 
         function updateIndicatorColor(obj, chNum, rgb)
-            obj.hChannelIndicators(chNum).FaceColor = rgb;
+            obj.ChannelIndicators(chNum).FaceColor = rgb;
         end
 
         function updateSize(obj)
@@ -350,10 +350,10 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
         function onChannelIndicatorPressed(obj, channelNum)
 
-            %obj.hFigure.CurrentKey
+            %obj.Figure.CurrentKey
 
             %oldSelection = obj.CurrentChannels;
-            switch obj.hFigure.SelectionType
+            switch obj.Figure.SelectionType
                 case 'normal'
                     % pass
                     obj.CurrentChannels = channelNum;
@@ -413,8 +413,8 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         function onMouseEntered(obj, h, varargin)
         %onMouseEntered Callback for mouse entering button
 
-            ind = ismember(obj.hChannelIndicators, h);
-            obj.isMouseOnButton(ind) = true;
+            ind = ismember(obj.ChannelIndicators, h);
+            obj.IsMouseOnButton(ind) = true;
 
             if isa(h, 'matlab.graphics.primitive.Patch')
                 switch h.Tag
@@ -424,14 +424,14 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
             elseif isa(h, 'matlab.graphics.chart.primitive.Line')
             end
 
-            obj.hFigure.Pointer = 'hand';
+            obj.Figure.Pointer = 'hand';
         end
 
         function onMouseExited(obj, h, varargin)
         %onMouseEntered Callback for mouse leaving button
 
-            ind = ismember(obj.hChannelIndicators, h);
-            obj.isMouseOnButton(ind) = false;
+            ind = ismember(obj.ChannelIndicators, h);
+            obj.IsMouseOnButton(ind) = false;
 
             if isa(h, 'matlab.graphics.primitive.Patch')
                 switch h.Tag
@@ -442,8 +442,8 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
             elseif isa(h, 'matlab.graphics.chart.primitive.Line')
             end
 
-            if ~obj.isMouseButtonPressed
-                obj.hFigure.Pointer = 'arrow';
+            if ~obj.IsMouseButtonPressed
+                obj.Figure.Pointer = 'arrow';
             end
         end
     end
@@ -454,7 +454,7 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
             if ~obj.IsConstructed; return; end
 
-            %obj.hAxes.Visible = obj.Visible;
+            %obj.Axes.Visible = obj.Visible;
 
             if obj.Visible
             else
@@ -469,20 +469,20 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
             if ~obj.IsConstructed; return; end
 
-            if obj.isAxesInternal
-                obj.hAxes.Position(3:4) = obj.Position_(3:4);
+            if obj.IsAxesInternal
+                obj.Axes.Position(3:4) = obj.Position_(3:4);
 
-                axWidth = obj.hAxes.Position(3);
-                axHeight = obj.hAxes.Position(4);
+                axWidth = obj.Axes.Position(3);
+                axHeight = obj.Axes.Position(4);
 
                 newYLim = [-1, 1] .* (axHeight/2);
-                if ~all( newYLim == obj.hAxes.YLim  )
-                    obj.hAxes.YLim = newYLim;
+                if ~all( newYLim == obj.Axes.YLim  )
+                    obj.Axes.YLim = newYLim;
                 end
 
                 newXLim = [1, axWidth];
-                if ~all( newXLim == obj.hAxes.XLim )
-                    obj.hAxes.XLim = newXLim;
+                if ~all( newXLim == obj.Axes.XLim )
+                    obj.Axes.XLim = newXLim;
                 end
             else
                 % Do nothing...
@@ -491,7 +491,7 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
         function onNumChannelsChanged(obj)
 
-            obj.isMouseOnButton = false(1, obj.NumChannels);
+            obj.IsMouseOnButton = false(1, obj.NumChannels);
 
             % Resize axes...
             % Todo: Call methods to change size / resize
@@ -500,7 +500,7 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
             if ~obj.IsConstructed; return; end
 
-            assert(~any(obj.isMouseOnButton), 'This should not happen')
+            assert(~any(obj.IsMouseOnButton), 'This should not happen')
 
             obj.drawIndicators()
             obj.drawIndicatorState()
