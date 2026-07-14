@@ -1,11 +1,11 @@
-classdef toolbar < uim.abstract.Container
+classdef Toolbar < uim.abstract.Container
 
     % Check out dropbox paper toolbar.
 
     % todo:
     %
     %   [x] add separator... I think this is done
-    %   [ ] Implement orientation functionality. See uim.widget.toolbar
+    %   [ ] Implement orientation functionality. See uim.widget.Toolbar
     %   [ ] Make sure button size is adapted to toolbar size + padding.
     %   [x] Rename BackgroundMode to ContainerMode (move to container?)
     %   [ ] Remove DarkMode property. Use Style
@@ -64,7 +64,7 @@ classdef toolbar < uim.abstract.Container
 
     methods % Structors
 
-        function obj = toolbar(hParent, varargin)
+        function obj = Toolbar(hParent, varargin)
 
             obj@uim.abstract.Container(hParent, varargin{:})
 

@@ -1,4 +1,4 @@
-classdef slidebar < handle
+classdef Slider < handle
 
     % Todo: adapt to uim.widgets.
 
@@ -39,7 +39,7 @@ classdef slidebar < handle
         TooltipUnits = '';
         TooltipExpression
 
-        Style = 'slidebar'
+        Style = 'Slider'
         Tag = ''
     end
 
@@ -65,7 +65,7 @@ classdef slidebar < handle
 
     methods % Structor
 
-        function obj = slidebar(varargin)
+        function obj = Slider(varargin)
 
             obj.parsevarargin(varargin)
 

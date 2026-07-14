@@ -29,9 +29,9 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 "Position", [0, 0, 1, 1]);
             canvas = uim.UIComponentCanvas(hPanel);
 
-            toolbar = uim.widget.toolbar(canvas, "Location", "northwest");
+            toolbar = uim.widget.Toolbar(canvas, "Location", "northwest");
             button = toolbar.addButton("Text", "Run", "Tag", "RunButton");
-            slider = uim.widget.rangeslider(canvas, "Min", 0, "Max", 10, ...
+            slider = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 10, ...
                 "Low", 2, "High", 8);
             pages = uim.widget.PageIndicator(canvas, {"One", "Two"});
             pointerManager = uim.interface.PointerManager(hFigure, canvas.Axes, ...
@@ -51,7 +51,7 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.addTeardown(@deleteValid, hFigure);
             hPanel = uipanel(hFigure, "Position", [1, 1, 500, 400]);
             canvas = uim.UIComponentCanvas(hPanel);
-            toolbar = uim.widget.toolbar(canvas);
+            toolbar = uim.widget.Toolbar(canvas);
             button = toolbar.addButton("Text", "Run");
 
             testCase.verifyClass(canvas.Axes, "matlab.graphics.axis.Axes");
@@ -80,7 +80,7 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             hPanel = uipanel(hFigure, "Units", "normalized", ...
                 "Position", [0, 0, 1, 1]);
 
-            toolbar = uim.widget.toolbar(hPanel, "Location", "northeast", ...
+            toolbar = uim.widget.Toolbar(hPanel, "Location", "northeast", ...
                 "CanvasMode", "private");
             button = toolbar.addButton("Text", "Run");
 
@@ -136,7 +136,7 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.addTeardown(@deleteValid, hFigure);
             hPanel = uipanel(hFigure);
 
-            slider = uim.widget.slidebar("Parent", hPanel, "Units", "pixel", ...
+            slider = uim.widget.Slider("Parent", hPanel, "Units", "pixel", ...
                 "Position", [10, 10, 200, 20], "Min", 0, "Max", 10, "TickLength", 5);
 
             hAxes = findall(hPanel, "Type", "axes");
@@ -165,10 +165,10 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             hAxes = axes("Parent", hFigure, "XLim", [0, 10], "YLim", [0, 1]);
             wasHoldOn = ishold(hAxes);
 
-            slider = uim.widget.slidebar("Parent", hAxes, "Min", 0, "Max", 10, ...
+            slider = uim.widget.Slider("Parent", hAxes, "Min", 0, "Max", 10, ...
                 "TickLength", 0.05, "Position", [1, 0.2, 8, 0.6]);
 
-            testCase.verifyClass(slider, "uim.widget.slidebar");
+            testCase.verifyClass(slider, "uim.widget.Slider");
             tickLines = findall(hAxes, "Type", "line");
             testCase.verifyEqual(numel(tickLines), 9);
 

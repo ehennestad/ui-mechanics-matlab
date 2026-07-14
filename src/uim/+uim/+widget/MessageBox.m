@@ -1,5 +1,5 @@
-classdef messageBox < uim.mixin.Resizable
-%uim.widget.messageBox A class that implements a messagebox for showing
+classdef MessageBox < uim.mixin.Resizable
+%uim.widget.MessageBox A class that implements a messagebox for showing
 % popupmessages within a figure window.
 
 % TODO:
@@ -51,7 +51,7 @@ classdef messageBox < uim.mixin.Resizable
 
     methods
 
-        function obj = messageBox(hParent, varargin)
+        function obj = MessageBox(hParent, varargin)
 
             msg = 'Invalid Sequence of Name, Value Parameters';
             assert(all(cellfun(@(arg) ischar(arg), varargin(1:2:end))), msg)

@@ -1,4 +1,4 @@
-classdef tabbar < uim.widget.toolbar
+classdef TabBar < uim.widget.Toolbar
 
     % Todo: Create customized versions for addButton and addSeparator
     % methods
@@ -7,8 +7,8 @@ classdef tabbar < uim.widget.toolbar
 
     methods
 
-        function obj = tabbar(hParent, varargin)
-            obj@uim.widget.toolbar(hParent, varargin{:})
+        function obj = TabBar(hParent, varargin)
+            obj@uim.widget.Toolbar(hParent, varargin{:})
         end
 
         function addSeparator(obj)

@@ -1,4 +1,4 @@
-classdef rangeslider < uim.abstract.Control & matlab.mixin.SetGet
+classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
     % Todo:
     %   [ ] add vertical orientation
@@ -67,7 +67,7 @@ classdef rangeslider < uim.abstract.Control & matlab.mixin.SetGet
 
     methods % Structors
 
-        function obj = rangeslider(hParent, varargin)
+        function obj = RangeSlider(hParent, varargin)
 
             obj@uim.abstract.Control(hParent, varargin{:})
 

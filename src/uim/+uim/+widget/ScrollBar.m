@@ -1,12 +1,12 @@
-classdef scrollerBar < uim.Handle
-%scrollerBar A very simple scrollerbar that can be made to look awesome.
+classdef ScrollBar < uim.Handle
+%ScrollBar A very simple scrollerbar that can be made to look awesome.
 %
-%   h = uim.widget.scrollerBar(hParent) creates a scrollbar in hParent.
+%   h = uim.widget.ScrollBar(hParent) creates a scrollbar in hParent.
 %   hParent should be a panel exclusively made for the scrollerbar. The
 %   scrollerbar will fill the panel, so the panel position determines the
 %   size and location of the scrollerbar.
 %
-%   h = uim.widget.scrollerBar(hParent, Name, Value) creates the
+%   h = uim.widget.ScrollBar(hParent, Name, Value) creates the
 %   scrollbar and specifies one or more scrollbar property names and
 %   corresponding values. All properties of the scrollbar can be set.
 %
@@ -71,7 +71,7 @@ classdef scrollerBar < uim.Handle
 
     methods
 
-        function obj = scrollerBar(parentContainer, varargin)
+        function obj = ScrollBar(parentContainer, varargin)
         %scrollerBar Create a scrollerbar in a specified panel.
 
             % make assertions, e.g. check that its a valid figure/panel.
