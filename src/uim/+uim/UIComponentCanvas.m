@@ -45,19 +45,19 @@ classdef UIComponentCanvas < handle
 %       intermediate size.
 
     properties (SetAccess = private, Transient)
-        Parent = []                 % Parent handle (figure/uifigure)
-        Axes = []                   % Handle to the axes which components are plotted in
+        Parent matlab.graphics.Graphics             % Parent handle (figure/uifigure)
+        Axes matlab.graphics.axis.Axes               % Handle to the axes which components are plotted in
         Children uim.abstract.Component % Flat list of all components drawn on this canvas
-        Tag = 'UI Component Canvas' % A tag which is also applied to the axes.
+        Tag (1,:) char = 'UI Component Canvas' % A tag which is also applied to the axes.
     end
 
     properties (Dependent, Transient)
-        Size
+        Size (1,2) double
     end
 
     properties (Access = private, Transient, Hidden)
-        PixelPosition = [nan, nan, nan, nan]
-        PixelSize = [nan, nan]
+        PixelPosition (1,4) double = [nan, nan, nan, nan]
+        PixelSize (1,2) double = [nan, nan]
         ParentSizeChangedListener event.listener = event.listener.empty
         ParentLocationChangedListener event.listener = event.listener.empty
         Tooltip uim.interface.ToolTip
@@ -377,11 +377,6 @@ classdef UIComponentCanvas < handle
         function set.Parent(obj, newValue)
         %set.Parent Validate value and assign to Parent property
 
-            errMsg = sprintf(['Error setting property ''Parent'' of class ''%s'': \n', ...
-                    'Value must be ''matlab.graphics.Graphics'''], class(obj));
-
-            assert( isa(newValue, 'matlab.graphics.Graphics'), errMsg)
-
             % A parent holds at most one canvas; a second one would fight
             % over the DefaultAxesCreateFcn hook and the appdata entry.
             existingCanvas = getappdata(newValue, 'UIComponentCanvas');
@@ -409,10 +404,6 @@ classdef UIComponentCanvas < handle
         end
 
         function set.PixelSize(obj, newValue)
-
-            assert(isnumeric(newValue) && numel(newValue)==2, ...
-                'uim:InvalidPropertyValue', ...
-                'PixelSize should be a vector of two elements')
 
             isPixelSizeChanged = any(newValue ~= obj.PixelSize);
             if ~isPixelSizeChanged; return; end
