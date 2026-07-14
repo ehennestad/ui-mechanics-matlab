@@ -15,10 +15,10 @@ classdef PointerManager < handle
     end
 
     properties (SetAccess = private)
-        Figure % Axes or figure
-        Axes
+        Figure matlab.ui.Figure
+        Axes matlab.graphics.axis.Axes
 
-        Pointers
+        Pointers struct = struct()
         SupportedTools
 
         CurrentPointerTool
@@ -28,7 +28,7 @@ classdef PointerManager < handle
 
     properties (Access = private)
         PreviousPointerTool
-        WasCursorInAxes = false;
+        WasCursorInAxes (1,1) logical = false;
 
         OriginalWindowButtonMotionFcn = []
         DummyWindowButtonMotionFcn = []

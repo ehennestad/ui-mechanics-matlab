@@ -14,7 +14,7 @@ classdef PointerTool < handle & matlab.mixin.Heterogeneous
     end
 
     properties
-        IsActive = false % Is tool doing something right now?
+        IsActive (1,1) logical = false % Is tool doing something right now?
 
         ButtonDownFcn % protected?
         ButtonUpFcn % protected?
@@ -25,12 +25,12 @@ classdef PointerTool < handle & matlab.mixin.Heterogeneous
     end
 
     properties (SetAccess = protected)
-        Figure
-        Axes
+        Figure matlab.ui.Figure
+        Axes matlab.graphics.axis.Axes
     end
 
     properties (Access = protected)
-        State = 'off';      % on | on hold | off
+        State (1,:) char {mustBeMember(State, {'on', 'on_hold', 'off'})} = 'off';      % on | on hold | off
         PointerCData = [];
     end
 

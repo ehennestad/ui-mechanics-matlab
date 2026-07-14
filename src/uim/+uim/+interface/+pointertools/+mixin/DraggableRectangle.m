@@ -1,4 +1,14 @@
 classdef DraggableRectangle < handle
+%DraggableRectangle Mixin adding a draggable selection rectangle.
+%
+%   Combined into uim.interface.PointerTool subclasses; relies on the
+%   concrete Axes property that PointerTool already provides (a
+%   protected, validated matlab.graphics.axis.Axes) rather than
+%   redeclaring it here, which would conflict with PointerTool's own
+%   declaration under MATLAB's property-validation-inheritance rules
+%   (a property with a type/size constraint must be Abstract in every
+%   superclass that declares it, and PointerTool's Axes is concrete
+%   by design).
 
     properties
         RectanglePlotHandle = gobjects(0);
@@ -7,10 +17,6 @@ classdef DraggableRectangle < handle
 
     properties (Abstract)
         AnchorPoint
-    end
-
-    properties (Abstract, SetAccess = protected)
-        Axes
     end
 
     methods
