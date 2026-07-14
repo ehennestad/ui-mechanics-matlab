@@ -28,10 +28,10 @@ classdef PageIndicator < uim.abstract.Control
     end
 
     properties (Hidden, Access = private, Transient)
-        hPageButtons = gobjects(0)
-        hPageLabels = gobjects(0)
-        hHBar = gobjects(0)
-        hVBar = gobjects(0)
+        PageButtons = gobjects(0)
+        PageLabels = gobjects(0)
+        HorizontalBar = gobjects(0)
+        VerticalBars = gobjects(0)
     end
 
     methods
@@ -49,10 +49,10 @@ classdef PageIndicator < uim.abstract.Control
         end
 
         function delete(obj)
-            delete(obj.hPageButtons)
-            delete(obj.hPageLabels)
-            delete(obj.hHBar)
-            delete(obj.hVBar)
+            delete(obj.PageButtons)
+            delete(obj.PageLabels)
+            delete(obj.HorizontalBar)
+            delete(obj.VerticalBars)
         end
     end
 
@@ -128,38 +128,38 @@ classdef PageIndicator < uim.abstract.Control
                 X_ = X + pos(1);
                 Y_ = Y;
 
-                obj.hPageButtons(i) = patch(obj.CanvasAxes, X_, Y_, obj.IndicatorColor);
-                obj.setPointerBehavior(obj.hPageButtons(i))
-                obj.hPageButtons(i).ButtonDownFcn = @obj.onPageButtonPressed;
+                obj.PageButtons(i) = patch(obj.CanvasAxes, X_, Y_, obj.IndicatorColor);
+                obj.setPointerBehavior(obj.PageButtons(i))
+                obj.PageButtons(i).ButtonDownFcn = @obj.onPageButtonPressed;
 
                 % Todo: Use a button
 % %                 h = uim.control.Button(obj.Parent, ...
 % %                     'Position', [pos(1:2)+10, 10*R, 10*R], 'Size', [2*R, 2*R], ...
 % %                     'PositionMode', 'manual', 'CornerRadius', 6, 'Style', uim.style.ButtonScheme);
 
-                obj.hPageLabels(i) = text(obj.CanvasAxes, pos(1), pos(2)+3*R, obj.PageNames{i}, 'Color', obj.FontColor);
-                obj.hPageLabels(i).FontUnits = 'pixel';
+                obj.PageLabels(i) = text(obj.CanvasAxes, pos(1), pos(2)+3*R, obj.PageNames{i}, 'Color', obj.FontColor);
+                obj.PageLabels(i).FontUnits = 'pixel';
 
-                obj.hVBar(i) = plot(obj.CanvasAxes, ones(1,2)*(pos(1)+R), [y1, y2]);
+                obj.VerticalBars(i) = plot(obj.CanvasAxes, ones(1,2)*(pos(1)+R), [y1, y2]);
 
                 if i == 1
-                    obj.hPageButtons(i).FaceColor = obj.BarColor;
+                    obj.PageButtons(i).FaceColor = obj.BarColor;
                 else
-                    obj.hPageLabels(i).Visible = 'off';
-                    obj.hVBar(i).Visible = 'off';
+                    obj.PageLabels(i).Visible = 'off';
+                    obj.VerticalBars(i).Visible = 'off';
                 end
 
                 pos(1) = pos(1) + 2*R + S;
             end
 
             xEnd = pos(1) - S;
-            obj.hHBar = plot(obj.CanvasAxes, [xInit, xEnd], ones(1,2) * y2 );
+            obj.HorizontalBar = plot(obj.CanvasAxes, [xInit, xEnd], ones(1,2) * y2 );
 
-            set([obj.hHBar, obj.hVBar], 'Color', obj.BarColor)
-            set([obj.hHBar, obj.hVBar], 'LineWidth', 1.5)
-            set([obj.hPageButtons, obj.hVBar], 'LineWidth', 1)
+            set([obj.HorizontalBar, obj.VerticalBars], 'Color', obj.BarColor)
+            set([obj.HorizontalBar, obj.VerticalBars], 'LineWidth', 1.5)
+            set([obj.PageButtons, obj.VerticalBars], 'LineWidth', 1)
 
-            set(obj.hPageLabels, 'FontSize', obj.FontSize)
+            set(obj.PageLabels, 'FontSize', obj.FontSize)
 
             obj.placeTextHorizontal()
             obj.placeTextVertical()
@@ -170,44 +170,44 @@ classdef PageIndicator < uim.abstract.Control
         function shiftComponents(obj, shift)
 
             for i = 1:numel(obj.PageNames)
-                obj.hPageButtons(i).XData = obj.hPageButtons(i).XData + shift(1);
-                obj.hPageButtons(i).YData = obj.hPageButtons(i).YData + shift(2);
-                obj.hVBar(i).XData = obj.hVBar(i).XData + shift(1);
-                obj.hVBar(i).YData = obj.hVBar(i).YData + shift(2);
-                obj.hPageLabels(i).Position(1:2) = obj.hPageLabels(i).Position(1:2) + shift(1:2);
+                obj.PageButtons(i).XData = obj.PageButtons(i).XData + shift(1);
+                obj.PageButtons(i).YData = obj.PageButtons(i).YData + shift(2);
+                obj.VerticalBars(i).XData = obj.VerticalBars(i).XData + shift(1);
+                obj.VerticalBars(i).YData = obj.VerticalBars(i).YData + shift(2);
+                obj.PageLabels(i).Position(1:2) = obj.PageLabels(i).Position(1:2) + shift(1:2);
             end
 
-            obj.hHBar.XData = obj.hHBar.XData + shift(1);
-            obj.hHBar.YData = obj.hHBar.YData + shift(2);
+            obj.HorizontalBar.XData = obj.HorizontalBar.XData + shift(1);
+            obj.HorizontalBar.YData = obj.HorizontalBar.YData + shift(2);
         end
 
         function placeTextHorizontal(obj)
 
-            xData = obj.hHBar.XData;
+            xData = obj.HorizontalBar.XData;
 
             switch obj.HorizontalTextAlignment
                 case 'left'
                     xPos = min(xData);
                 case 'center'
-                    xData = obj.hHBar.XData;
+                    xData = obj.HorizontalBar.XData;
                     xPos = min(xData) + (max(xData)-min(xData)) / 2;
                 case 'right'
                     xPos = max(xData);
             end
 
-            for i = 1:numel(obj.hPageLabels)
-                obj.hPageLabels(i).Position(1) = xPos;
+            for i = 1:numel(obj.PageLabels)
+                obj.PageLabels(i).Position(1) = xPos;
             end
 
-            set(obj.hPageLabels, 'HorizontalAlignment', obj.HorizontalTextAlignment)
+            set(obj.PageLabels, 'HorizontalAlignment', obj.HorizontalTextAlignment)
         end
 
         function placeTextVertical(obj)
 
             if strcmp(obj.BarVisibility, 'on')
-                set(obj.hPageLabels, 'VerticalAlignment', 'Bottom')
+                set(obj.PageLabels, 'VerticalAlignment', 'Bottom')
             elseif strcmp(obj.BarVisibility, 'off')
-                set(obj.hPageLabels, 'VerticalAlignment', 'Middle')
+                set(obj.PageLabels, 'VerticalAlignment', 'Middle')
             end
         end
     end
@@ -220,24 +220,24 @@ classdef PageIndicator < uim.abstract.Control
         function updateBarVisibility(obj)
 
             if strcmp(obj.BarVisibility, 'off')
-                set([obj.hHBar, obj.hVBar], 'Visible', obj.BarVisibility)
+                set([obj.HorizontalBar, obj.VerticalBars], 'Visible', obj.BarVisibility)
             else
-                set(obj.hHBar, 'Visible', 'on')
-                set(obj.hVBar, 'Visible', 'off')
-                obj.hVBar(obj.CurrentPage).Visible = 'on';
+                set(obj.HorizontalBar, 'Visible', 'on')
+                set(obj.VerticalBars, 'Visible', 'off')
+                obj.VerticalBars(obj.CurrentPage).Visible = 'on';
             end
         end
 
         function updateTextVisibility(obj)
             if strcmp(obj.TextVisibility, 'off')
-                set(obj.hPageLabels, 'Visible', 'off')
+                set(obj.PageLabels, 'Visible', 'off')
 
             elseif strcmp(obj.TextVisibility, 'on')
-                set(obj.hPageLabels, 'Visible', 'off')
-                obj.hPageLabels(obj.CurrentPage).Visible = 'on';
+                set(obj.PageLabels, 'Visible', 'off')
+                obj.PageLabels(obj.CurrentPage).Visible = 'on';
 
             elseif strcmp(obj.TextVisibility, 'hit')
-                set(obj.hPageLabels, 'Visible', 'off')
+                set(obj.PageLabels, 'Visible', 'off')
             end
         end
 
@@ -255,12 +255,12 @@ classdef PageIndicator < uim.abstract.Control
             end
 
             % Deactivate current page
-            obj.hPageButtons(obj.CurrentPage).FaceColor = obj.IndicatorColor;
-            obj.hPageLabels(obj.CurrentPage).Visible = 'off';
+            obj.PageButtons(obj.CurrentPage).FaceColor = obj.IndicatorColor;
+            obj.PageLabels(obj.CurrentPage).Visible = 'off';
 
             % Activate new page
-            obj.hPageButtons(newPageNumber).FaceColor = obj.BarColor;
-            obj.hPageLabels(newPageNumber).Visible = 'on';
+            obj.PageButtons(newPageNumber).FaceColor = obj.BarColor;
+            obj.PageLabels(newPageNumber).Visible = 'on';
 
             obj.CurrentPage = newPageNumber;
             obj.updateBarVisibility()
@@ -273,10 +273,10 @@ classdef PageIndicator < uim.abstract.Control
 
             if ~obj.IsConstructed; return; end
 
-            set(obj.hPageButtons, 'FaceColor', obj.IndicatorColor)
-            set(obj.hPageLabels, 'Color', obj.FontColor)
-            set([obj.hHBar, obj.hVBar], 'Color', obj.BarColor)
-            obj.hPageButtons(obj.CurrentPage).FaceColor = obj.BarColor;
+            set(obj.PageButtons, 'FaceColor', obj.IndicatorColor)
+            set(obj.PageLabels, 'Color', obj.FontColor)
+            set([obj.HorizontalBar, obj.VerticalBars], 'Color', obj.BarColor)
+            obj.PageButtons(obj.CurrentPage).FaceColor = obj.BarColor;
         end
 
         function onBarVisibilityChanged(obj)
@@ -288,7 +288,7 @@ classdef PageIndicator < uim.abstract.Control
         function onTextVisibilitySet(obj)
             if ~obj.IsConstructed; return; end
             if strcmp(obj.TextVisibility, 'hit')
-                set(obj.hPageLabels, 'Visible', 'off')
+                set(obj.PageLabels, 'Visible', 'off')
             end
             obj.updateTextVisibility()
         end
@@ -300,7 +300,7 @@ classdef PageIndicator < uim.abstract.Control
 
         function onSetFontSize(obj, newValue)
             if ~obj.IsConstructed; return; end
-            set(obj.hPageLabels, 'FontSize', newValue)
+            set(obj.PageLabels, 'FontSize', newValue)
         end
 
         function setPointerBehavior(obj, h)
@@ -317,7 +317,7 @@ classdef PageIndicator < uim.abstract.Control
         function onPageButtonPressed(obj, src, ~)
 
             oldPageNumber = obj.CurrentPage;
-            newPageNumber = find( ismember(obj.hPageButtons, src) );
+            newPageNumber = find( ismember(obj.PageButtons, src) );
 
             if ~obj.BlockChangePage
                 obj.changePage(newPageNumber)
@@ -349,11 +349,11 @@ classdef PageIndicator < uim.abstract.Control
 
         function onVisibleChanged(obj, ~)
             if obj.IsConstructed
-                set(obj.hHBar, 'Visible', obj.Visible)
-                set(obj.hPageButtons, 'Visible', obj.Visible)
+                set(obj.HorizontalBar, 'Visible', obj.Visible)
+                set(obj.PageButtons, 'Visible', obj.Visible)
 
-                set(obj.hVBar(obj.CurrentPage), 'Visible', obj.Visible)
-                set(obj.hPageLabels(obj.CurrentPage), 'Visible', obj.Visible)
+                set(obj.VerticalBars(obj.CurrentPage), 'Visible', obj.Visible)
+                set(obj.PageLabels(obj.CurrentPage), 'Visible', obj.Visible)
             end
         end
 
@@ -361,10 +361,10 @@ classdef PageIndicator < uim.abstract.Control
             h.EdgeColor = obj.BarColor;
             hFig.Pointer = 'hand';
 
-            isCurrent = ismember(obj.hPageButtons, h);
-            obj.hPageLabels(obj.CurrentPage).Visible = 'off';
+            isCurrent = ismember(obj.PageButtons, h);
+            obj.PageLabels(obj.CurrentPage).Visible = 'off';
             if ~strcmp(obj.TextVisibility, 'off')
-                obj.hPageLabels(isCurrent).Visible = 'on';
+                obj.PageLabels(isCurrent).Visible = 'on';
             end
         end
 
@@ -372,10 +372,10 @@ classdef PageIndicator < uim.abstract.Control
             h.EdgeColor = 'k';
             hFig.Pointer = 'arrow';
 
-            isCurrent = ismember(obj.hPageButtons, h);
-            obj.hPageLabels(isCurrent).Visible = 'off';
+            isCurrent = ismember(obj.PageButtons, h);
+            obj.PageLabels(isCurrent).Visible = 'off';
             if strcmp(obj.TextVisibility, 'on')
-                obj.hPageLabels(obj.CurrentPage).Visible = 'on';
+                obj.PageLabels(obj.CurrentPage).Visible = 'on';
             end
         end
     end

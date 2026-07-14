@@ -14,12 +14,12 @@ classdef DataCursor < uim.interface.PointerTool
     properties
         XLimOrig
         YLimOrig
-        cursorColor = ones(1,3)*0.5
+        CursorColor = ones(1,3)*0.5
     end
 
     properties (Access = private)
         IsButtonDown = false
-        hCrosshair % Line handle for temporary lines of data cursor crosshair
+        Crosshair % Line handle for temporary lines of data cursor crosshair
     end
 
     methods
@@ -34,18 +34,18 @@ classdef DataCursor < uim.interface.PointerTool
             activate@uim.interface.PointerTool(obj)
             obj.plotCrosshair()
 
-            set(obj.hCrosshair, 'Visible', 'on')
+            set(obj.Crosshair, 'Visible', 'on')
             obj.IsActive = true;
         end
 
         function suspend(obj)
             suspend@uim.interface.PointerTool(obj)
-            set(obj.hCrosshair, 'Visible', 'off')
+            set(obj.Crosshair, 'Visible', 'off')
         end
 
         function deactivate(obj)
             deactivate@uim.interface.PointerTool(obj)
-            set(obj.hCrosshair, 'Visible', 'off')
+            set(obj.Crosshair, 'Visible', 'off')
             obj.IsActive = false;
         end
 
@@ -75,8 +75,8 @@ classdef DataCursor < uim.interface.PointerTool
             obj.IsButtonDown = false;
         end
 
-        function set.cursorColor(obj, newColor)
-            obj.cursorColor = newColor;
+        function set.CursorColor(obj, newColor)
+            obj.CursorColor = newColor;
             obj.updateCursorColor()
         end
     end
@@ -106,34 +106,34 @@ classdef DataCursor < uim.interface.PointerTool
             xdata2 = ones(size(ydata2))*x0;
 
             % Plot Line
-            if isempty(obj.hCrosshair)
-                obj.hCrosshair = gobjects(4,1);
-                obj.hCrosshair(1) = plot(hAx, xdata1, ydata1);
-                obj.hCrosshair(2) = plot(hAx, xdata2, ydata2);
-                obj.hCrosshair(3) = plot(hAx, xdata1, ydata1);
-                obj.hCrosshair(4) = plot(hAx, xdata2, ydata2);
-                set( obj.hCrosshair(1:2), 'Color', obj.cursorColor)
-                set( obj.hCrosshair(1:2), 'LineWidth', 0.5)
-                set( obj.hCrosshair(3:4), 'Color', [0,0,0])
-                set( obj.hCrosshair(3:4), 'LineWidth', 1)
+            if isempty(obj.Crosshair)
+                obj.Crosshair = gobjects(4,1);
+                obj.Crosshair(1) = plot(hAx, xdata1, ydata1);
+                obj.Crosshair(2) = plot(hAx, xdata2, ydata2);
+                obj.Crosshair(3) = plot(hAx, xdata1, ydata1);
+                obj.Crosshair(4) = plot(hAx, xdata2, ydata2);
+                set( obj.Crosshair(1:2), 'Color', obj.CursorColor)
+                set( obj.Crosshair(1:2), 'LineWidth', 0.5)
+                set( obj.Crosshair(3:4), 'Color', [0,0,0])
+                set( obj.Crosshair(3:4), 'LineWidth', 1)
 
-                set(obj.hCrosshair, 'LineStyle', '--')
-                set(obj.hCrosshair, 'HitTest', 'off', 'PickableParts', 'none')
+                set(obj.Crosshair, 'LineStyle', '--')
+                set(obj.Crosshair, 'HitTest', 'off', 'PickableParts', 'none')
 
-                obj.hCrosshair(5) = plot(obj.Axes, x0, y0, '.', 'MarkerSize', 20);
-                obj.hCrosshair(5).Color =  obj.cursorColor;
+                obj.Crosshair(5) = plot(obj.Axes, x0, y0, '.', 'MarkerSize', 20);
+                obj.Crosshair(5).Color =  obj.CursorColor;
 
             else
-%                 set(obj.hCrosshair, {'XData'}, {xdata1,xdata2}', ...
+%                 set(obj.Crosshair, {'XData'}, {xdata1,xdata2}', ...
 %                                     {'YData'}, {ydata1,ydata2}' )
-                set(obj.hCrosshair(1:4), {'XData'}, {xdata1,xdata2,xdata1,xdata2}', ...
+                set(obj.Crosshair(1:4), {'XData'}, {xdata1,xdata2,xdata1,xdata2}', ...
                                     {'YData'}, {ydata1,ydata2,ydata1,ydata2}' )
-                set(obj.hCrosshair(5), 'XData', x0, 'YData', y0)
+                set(obj.Crosshair(5), 'XData', x0, 'YData', y0)
             end
         end
 
         function updateCursorColor(obj)
-            set( obj.hCrosshair, 'Color', obj.cursorColor)
+            set( obj.Crosshair, 'Color', obj.CursorColor)
         end
     end
 end

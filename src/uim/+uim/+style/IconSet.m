@@ -16,10 +16,10 @@ classdef IconSet < uim.Handle
 %   Create colorful icons
 
     properties
-        iconDir                 % Path to folder where icons are saved
-        filePath                % File path to the icon library file
-        iconNames               % Name of icons in set
-        iconData = struct       % Data of icons in set
+        IconDir                 % Path to folder where icons are saved
+        FilePath                % File path to the icon library file
+        IconNames               % Name of icons in set
+        IconData = struct       % Data of icons in set
     end
 
     methods %Structors
@@ -28,8 +28,8 @@ classdef IconSet < uim.Handle
         %
         %   obj = IconSet(pathStr)
 
-            obj.iconDir = pathStr;
-            obj.filePath = fullfile(obj.iconDir, 'icon_library.mat');
+            obj.IconDir = pathStr;
+            obj.FilePath = fullfile(obj.IconDir, 'icon_library.mat');
 
             obj.loadIcons();
         end
@@ -44,11 +44,11 @@ classdef IconSet < uim.Handle
 
                 % Use builtin if a property is requested.
                 case '.'
-                    if ~isempty(obj.iconNames) && isscalar(s) && contains(s.subs, obj.iconNames)
+                    if ~isempty(obj.IconNames) && isscalar(s) && contains(s.subs, obj.IconNames)
                         if ~nargout
-                            varargout = {obj.iconData.(s.subs)};
+                            varargout = {obj.IconData.(s.subs)};
                         else
-                            [varargout{:}] = obj.iconData.(s.subs);
+                            [varargout{:}] = obj.IconData.(s.subs);
                         end
                     else
                         if ~nargout
@@ -70,29 +70,29 @@ classdef IconSet < uim.Handle
         function loadIcons(obj)
         %LOADICONS Load icons from matfile
 
-            if isfile(obj.filePath)
-                obj.iconData = load(obj.filePath);
+            if isfile(obj.FilePath)
+                obj.IconData = load(obj.FilePath);
             end
 
-            obj.iconNames = fieldnames(obj.iconData);
+            obj.IconNames = fieldnames(obj.IconData);
         end
 
         function saveIcons(obj, S)
         %SAVEICONS Save icons to matfile
 
             if nargin < 2
-                S = obj.iconData;
+                S = obj.IconData;
             end
 
-            if ~isfile(obj.filePath)
-                save(obj.filePath, '-struct', 'S');
+            if ~isfile(obj.FilePath)
+                save(obj.FilePath, '-struct', 'S');
             else
-                save(obj.filePath, '-struct', 'S', '-append');
+                save(obj.FilePath, '-struct', 'S', '-append');
             end
         end
 
         function listIcons(obj)
-            fprintf([strjoin(obj.iconNames, '\n'), '\n'])
+            fprintf([strjoin(obj.IconNames, '\n'), '\n'])
         end
 
         function addIcon(obj, iconName, S)
@@ -103,9 +103,9 @@ classdef IconSet < uim.Handle
         %   png-file in the iconSet's root directory.
 
             if nargin < 2
-                S = obj.createIcon(obj.iconDir);
+                S = obj.createIcon(obj.IconDir);
             elseif nargin < 3
-                S = obj.createIcon(obj.iconDir, iconName);
+                S = obj.createIcon(obj.IconDir, iconName);
             end
 
             if ~isempty(S)
@@ -115,10 +115,10 @@ classdef IconSet < uim.Handle
             newIconNames = fieldnames(S);
 
             for i = 1:numel(newIconNames)
-                obj.iconData.(newIconNames{i}) = S.(newIconNames{i});
+                obj.IconData.(newIconNames{i}) = S.(newIconNames{i});
             end
 
-            obj.iconNames = fieldnames(obj.iconData);
+            obj.IconNames = fieldnames(obj.IconData);
         end
 
         function addIconFromFile(obj, iconName, filePath)
@@ -144,24 +144,24 @@ classdef IconSet < uim.Handle
 
         function removeIcon(obj, iconName)
 
-            isMatch = contains(obj.iconNames, iconName);
+            isMatch = contains(obj.IconNames, iconName);
 
             if any(isMatch)
-                obj.iconData = rmfield(obj.iconData, iconName);
+                obj.IconData = rmfield(obj.IconData, iconName);
             end
 
-            obj.iconNames = fieldnames(obj.iconData);
+            obj.IconNames = fieldnames(obj.IconData);
         end
 
         function setSimplifyFalse(obj)
 
-            names = obj.iconNames;
+            names = obj.IconNames;
 
             for i = 1:numel(names)
-                for j = 1:numel(obj.iconData.(names{i}))
-                    p1 = obj.iconData.(names{i})(j).Shape;
+                for j = 1:numel(obj.IconData.(names{i}))
+                    p1 = obj.IconData.(names{i})(j).Shape;
                     p2 = polyshape(p1.Vertices, 'Simplify', false);
-                    obj.iconData.(names{i})(j).Shape = p2;
+                    obj.IconData.(names{i})(j).Shape = p2;
                 end
             end
         end
