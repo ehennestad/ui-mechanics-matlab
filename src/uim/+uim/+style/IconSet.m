@@ -23,10 +23,10 @@ classdef IconSet < uim.Handle
     end
 
     methods %Structors
-        function obj = iconSet(pathStr)
-        %iconSet Initialize an iconSet for an icon library
+        function obj = IconSet(pathStr)
+        %IconSet Initialize an IconSet for an icon library
         %
-        %   obj = iconSet(pathStr)
+        %   obj = IconSet(pathStr)
 
             obj.iconDir = pathStr;
             obj.filePath = fullfile(obj.iconDir, 'icon_library.mat');

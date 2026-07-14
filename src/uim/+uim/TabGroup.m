@@ -1,5 +1,5 @@
-classdef tabgroup < uim.abstract.Container
-%tabgroup Mimic Matlab's tabgroup container class.
+classdef TabGroup < uim.abstract.Container
+%TabGroup Mimic Matlab's tabgroup container class.
 %
 %   This tabgroup container has more flexibility in design, but is slower
 %   to update when being resized because the code is using axes and
@@ -26,9 +26,9 @@ classdef tabgroup < uim.abstract.Container
 
         TabButtonGroup uim.control.Button
         TabSeparators uim.decorator.Separator
-        TabPanels uim.panel
+        TabPanels uim.Panel
 
-        Tabs uim.tab
+        Tabs uim.Tab
     end
 
     events
@@ -37,7 +37,7 @@ classdef tabgroup < uim.abstract.Container
 
     methods %structor
 
-        function obj = tabgroup(hParent, varargin)
+        function obj = TabGroup(hParent, varargin)
 
             obj@uim.abstract.Container(hParent, varargin{:})
 

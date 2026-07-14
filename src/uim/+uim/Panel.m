@@ -1,4 +1,4 @@
-classdef panel < uim.abstract.Container
+classdef Panel < uim.abstract.Container
 
     properties (Constant)
         Type = 'Panel'
@@ -13,7 +13,7 @@ classdef panel < uim.abstract.Container
     end
 
     methods % Structors
-        function obj = panel(hParent, varargin)
+        function obj = Panel(hParent, varargin)
             obj@uim.abstract.Container(hParent, varargin{:})
             obj.IsConstructed = true;
         end

@@ -1,5 +1,5 @@
-classdef tab < uim.Handle & uim.mixin.NameValueAssignable
-%tab Logical wrapper registering a titled panel with a tabgroup.
+classdef Tab < uim.Handle & uim.mixin.NameValueAssignable
+%Tab Logical wrapper registering a titled panel with a tabgroup.
 %
 %   A tab has no position/style of its own - all drawing is delegated to
 %   its Panel. Parent refers to the owning tabgroup object (not a
@@ -18,11 +18,11 @@ classdef tab < uim.Handle & uim.mixin.NameValueAssignable
     end
 
     methods
-        function obj = tab(hParent, varargin)
+        function obj = Tab(hParent, varargin)
 
             % Assert that parent is a tabgroup.
-            assertMsg = 'Parent must be an instance of uim.tabgroup';
-            assert(isa(hParent, 'uim.tabgroup'), assertMsg)
+            assertMsg = 'Parent must be an instance of uim.TabGroup';
+            assert(isa(hParent, 'uim.TabGroup'), assertMsg)
 
             obj.Parent = hParent;
             obj.parseInputs(varargin{:});
@@ -30,7 +30,7 @@ classdef tab < uim.Handle & uim.mixin.NameValueAssignable
             % Create tab panel (todo: Add more properties?)
             % Since tabgroup itself is a virtual container, need to add the
             % panel in the tabgroups parent handle
-            obj.Panel = uim.panel(obj.Parent.Parent, ...
+            obj.Panel = uim.Panel(obj.Parent.Parent, ...
                 'BackgroundColor', obj.BackgroundColor);
 
             % Add tab to the tabgroup
