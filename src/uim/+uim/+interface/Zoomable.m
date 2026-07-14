@@ -141,22 +141,20 @@ classdef Zoomable < handle
             newLimits(2) = min([obj.XLimOrig(2), newLimits(2)]);
 
             % Set new limits
-            set(obj.ax, 'XLim', newLimits);
+            set(obj.Axes, 'XLim', newLimits);
 
             drawnow limitrate
         end
 
         function setNewYLims(obj, newLimits)
 
-            % Set new limits
             if nargin == 1 || isempty(newLimits)
-                set(obj.ax, 'YLim', obj.YLimExtreme.(obj.ActiveYAxis))
-                obj.updateFrameMarker('update_y')
-%                 set(obj.ax, 'XLim', [1, obj.tsArray(1).Time(end)])
-            else
-                set(obj.ax, 'YLim', newLimits);
-                obj.updateFrameMarker('update_y')
+                newLimits = obj.YLimOrig;
             end
+
+            newLimits(1) = max([obj.YLimOrig(1), newLimits(1)]);
+            newLimits(2) = min([obj.YLimOrig(2), newLimits(2)]);
+            set(obj.Axes, 'YLim', newLimits);
         end
     end
 

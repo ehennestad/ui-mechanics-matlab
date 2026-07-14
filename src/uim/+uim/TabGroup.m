@@ -232,15 +232,15 @@ classdef TabGroup < uim.abstract.Container
                     end
                 end
 
+                args = {obj.Tabs(obj.SelectedTab), obj.Tabs(nextTab)};
+                evtData = uim.event.TabSelectionChangedEvent(args{:});
+                obj.SelectedTab = nextTab;
+                obj.notify('SelectionChanged', evtData)
+
                 if ~isempty(obj.SelectionChangedFcn)
-                    args = {obj.Tabs(obj.SelectedTab), obj.Tabs(nextTab)};
-                    evtData = uim.event.TabSelectionChangedEvent(args{:});
                     obj.SelectionChangedFcn(obj, evtData)
                 end
             end
-
-            % Update currently selectedTab property
-            obj.SelectedTab = nextTab;
         end
     end
 

@@ -30,7 +30,7 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
         ChannelIndicatorSize = 12;
         ChannelIndicatorSpacing = 3;
-        ChannelColors = {'r', 'g', 'b'};
+        ChannelColors = {'r', 'g', 'b', 'c', 'm', 'y'};
 
         Callback = []
         ChannelColorCallback = []
@@ -211,7 +211,7 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
                 obj.Axes = hParent;
                 obj.IsAxesInternal = false;
             else
-                obj.createAxes()
+                obj.createAxes(hParent)
                 obj.IsAxesInternal = true;
             end
         end
@@ -245,7 +245,7 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
                     obj.ChannelIndicators(i).EdgeColor = ones(1,3)*0.8;
                     obj.ChannelIndicators(i).FaceColor = obj.ChannelColors{i};
                     obj.ChannelIndicators(i).FaceAlpha = 0.7;
-                    obj.ChannelIndicators(i).ButtonDownFcn = @(s, e, num) obj.onChannelIndicatorPressed(i);
+                    obj.ChannelIndicators(i).ButtonDownFcn = @(s, e) obj.onChannelIndicatorPressed(i);
                     obj.setPointerBehavior(obj.ChannelIndicators(i))
                     obj.ChannelIndicators(i).Tag = 'ChannelIndicator';
                     obj.ChannelIndicators(i).ContextMenu = obj.ContextMenu;

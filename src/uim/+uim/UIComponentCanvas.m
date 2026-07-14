@@ -49,6 +49,8 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
         ParentLocationChangedListener event.listener = event.listener.empty
         TooltipHandle
         ParentDestroyedListener
+        PreviousDefaultAxesCreateFcn = []
+        SiblingCreatedFcn = []
     end
 
     events
@@ -82,9 +84,22 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
         end
 
         function delete(obj)
-            delete(obj.Axes)
-            delete(obj.ParentSizeChangedListener)
-            delete(obj.ParentLocationChangedListener)
+            if ~isempty(obj.Parent) && isvalid(obj.Parent)
+                obj.removeParent()
+            else
+                if ~isempty(obj.ParentDestroyedListener) && isvalid(obj.ParentDestroyedListener)
+                    delete(obj.ParentDestroyedListener)
+                end
+                if ~isempty(obj.ParentSizeChangedListener) && isvalid(obj.ParentSizeChangedListener)
+                    delete(obj.ParentSizeChangedListener)
+                end
+                if ~isempty(obj.ParentLocationChangedListener) && isvalid(obj.ParentLocationChangedListener)
+                    delete(obj.ParentLocationChangedListener)
+                end
+            end
+            if ~isempty(obj.Axes) && isvalid(obj.Axes)
+                delete(obj.Axes)
+            end
         end
     end
 
@@ -146,7 +161,6 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
             obj.Axes.HitTest = 'on';
             obj.Axes.PickableParts = 'visible';
             obj.Axes.Tag = 'UI Component Canvas Axes';
-            obj.Axes.ButtonDownFcn = @(s,e,str) disp('c');
 
             obj.Axes.Color = [0.2,0.2,0.2];
 
@@ -193,7 +207,9 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
 
             % Note, this is more like a dummy listener...
 
-            set(obj.Parent, 'DefaultAxesCreateFcn', @obj.onSiblingCreated)
+            obj.PreviousDefaultAxesCreateFcn = get(obj.Parent, 'DefaultAxesCreateFcn');
+            obj.SiblingCreatedFcn = @obj.onSiblingCreated;
+            set(obj.Parent, 'DefaultAxesCreateFcn', obj.SiblingCreatedFcn)
         end
 
         function createTooltipHandle(obj) %todo: Make class...
@@ -335,7 +351,10 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
 
         function removeParent(obj)
 
-            set(obj.Parent, 'DefaultAxesCreateFcn', [])
+            if ~isempty(obj.Parent) && isvalid(obj.Parent) && ...
+                    isequal(get(obj.Parent, 'DefaultAxesCreateFcn'), obj.SiblingCreatedFcn)
+                set(obj.Parent, 'DefaultAxesCreateFcn', obj.PreviousDefaultAxesCreateFcn)
+            end
 
             if ~isempty(obj.ParentDestroyedListener)
                 delete(obj.ParentDestroyedListener)
@@ -344,12 +363,12 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
 
             if ~isempty(obj.ParentSizeChangedListener)
                 delete(obj.ParentSizeChangedListener)
-                obj.ParentSizeChangedListener = [];
+                obj.ParentSizeChangedListener = event.listener.empty;
             end
 
             if ~isempty(obj.ParentLocationChangedListener)
                 delete(obj.ParentLocationChangedListener)
-                obj.ParentLocationChangedListener = [];
+                obj.ParentLocationChangedListener = event.listener.empty;
             end
         end
 
@@ -384,7 +403,7 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
             hadParent = ~isempty(obj.Parent) && isvalid(obj.Parent);
 
             if hadParent
-                obj.removeParent(obj);
+                obj.removeParent();
             end
 
             obj.Parent = newValue;

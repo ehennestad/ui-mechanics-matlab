@@ -30,6 +30,10 @@ classdef PointerManager < handle
         PreviousPointerTool
         WasCursorInAxes = false;
 
+        OriginalWindowButtonMotionFcn = []
+        DummyWindowButtonMotionFcn = []
+        OwnsWindowButtonMotionFcn (1,1) logical = false
+
         AxesButtonPressListener event.listener
         WindowButtonMotionListener event.listener
         WindowButtonUpListener event.listener
@@ -51,10 +55,13 @@ classdef PointerManager < handle
 
             obj.Figure = hFigure;
             obj.Axes = hAxes;
+            obj.OriginalWindowButtonMotionFcn = hFigure.WindowButtonMotionFcn;
 
             % Assign dummy callback if WindowButtonMotionFcn is unassigned
             if isempty( hFigure.WindowButtonMotionFcn )
-                hFigure.WindowButtonMotionFcn = @obj.mouseMotionDummyCallback;
+                obj.DummyWindowButtonMotionFcn = @obj.mouseMotionDummyCallback;
+                hFigure.WindowButtonMotionFcn = obj.DummyWindowButtonMotionFcn;
+                obj.OwnsWindowButtonMotionFcn = true;
             end
 
             % Create listeners for mouse event in figure
@@ -93,6 +100,11 @@ classdef PointerManager < handle
                 if ~isempty(obj.OriginalAxesButtonDownFcn)
                     obj.Axes.ButtonDownFcn = obj.OriginalAxesButtonDownFcn;
                 end
+            end
+
+            if obj.OwnsWindowButtonMotionFcn && isvalid(obj.Figure) && ...
+                    isequal(obj.Figure.WindowButtonMotionFcn, obj.DummyWindowButtonMotionFcn)
+                obj.Figure.WindowButtonMotionFcn = obj.OriginalWindowButtonMotionFcn;
             end
         end
     end

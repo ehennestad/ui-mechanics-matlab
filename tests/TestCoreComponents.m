@@ -194,6 +194,141 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyNotEmpty(hPatch);
             testCase.verifyTrue(all(isgraphics(hPatch)));
         end
+
+        function rangeSliderHasFiniteDefaults(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            slider = uim.widget.RangeSlider(canvas);
+
+            testCase.verifyEqual([slider.Min, slider.Low, slider.High, slider.Max], ...
+                [0, 0, 1, 1]);
+        end
+
+        function rangeSliderClampsValuesWhenLimitsChange(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            slider = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 10, ...
+                "Low", 2, "High", 8);
+
+            slider.Min = 9;
+            testCase.verifyEqual([slider.Low, slider.High], [9, 9]);
+
+            slider.Min = 0;
+            slider.Low = 2;
+            slider.High = 8;
+            slider.Max = 1;
+            testCase.verifyEqual([slider.Low, slider.High], [1, 1]);
+        end
+
+        function pageIndicatorHonorsHiddenTextAfterPageChange(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            pages = uim.widget.PageIndicator(canvas, {"One", "Two"}, ...
+                "TextVisibility", "off");
+
+            pages.changePage(2);
+            labels = findall(canvas.Axes, "Type", "text");
+            labelStrings = string({labels.String});
+            secondLabel = labels(labelStrings == "Two");
+
+            testCase.verifyEqual(char(secondLabel.Visible), 'off');
+        end
+
+        function privateToolbarRendersAllSymbolButtons(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure);
+            toolbar = uim.widget.Toolbar(hPanel, "CanvasMode", "private");
+
+            xButton = toolbar.addButton("Icon", "x");
+            oButton = toolbar.addButton("Icon", "o");
+
+            testCase.verifyClass(xButton, "uim.control.Button");
+            testCase.verifyClass(oButton, "uim.control.Button");
+        end
+
+        function canvasRestoresAndPreservesAxesCreationCallbacks(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            originalCallback = @(~, ~) [];
+            set(hFigure, "DefaultAxesCreateFcn", originalCallback);
+
+            canvas = uim.UIComponentCanvas(hFigure);
+            delete(canvas);
+            testCase.verifyEqual(func2str(get(hFigure, "DefaultAxesCreateFcn")), ...
+                func2str(originalCallback));
+
+            canvas = uim.UIComponentCanvas(hFigure);
+            replacementCallback = @(~, ~) [];
+            set(hFigure, "DefaultAxesCreateFcn", replacementCallback);
+            delete(canvas);
+            testCase.verifyEqual(func2str(get(hFigure, "DefaultAxesCreateFcn")), ...
+                func2str(replacementCallback));
+        end
+
+        function pointerManagerRestoresOnlyItsOwnMotionCallback(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure);
+
+            manager = uim.interface.PointerManager(hFigure, hAxes);
+            delete(manager);
+            testCase.verifyEmpty(hFigure.WindowButtonMotionFcn);
+
+            manager = uim.interface.PointerManager(hFigure, hAxes);
+            replacementCallback = @(~, ~) [];
+            hFigure.WindowButtonMotionFcn = replacementCallback;
+            delete(manager);
+
+            testCase.verifyEqual(func2str(hFigure.WindowButtonMotionFcn), ...
+                func2str(replacementCallback));
+        end
+
+        function coordinateConversionsRespectLocalAndRecursivePixelFrames(testCase)
+            hFigure = figure("Visible", "off", "Position", [100, 100, 500, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure, "Units", "pixels", "Position", [100, 80, 350, 250]);
+            hAxes = axes(hPanel, "Units", "pixels", "Position", [50, 40, 300, 200], ...
+                "XLim", [2, 8], "YLim", [10, 20], "XDir", "reverse", "YDir", "reverse");
+            dataPoints = [2, 10; 5, 15; 8, 20];
+
+            localPixelPoints = uim.utility.du2px(hAxes, dataPoints);
+            actualDataPoints = uim.utility.px2du(hAxes, localPixelPoints);
+            testCase.verifyEqual(actualDataPoints, dataPoints, "AbsTol", 1e-10);
+
+            recursivePixelPoints = uim.utility.du2px(hAxes, dataPoints, true);
+            actualDataPoints = uim.utility.px2du(hAxes, recursivePixelPoints, true);
+            testCase.verifyEqual(actualDataPoints, dataPoints, "AbsTol", 1e-10);
+        end
+
+        function channelIndicatorSupportsInternalAxesAndFourChannels(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            parentApp = struct("Figure", hFigure);
+            hPanel = uipanel(hFigure);
+
+            indicator = uim.widget.ChannelIndicator(parentApp, hPanel, "NumChannels", 4);
+
+            testCase.verifyEqual(indicator.NumChannels, 4);
+            testCase.verifyEqual(numel(findall(hPanel, "Tag", "ChannelIndicator")), 4);
+        end
+
+        function zoomLimitSettersOperateOnTheirAxes(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "XLim", [0, 10], "YLim", [0, 5]);
+            pointerTool = uim.interface.pointertools.ZoomIn(hAxes);
+
+            pointerTool.setNewXLims([2, 8]);
+            pointerTool.setNewYLims([1, 4]);
+
+            testCase.verifyEqual(hAxes.XLim, [2, 8]);
+            testCase.verifyEqual(hAxes.YLim, [1, 4]);
+        end
     end
 end
 

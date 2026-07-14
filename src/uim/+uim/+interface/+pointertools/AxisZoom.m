@@ -23,7 +23,6 @@ classdef AxisZoom < uim.interface.PointerTool
         PreviousPoint (1,2) double = [nan, nan] % Todo: Should be property of pointermanager, or at least super class...???
         IsButtonDown (1,1) logical = false
 
-        IsMouseDown
         PreviousMouseClickPoint   % Point where mouse was last clicked
         PreviousMousePoint
     end
@@ -52,7 +51,7 @@ classdef AxisZoom < uim.interface.PointerTool
             if evt.Button == 3; return; end
 
             if strcmp(obj.Figure.SelectionType, 'normal')
-                obj.IsMouseDown = true;
+                obj.IsButtonDown = true;
                 obj.PreviousMouseClickPoint = obj.Figure.CurrentPoint;
                 obj.PreviousMousePoint = obj.Figure.CurrentPoint;
             end
@@ -88,7 +87,7 @@ classdef AxisZoom < uim.interface.PointerTool
         end
 
         function onButtonUp(obj, ~, ~)
-            obj.IsMouseDown = false;
+            obj.IsButtonDown = false;
             obj.PreviousMouseClickPoint = [];
             obj.IsActive = false;
         end

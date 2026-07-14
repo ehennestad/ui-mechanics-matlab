@@ -437,7 +437,7 @@ classdef MessageBox < uim.mixin.Resizable
             end
             n = round(n, 2);
             t = timer('ExecutionMode', 'singleShot', 'StartDelay', n);
-            t.TimerFcn = @(myTimerObj, thisEvent, tf) obj.clearMessageByTimer(t, doFade);
+            t.TimerFcn = @(myTimerObj, thisEvent) obj.clearMessageByTimer(t, doFade);
             obj.MessageTimer = t;
             start(obj.MessageTimer)
         end

@@ -230,7 +230,7 @@ classdef Button < uim.abstract.Control
         function plotButtonIcon(obj)
         %plotButtonIcon Plot button icon
 
-            if strcmp(obj.Icon, 'x') ||  strcmp(obj.Icon, '>')
+            if any(strcmp(obj.Icon, {'x', 'o', '>'}))
                 obj.plotSymbol();
                 return;
             end
@@ -241,7 +241,7 @@ classdef Button < uim.abstract.Control
             end
 
             % Use the imageVector to plot the icon
-            obj.ButtonIcon = uim.graphics.ImageVector(obj.Canvas.Axes, obj.Icon);
+            obj.ButtonIcon = uim.graphics.ImageVector(obj.CanvasAxes, obj.Icon);
 
             % Imagevector are upside down... Should be taken care of
             % somewhere else...
@@ -323,7 +323,7 @@ classdef Button < uim.abstract.Control
             x = obj.Position(1) + obj.Size(1)/2;
             y = obj.Position(2) + obj.Size(2)/2;
 
-            obj.ButtonIcon = plot(obj.Canvas.Axes, x, y, obj.Icon);
+            obj.ButtonIcon = plot(obj.CanvasAxes, x, y, obj.Icon);
             obj.ButtonIcon.MarkerSize = 12;
             obj.ButtonIcon.Color = obj.ForegroundColor;
             obj.ButtonIcon.LineWidth = 2;

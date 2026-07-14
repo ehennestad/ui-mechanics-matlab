@@ -34,11 +34,12 @@ jobs:
       # automatically determined from MLToolboxInfo.json. Example for manual override:
       # matlab_versions: '["R2023a", "R2023b", "R2024a"]'
       matlab_versions: '[]'
+      needs_virtual_display: true
       
       # Optional list of MATLAB products to install. Example if adding multiple 
       # products (use ">" and one product per line):
-      # matlab_products: >
-      #   Image_Processing_Toolbox
+      matlab_products: >
+        Image_Processing_Toolbox
       #   Statistics_and_Machine_Learning_Toolbox
 
       # JSON object mapping MATLAB versions to Python versions. Use this to override

@@ -46,10 +46,10 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
     properties (Access = private, Transient = true)
         StepSize
-        Min_ = -inf
-        Max_ = inf
-        Low_ = -inf
-        High_ = inf
+        Min_ (1,1) double = 0
+        Max_ (1,1) double = 1
+        Low_ (1,1) double = 0
+        High_ (1,1) double = 1
     end
 
     properties (Access = private)
@@ -71,6 +71,8 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
             obj@uim.abstract.Control(hParent, varargin{:})
 
+            obj.initializeFiniteRange()
+
             obj.createSlider()
             obj.plotLabel()
 
@@ -85,10 +87,34 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             delete(obj.Track)
             delete(obj.Knob)
             delete(obj.ValueLabel)
+            delete(obj.Ticks)
+            delete(obj.LabelHandle)
         end
     end
 
     methods (Access = private) % Component construction
+
+        function initializeFiniteRange(obj)
+            if ~isfinite(obj.Min_)
+                obj.Min_ = 0;
+            end
+            if ~isfinite(obj.Max_)
+                obj.Max_ = 1;
+            end
+            if ~isfinite(obj.Low_)
+                obj.Low_ = obj.Min_;
+            end
+            if ~isfinite(obj.High_)
+                obj.High_ = obj.Max_;
+            end
+
+            assert(obj.Min_ < obj.Max_, ...
+                'Slider lower limit must be smaller than slider upper limit')
+            assert(obj.Low_ >= obj.Min_ && obj.Low_ <= obj.High_, ...
+                'Slider lower value must be within the selected range')
+            assert(obj.High_ <= obj.Max_, ...
+                'Slider upper value must be within the selected range')
+        end
 
         function createSlider(obj)
 
@@ -113,7 +139,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             [xCoords, yCoords] = obj.getTrackCoordinates();
 
             if isempty(obj.LabelHandle)
-                obj.LabelHandle = text(obj.Canvas.Axes, 1, 1, obj.Label);
+                obj.LabelHandle = text(obj.CanvasAxes, 1, 1, obj.Label);
                 obj.LabelHandle.Color = obj.TextColor;
                 obj.LabelHandle.HitTest = 'off';
                 obj.LabelHandle.PickableParts = 'none';
@@ -154,7 +180,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             [xCoords, yCoords] = obj.getTrackCoordinates();
 
             if isempty(obj.Track)
-                obj.Track = plot(obj.Canvas.Axes, xCoords, yCoords);
+                obj.Track = plot(obj.CanvasAxes, xCoords, yCoords);
 
                 obj.Track.LineWidth = obj.TrackWidth;
                 obj.Track.HitTest = 'on';
@@ -184,7 +210,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
             y = repmat([y1;y2;nan], 1, numTicks);
 
-            obj.Ticks = plot(obj.Canvas.Axes,x,y, obj.TrackColor);
+            obj.Ticks = plot(obj.CanvasAxes,x,y, obj.TrackColor);
         end
 
         function plotKnobs(obj)
@@ -194,8 +220,8 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             [xCoordsHigh, yCoordsHigh] = obj.getKnobCoordinates('high');
 
             if isempty(obj.Knob)
-                h1 = patch(obj.Canvas.Axes, xCoordsLow, yCoordsLow, 'k');
-                h2 = patch(obj.Canvas.Axes, xCoordsHigh, yCoordsHigh, 'k');
+                h1 = patch(obj.CanvasAxes, xCoordsLow, yCoordsLow, 'k');
+                h2 = patch(obj.CanvasAxes, xCoordsHigh, yCoordsHigh, 'k');
 
                 h1.Tag = 'Range Slider Low';
                 h2.Tag = 'Range Slider High';
@@ -563,14 +589,17 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
         function set.Min(obj, newMin)
             assert(newMin < obj.Max_, 'Slider lower limit must be smaller than slider upper limit')
+            oldValues = [obj.Low_, obj.High_];
             obj.Min_ = newMin;
+            obj.Low_ = max(obj.Low_, obj.Min_);
+            obj.High_ = max(obj.High_, obj.Low_);
 
             if obj.IsConstructed
-                obj.plotKnobs()
-            end
-
-            if obj.Min_ > obj.Low_
-                obj.Low = obj.Min_;
+                if isequal(oldValues, [obj.Low_, obj.High_])
+                    obj.plotKnobs()
+                else
+                    obj.onValueChanged()
+                end
             end
         end
 
@@ -580,14 +609,17 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
         function set.Max(obj, newMax)
             assert(newMax > obj.Min_, 'Slider upper limit must be larger than slider lower limit')
+            oldValues = [obj.Low_, obj.High_];
             obj.Max_ = newMax;
+            obj.High_ = min(obj.High_, obj.Max_);
+            obj.Low_ = min(obj.Low_, obj.High_);
 
             if obj.IsConstructed
-                obj.plotKnobs()
-            end
-
-            if obj.Max_ < obj.High_
-                obj.High = obj.Max_;
+                if isequal(oldValues, [obj.Low_, obj.High_])
+                    obj.plotKnobs()
+                else
+                    obj.onValueChanged()
+                end
             end
         end
 

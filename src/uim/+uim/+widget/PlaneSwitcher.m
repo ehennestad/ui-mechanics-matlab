@@ -119,7 +119,7 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
                 obj.Axes = hParent;
                 obj.IsAxesInternal = false;
             else
-                obj.createAxes()
+                obj.createAxes(hParent)
                 obj.IsAxesInternal = true;
             end
         end
@@ -252,7 +252,10 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
         end
 
         function onCurrentPlaneChanged(obj)
-            % Todo: update slidebar value
+            if ~obj.IsConstructed || isempty(obj.PlaneSwitcherSlider)
+                return
+            end
+
             if numel(obj.CurrentPlane) > 1
                 return
             else

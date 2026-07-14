@@ -321,12 +321,8 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         function createAxes(obj, parentHandle)
 
             if isa(parentHandle, 'matlab.graphics.axis.Axes')
-                %hAxes(2) = parentHandle;
                 obj.SliderAxes = parentHandle;
-
                 obj.ButtonAxes = axes('Parent', parentHandle.Parent);
-
-                warning('not quite supported')
             else
                 matlabVersion = version('-release');
                 doDisableToolbar = str2double(matlabVersion(1:4))>2018 || ...
@@ -350,6 +346,8 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                 obj.ButtonAxes = hAxes(1);
                 obj.SliderAxes = hAxes(2);
             end
+
+            hAxes = [obj.ButtonAxes, obj.SliderAxes];
 
             hold(obj.SliderAxes, 'on')
             hold(obj.ButtonAxes, 'on')
@@ -598,7 +596,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                     hBtn = plot(obj.SliderAxes, X, 0, 'ow');
                     hBtn.Visible = 'off';
                     hBtn.PickableParts = 'all';
-                    hBtn.ButtonDownFcn = @(s,e, h) obj.rangeButtonPressed(hBtn);
+                    hBtn.ButtonDownFcn = @(s,e) obj.rangeButtonPressed(hBtn);
                     obj.setPointerBehaviorActiveRangeSlider(hBtn)
 
                     obj.RangeButtons(i) = hBtn;
@@ -849,11 +847,11 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         function rangeButtonPressed(obj, hBtn)
 
             el = listener(obj.ParentApp.Figure, ...
-                'WindowMouseMotion', @(s,e,h) obj.rangeButtonMoving(hBtn));
+                'WindowMouseMotion', @(s,e) obj.rangeButtonMoving(hBtn));
             obj.WindowMouseMotionListener = el;
 
             el = listener(obj.ParentApp.Figure, ...
-                'WindowMouseRelease', @(s,e,h) obj.rangeButtonReleased());
+                'WindowMouseRelease', @(s,e) obj.rangeButtonReleased());
             obj.WindowMouseReleaseListener = el;
 
             obj.IsKnobDown = true;

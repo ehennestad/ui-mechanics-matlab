@@ -256,14 +256,13 @@ classdef PageIndicator < uim.abstract.Control
 
             % Deactivate current page
             obj.PageButtons(obj.CurrentPage).FaceColor = obj.IndicatorColor;
-            obj.PageLabels(obj.CurrentPage).Visible = 'off';
 
             % Activate new page
             obj.PageButtons(newPageNumber).FaceColor = obj.BarColor;
-            obj.PageLabels(newPageNumber).Visible = 'on';
 
             obj.CurrentPage = newPageNumber;
             obj.updateBarVisibility()
+            obj.updateTextVisibility()
         end
 
         function onMouseOverIndicator(obj)
