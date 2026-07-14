@@ -241,7 +241,7 @@ classdef Button < uim.abstract.Control
             end
 
             % Use the imageVector to plot the icon
-            obj.hButtonIcon = uim.graphics.imageVector(obj.Canvas.Axes, obj.Icon);
+            obj.hButtonIcon = uim.graphics.ImageVector(obj.Canvas.Axes, obj.Icon);
 
             % Imagevector are upside down... Should be taken care of
             % somewhere else...
@@ -466,7 +466,7 @@ classdef Button < uim.abstract.Control
             % Set visibility of graphics components.
             obj.hBackground.Visible =  obj.Visible;
 
-            if ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'uim.graphics.imageVector')
+            if ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'uim.graphics.ImageVector')
                 obj.hButtonIcon.Visible = obj.Visible;
             end
             if ~isempty(obj.hButtonText) && isgraphics(obj.hButtonText)
@@ -482,7 +482,7 @@ classdef Button < uim.abstract.Control
 
             if obj.IsConstructed
 
-                if ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'uim.graphics.imageVector')
+                if ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'uim.graphics.ImageVector')
                     obj.hButtonIcon.Color = obj.ForegroundColor;
                 end
 
@@ -513,7 +513,7 @@ classdef Button < uim.abstract.Control
         function relocate(obj, shift)
             relocate@uim.abstract.Component(obj, shift)
 
-            if ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'uim.graphics.imageVector')
+            if ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'uim.graphics.ImageVector')
                 obj.hButtonIcon.translate(shift(1:2))
             elseif ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'matlab.graphics.chart.primitive.Line')
                 obj.hButtonIcon.XData = obj.hButtonIcon.XData + shift(1);

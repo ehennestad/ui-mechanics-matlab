@@ -1,9 +1,9 @@
 classdef IconSet < uim.Handle
-%iconSet Class for interfacing an icon library.
+%IconSet Class for interfacing an icon library.
 %
 % How to use: Create a folder and add pngs with icons. Preferably high
 % resolution (Also, currently, only monocolor icons are supported).
-% Initialize the iconSet with a reference (path string) to the folder and
+% Initialize the IconSet with a reference (path string) to the folder and
 % use the addIcon method to add icons to the library. New icons are
 % automatically saved in the library file.
 %
@@ -225,14 +225,14 @@ classdef IconSet < uim.Handle
                         V = struct('Shape', polyShape, 'Color', colors);
                         delete(hP)
 
-                        hV = uim.graphics.imageVector(ax, V);
+                        hV = uim.graphics.ImageVector(ax, V);
 
                     case 'patch'
                         V = struct('Faces', {hP.Faces}, 'Vertices', {hP.Vertices}, ...
                             'FaceColor', {hP.FaceColor}, 'EdgeColor', {'none'});
                         delete(hP)
 
-                        hV = uim.graphics.imageVector(ax, V);
+                        hV = uim.graphics.ImageVector(ax, V);
                         hV.center()
                 end
 

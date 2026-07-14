@@ -1,5 +1,5 @@
-classdef tiledImageAxes < uim.Handle
-%tiledImageAxes Class for creating image tiles in an axes
+classdef TiledImageAxes < uim.Handle
+%TiledImageAxes Class for creating image tiles in an axes
 %
 %   Create an axes with a grid of tiles, where each tile can hold an image,
 %   a line/patch and a text object. Additionally tiles can be selected
@@ -114,15 +114,15 @@ end
 methods %Structors
 
     % % Constructor
-    function obj = tiledImageAxes(varargin)
-    %tiledImageAxes Create and configure the tileImageAxes object
+    function obj = TiledImageAxes(varargin)
+    %TiledImageAxes Create and configure the TiledImageAxes object
     %
-    %   tiledImageAxes Creates a tiled image axes in a new figure.
+    %   TiledImageAxes Creates a tiled image axes in a new figure.
     %
-    %   tiledImageAxes(parent) Creates a tiled images axes in an existing
+    %   TiledImageAxes(parent) Creates a tiled images axes in an existing
     %   figure or uipanel.
     %
-    %   tiledImageAxes(..., Name, Value) creates a tiled images given
+    %   TiledImageAxes(..., Name, Value) creates a tiled images given
     %   additional parameters.
     %
     %   Parameters:

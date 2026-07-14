@@ -181,7 +181,7 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.addTeardown(@deleteValid, hFigure);
             hPanel = uipanel(hFigure);
 
-            tileAxes = uim.graphics.tiledImageAxes(hPanel, ...
+            tileAxes = uim.graphics.TiledImageAxes(hPanel, ...
                 "gridSize", [2, 2], "imageSize", [16, 16]);
             testCase.verifyEqual(tileAxes.nTiles, 4);
 

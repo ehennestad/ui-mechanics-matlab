@@ -1,11 +1,11 @@
-classdef image < uim.abstract.Component
+classdef Image < uim.abstract.Component
 
     properties (Constant)
         Type = 'image'
     end
 
     properties
-        Image = []
+        CData = []
         Alpha = []
 
         LockAspectRatio = true;
@@ -22,7 +22,7 @@ classdef image < uim.abstract.Component
     end
 
     methods
-        function obj = image(hParent, varargin)
+        function obj = Image(hParent, varargin)
 
             obj@uim.abstract.Component(hParent, varargin{:})
 
@@ -45,14 +45,14 @@ classdef image < uim.abstract.Component
     end
 
     methods % Set/get
-        function set.Image(obj, newValue)
+        function set.CData(obj, newValue)
 
             isValidDim = ismatrix(newValue) || ndims(newValue) == 3;
             isValidSize = size(newValue, 3) == 1 || size(newValue, 3) == 3;
 
             assert(isValidDim & isValidSize, 'Value must be an image matrix')
 
-            obj.Image = flipud(newValue);
+            obj.CData = flipud(newValue);
 
             obj.plotImage()
         end
@@ -65,7 +65,7 @@ classdef image < uim.abstract.Component
         end
 
         function ar = get.AspectRatio(obj)
-            imSize = size(obj.Image);
+            imSize = size(obj.CData);
             ar = imSize(1) / imSize(2);
         end
     end
@@ -112,7 +112,7 @@ classdef image < uim.abstract.Component
                 obj.hImage=[];
             end
 
-            obj.hImage = image(obj.CanvasAxes, 'CData', obj.Image);
+            obj.hImage = image(obj.CanvasAxes, 'CData', obj.CData);
             obj.hImage.AlphaData = obj.Alpha;
 
             obj.hImage.HitTest = 'off';

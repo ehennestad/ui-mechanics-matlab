@@ -1,12 +1,12 @@
-classdef box < uim.abstract.Control
-%box A decorative background box.
+classdef Box < uim.abstract.Control
+%Box A decorative background box.
 
     properties (Constant)
         Type = 'Box'
     end
 
     methods % Structors
-        function obj = box(varargin)
+        function obj = Box(varargin)
 
             obj@uim.abstract.Control(varargin{:})
 

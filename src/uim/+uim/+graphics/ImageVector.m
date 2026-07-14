@@ -1,5 +1,5 @@
-classdef imageVector < handle
-%imageVector Plot a set of polygons as one object.
+classdef ImageVector < handle
+%ImageVector Plot a set of polygons as one object.
 %
 %   Methods for placing and scaling all polygons belonging to the group
 
@@ -45,11 +45,11 @@ classdef imageVector < handle
 
     methods
 
-        function obj = imageVector(hParent, pathStr, varargin)
+        function obj = ImageVector(hParent, pathStr, varargin)
 
             assert(isa(hParent, 'matlab.graphics.axis.Axes') || ...
             isa(hParent, 'matlab.graphics.primitive.Group'), ...
-            'Invalid parent handle for imageVector');
+            'Invalid parent handle for ImageVector');
 
             if isa(pathStr, 'char')
                 S = load(pathStr);
