@@ -1,45 +1,45 @@
 classdef ZoomOut < uim.interface.PointerTool & uim.interface.Zoomable
 
     properties (Constant)
-        exitMode = 'previous';
+        ExitMode = 'previous';
     end
 
     properties % Implement abstract properties from zoom
-        zoomFactor = 0.25
-        xLimOrig
-        yLimOrig
-        runDefault = false;
+        ZoomFactor = 0.25
+        XLimOrig
+        YLimOrig
+        RunDefault = false;
     end
 
     methods
 
         function obj = ZoomOut(hAxes)
             obj@uim.interface.PointerTool(hAxes)
-            obj.xLimOrig = obj.hAxes.XLim;
-            obj.yLimOrig = obj.hAxes.YLim;
+            obj.XLimOrig = obj.Axes.XLim;
+            obj.YLimOrig = obj.Axes.YLim;
         end
 
         function setPointerSymbol(obj)
-            setptr(obj.hFigure, 'glassminus');
+            setptr(obj.Figure, 'glassminus');
         end
 
         function onButtonDown(obj, ~, event)
 
             if event.Button==3; return; end
 
-            switch obj.hFigure.SelectionType
+            switch obj.Figure.SelectionType
                 case 'normal'
-                    if isempty(obj.buttonDownCallback)
+                    if isempty(obj.ButtonDownFcn)
                         obj.imageZoom('out')
                     else
-                        if obj.runDefault
+                        if obj.RunDefault
                             obj.imageZoom('out')
                         end
-                        obj.buttonDownCallback();
+                        obj.ButtonDownFcn();
                     end
 
                 case 'open'
-                    set(obj.hAxes, 'XLim', obj.xLimOrig, 'YLim', obj.yLimOrig)
+                    set(obj.Axes, 'XLim', obj.XLimOrig, 'YLim', obj.YLimOrig)
             end
         end
 

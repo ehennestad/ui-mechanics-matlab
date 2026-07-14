@@ -1,54 +1,57 @@
 classdef DraggableRectangle < handle
 
     properties
-        rectanglePlotHandle = gobjects(0);
-        rectangleReleaseCallback = [];
+        RectanglePlotHandle = gobjects(0);
+        RectangleReleaseFcn = [];
     end
 
     properties (Abstract)
-        anchorPoint
-        hAxes
+        AnchorPoint
+    end
+
+    properties (Abstract, SetAccess = protected)
+        Axes
     end
 
     methods
 
         function plotRectangle(obj)
 
-            if isempty(obj.rectanglePlotHandle)
-                obj.rectanglePlotHandle = plot(obj.hAxes, nan, nan);
-                obj.rectanglePlotHandle.Color = 'white';
-                obj.rectanglePlotHandle.Color = ones(1,3)*0.5;
-                obj.rectanglePlotHandle.LineWidth = 1;
-                obj.rectanglePlotHandle.PickableParts = 'none';
-                obj.rectanglePlotHandle.HitTest = 'off';
-                obj.rectanglePlotHandle.Tag = 'Rectangular Selection Outline';
+            if isempty(obj.RectanglePlotHandle)
+                obj.RectanglePlotHandle = plot(obj.Axes, nan, nan);
+                obj.RectanglePlotHandle.Color = 'white';
+                obj.RectanglePlotHandle.Color = ones(1,3)*0.5;
+                obj.RectanglePlotHandle.LineWidth = 1;
+                obj.RectanglePlotHandle.PickableParts = 'none';
+                obj.RectanglePlotHandle.HitTest = 'off';
+                obj.RectanglePlotHandle.Tag = 'Rectangular Selection Outline';
             else
-                set(obj.rectanglePlotHandle, 'XData', nan, 'Ydata', nan)
+                set(obj.RectanglePlotHandle, 'XData', nan, 'Ydata', nan)
             end
 
-            if ~isempty(obj.rectanglePlotHandle)
-                set(obj.rectanglePlotHandle, 'Visible', 'on')
+            if ~isempty(obj.RectanglePlotHandle)
+                set(obj.RectanglePlotHandle, 'Visible', 'on')
             end
         end
 
         function updateRectangle(obj, currentPoint)
 
-            if isempty(obj.rectanglePlotHandle); return; end
+            if isempty(obj.RectanglePlotHandle); return; end
 
             % Set rectangle vertex coordinates
-            x1 = obj.anchorPoint(1);
-            y1 = obj.anchorPoint(2);
+            x1 = obj.AnchorPoint(1);
+            y1 = obj.AnchorPoint(2);
 
             if nargin < 2 || isempty(currentPoint)
-                currentPoint = obj.hAxes.CurrentPoint(1, 1:2);
+                currentPoint = obj.Axes.CurrentPoint(1, 1:2);
             end
 
             x2 = currentPoint(1);
             y2 = currentPoint(2);
 
             % Make sure rectangle does not exceed axes limits.
-            xLim = obj.hAxes.XLim;
-            yLim = obj.hAxes.YLim;
+            xLim = obj.Axes.XLim;
+            yLim = obj.Axes.YLim;
 
             if      x2 < xLim(1);   x2 = xLim(1);
             elseif  x2 > xLim(2);   x2 = xLim(2);
@@ -59,18 +62,18 @@ classdef DraggableRectangle < handle
             end
 
             % Assign rectangle vertex coordinates to plot handle
-            if ~isempty(obj.rectanglePlotHandle)
-                obj.rectanglePlotHandle.XData = [x1, x1, x2, x2, x1];
-                obj.rectanglePlotHandle.YData = [y1, y2, y2, y1, y1];
+            if ~isempty(obj.RectanglePlotHandle)
+                obj.RectanglePlotHandle.XData = [x1, x1, x2, x2, x1];
+                obj.RectanglePlotHandle.YData = [y1, y2, y2, y1, y1];
             end
         end
 
         function resetRectangle(obj)
-            delete(obj.rectanglePlotHandle)
-            obj.rectanglePlotHandle = [];
+            delete(obj.RectanglePlotHandle)
+            obj.RectanglePlotHandle = [];
 
-            % % % set(obj.rectanglePlotHandle, 'XData', nan, 'Ydata', nan)
-            % % % set(obj.rectanglePlotHandle, 'Visible', 'off')
+            % % % set(obj.RectanglePlotHandle, 'XData', nan, 'Ydata', nan)
+            % % % set(obj.RectanglePlotHandle, 'Visible', 'off')
         end
     end
 end

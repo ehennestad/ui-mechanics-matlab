@@ -1,40 +1,40 @@
 classdef Pan < uim.interface.PointerTool
 
     properties (Constant)
-        exitMode = 'previous';
+        ExitMode = 'previous';
     end
 
     properties
-        xLimOrig
-        yLimOrig
+        XLimOrig
+        YLimOrig
 
-        constrainX = true;
-        constrainY = true;
+        ConstrainX = true;
+        ConstrainY = true;
 
-        previousPoint (1,2) double = [nan, nan]
-        isButtonDown (1,1) logical = false
+        PreviousPoint (1,2) double = [nan, nan]
+        IsButtonDown (1,1) logical = false
     end
 
     methods
 
         function obj = Pan(hAxes)
             obj@uim.interface.PointerTool(hAxes)
-            obj.xLimOrig = obj.hAxes.XLim;
-            obj.yLimOrig = obj.hAxes.YLim;
+            obj.XLimOrig = obj.Axes.XLim;
+            obj.YLimOrig = obj.Axes.YLim;
         end
 
         function setPointerSymbol(obj)
-            setptr(obj.hFigure, 'hand');
+            setptr(obj.Figure, 'hand');
         end
 
         function onButtonDown(obj, ~, evt)
 
             if evt.Button == 3; return; end
 
-            obj.isButtonDown = true;
-            obj.isActive = true;
+            obj.IsButtonDown = true;
+            obj.IsActive = true;
 
-            obj.previousPoint = obj.hFigure.CurrentPoint;
+            obj.PreviousPoint = obj.Figure.CurrentPoint;
         end
 
         function onButtonMotion(obj, ~, ~)
@@ -42,45 +42,45 @@ classdef Pan < uim.interface.PointerTool
             persistent isBusy
             if isempty(isBusy); isBusy=false; end
 
-            if obj.isButtonDown
+            if obj.IsButtonDown
                 if isBusy
                     return
                 end
                 isBusy = true;
-                currentPoint = obj.hFigure.CurrentPoint;
-                shift = currentPoint - obj.previousPoint;
+                currentPoint = obj.Figure.CurrentPoint;
+                shift = currentPoint - obj.PreviousPoint;
 
-                if ~isempty(obj.buttonMotionCallback)
-                    obj.buttonMotionCallback(shift)
+                if ~isempty(obj.ButtonMotionFcn)
+                    obj.ButtonMotionFcn(shift)
                 else
                     moveAxes(obj, shift)
                 end
 
                 %moveAxes(obj, shift)
 
-                obj.previousPoint = currentPoint;
+                obj.PreviousPoint = currentPoint;
                 isBusy = false;
             end
         end
 
         function onButtonUp(obj, ~, ~)
-            obj.isButtonDown = false;
-            obj.isActive = false;
+            obj.IsButtonDown = false;
+            obj.IsActive = false;
         end
 
         function moveAxes(obj, shift)
         % Move image in ax according to shift
 
             % Get ax position in figure coordinates
-            axPos = getpixelposition(obj.hAxes);
+            axPos = getpixelposition(obj.Axes);
 
-            if strcmp(obj.hAxes.YDir, 'reverse')
+            if strcmp(obj.Axes.YDir, 'reverse')
                 shift(2) = -1 * shift(2);
             end
 
             % Get current axes limits
-            xlim = obj.hAxes.XLim;
-            ylim = obj.hAxes.YLim;
+            xlim = obj.Axes.XLim;
+            ylim = obj.Axes.YLim;
 
             % Convert mouse shift to image shift
             imshift = shift ./ axPos(3:4) .* [diff(xlim), diff(ylim)];
@@ -88,18 +88,18 @@ classdef Pan < uim.interface.PointerTool
             ylim = ylim - imshift(2);
 
             % Dont move outside of image boundaries..
-            if xlim(1) > obj.xLimOrig(1) && xlim(2) < obj.xLimOrig(2)
-                set(obj.hAxes, 'XLim', xlim);
-%                 plotZoomRegion(obj, xlim, obj.hAxes.YLim)
-            elseif ~obj.constrainX
-                set(obj.hAxes, 'XLim', xlim);
+            if xlim(1) > obj.XLimOrig(1) && xlim(2) < obj.XLimOrig(2)
+                set(obj.Axes, 'XLim', xlim);
+%                 plotZoomRegion(obj, xlim, obj.Axes.YLim)
+            elseif ~obj.ConstrainX
+                set(obj.Axes, 'XLim', xlim);
             end
 
-            if ylim(1) > obj.yLimOrig(1) && ylim(2) < obj.yLimOrig(2)
-                set(obj.hAxes, 'YLim', ylim);
-            elseif ~obj.constrainY
-                set(obj.hAxes, 'YLim', ylim);
-%                 plotZoomRegion(obj, obj.hAxes.XLim, ylim)
+            if ylim(1) > obj.YLimOrig(1) && ylim(2) < obj.YLimOrig(2)
+                set(obj.Axes, 'YLim', ylim);
+            elseif ~obj.ConstrainY
+                set(obj.Axes, 'YLim', ylim);
+%                 plotZoomRegion(obj, obj.Axes.XLim, ylim)
             end
         end
     end

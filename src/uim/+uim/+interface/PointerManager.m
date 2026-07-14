@@ -11,27 +11,25 @@ classdef PointerManager < handle
 %   [x] use listeners instead of attaching mouse function to figure handle
 
     properties
-
-        hFigure % Axes or figure
-        hAxes
-
-        pointers
-
-        supportedTools
-
-        defaultPointerTool
-
-        currentPointerTool
-        previousPointerTool
-
-        wasCursorInAxes = false;
+        DefaultPointerTool
     end
 
     properties (SetAccess = private)
+        Figure % Axes or figure
+        Axes
+
+        Pointers
+        SupportedTools
+
+        CurrentPointerTool
+
         OriginalAxesButtonDownFcn = [] % Store axes function
     end
 
     properties (Access = private)
+        PreviousPointerTool
+        WasCursorInAxes = false;
+
         AxesButtonPressListener event.listener
         WindowButtonMotionListener event.listener
         WindowButtonUpListener event.listener
@@ -41,7 +39,7 @@ classdef PointerManager < handle
     end
 
     properties (Access = protected)
-        isMouseButtonDown (1,1) logical = false
+        IsMouseButtonDown (1,1) logical = false
         PreviousMousePoint (1,2) double = [nan, nan]
         PreviousMouseClickPoint   % Point where mouse was last clicked
     end
@@ -51,8 +49,8 @@ classdef PointerManager < handle
         function obj = PointerManager(hFigure, hAxes, pointerNames)
         %PointerManager Attach a PointerManager to a figure
 
-            obj.hFigure = hFigure;
-            obj.hAxes = hAxes;
+            obj.Figure = hFigure;
+            obj.Axes = hAxes;
 
             % Assign dummy callback if WindowButtonMotionFcn is unassigned
             if isempty( hFigure.WindowButtonMotionFcn )
@@ -71,7 +69,7 @@ classdef PointerManager < handle
             hAxes.ButtonDownFcn = @obj.onButtonDown; % Use button down callback of axes..
             hAxes.Interruptible = 'off'; % Todo: are there cases where its better if this is on?
 
-            hold(obj.hAxes, 'on')
+            hold(obj.Axes, 'on')
 
             if nargin >= 3 &&  ~isempty(pointerNames)
                 obj.initializePointers(hAxes, pointerNames)
@@ -87,13 +85,13 @@ classdef PointerManager < handle
 
             obj.deleteFigureMouseListeners()
 
-            if isvalid(obj.hAxes)
-                if isequal( obj.hAxes.ButtonDownFcn, @obj.onButtonDown)
-                    obj.hAxes.ButtonDownFcn = [];
+            if isvalid(obj.Axes)
+                if isequal( obj.Axes.ButtonDownFcn, @obj.onButtonDown)
+                    obj.Axes.ButtonDownFcn = [];
                 end
 
                 if ~isempty(obj.OriginalAxesButtonDownFcn)
-                    obj.hAxes.ButtonDownFcn = obj.OriginalAxesButtonDownFcn;
+                    obj.Axes.ButtonDownFcn = obj.OriginalAxesButtonDownFcn;
                 end
             end
         end
@@ -103,20 +101,20 @@ classdef PointerManager < handle
 
         function createFigureMouseListeners(obj)
 
-            %obj.WindowMousePressListener = addlistener(obj.hFigure, ...
+            %obj.WindowMousePressListener = addlistener(obj.Figure, ...
             %    'WindowMousePress', @obj.onMousePressed);
 
-            obj.WindowButtonMotionListener = addlistener(obj.hFigure, ...
+            obj.WindowButtonMotionListener = addlistener(obj.Figure, ...
                  'WindowMouseMotion', @obj.onButtonMotion);
 
-            obj.WindowButtonUpListener = addlistener(obj.hFigure, ...
+            obj.WindowButtonUpListener = addlistener(obj.Figure, ...
                 'WindowMouseRelease', @obj.onButtonRelease);
 
-            %obj.WindowScrollWheelListener = addlistener(obj.hFigure, ...
+            %obj.WindowScrollWheelListener = addlistener(obj.Figure, ...
             %    'WindowScrollWheel', @obj.onMouseScrolled);
 
             % Should this be independent, or called from external gui?
-            %obj.WindowKeyPressListener = addlistener(obj.hFigure, ...
+            %obj.WindowKeyPressListener = addlistener(obj.Figure, ...
             %    'WindowKeyPress', @obj.onKeyPress);
         end
 
@@ -160,13 +158,13 @@ classdef PointerManager < handle
                     % Normalize class name (PascalCase) to tool key (camelCase)
                     thisPointerName = [lower(thisPointerName(1)), thisPointerName(2:end)];
                 end
-                obj.pointers.(thisPointerName) = thisPointerRef(hAxes);
+                obj.Pointers.(thisPointerName) = thisPointerRef(hAxes);
             end
         end
 
         function updatePointerSymbol(obj)
-            if ~isempty(obj.currentPointerTool)
-                obj.currentPointerTool.setPointerSymbol()
+            if ~isempty(obj.CurrentPointerTool)
+                obj.CurrentPointerTool.setPointerSymbol()
             end
         end
 
@@ -180,9 +178,9 @@ classdef PointerManager < handle
 %             end
 
             % 2) Call active pointer tool
-            if obj.isCursorInsideAxes(obj.hAxes)
-                if ~isempty(obj.currentPointerTool)
-                    obj.MouseDownPointerTool = obj.currentPointerTool;
+            if obj.isCursorInsideAxes(obj.Axes)
+                if ~isempty(obj.CurrentPointerTool)
+                    obj.MouseDownPointerTool = obj.CurrentPointerTool;
                     try
                         obj.MouseDownPointerTool.onButtonDown(src, event)
                     catch ME
@@ -197,14 +195,14 @@ classdef PointerManager < handle
 
             pointerTool = obj.getMouseEventPointerTool();
             if isempty(pointerTool); return; end
-            tf = obj.isCursorInsideAxes(obj.hAxes);
+            tf = obj.isCursorInsideAxes(obj.Axes);
 
             % Change cursor symbol when pointer enters or leaves axes
-            if tf && ~obj.wasCursorInAxes % Entered axes
+            if tf && ~obj.WasCursorInAxes % Entered axes
                 pointerTool.setPointerSymbol()
                 pointerTool.onPointerEnteredAxes()
-            elseif ~tf && obj.wasCursorInAxes % Left axes
-                set(obj.hFigure, 'Pointer', 'arrow');
+            elseif ~tf && obj.WasCursorInAxes % Left axes
+                set(obj.Figure, 'Pointer', 'arrow');
                 pointerTool.onPointerExitedAxes()
             end
 
@@ -216,9 +214,9 @@ classdef PointerManager < handle
             pointerTool.onButtonMotion(src, event)
 
             if tf
-                obj.wasCursorInAxes = true;
+                obj.WasCursorInAxes = true;
             else
-                obj.wasCursorInAxes = false;
+                obj.WasCursorInAxes = false;
             end
 
             %drawnow limitrate
@@ -239,7 +237,7 @@ classdef PointerManager < handle
             % Todo: Make a system for having unique key shortcuts and
             % setting/changing them from one location..
 
-            % if ~obj.isCursorInsideAxes(obj.hAxes); return; end
+            % if ~obj.isCursorInsideAxes(obj.Axes); return; end
             % disp(event.Key)
 
             wasCaptured = true;
@@ -274,8 +272,8 @@ classdef PointerManager < handle
             end
 
             % 2) Call pointertool's keypress
-            if ~isempty(obj.currentPointerTool)
-                wasCaptured = obj.currentPointerTool.onKeyPress(src, event) || wasCaptured;
+            if ~isempty(obj.CurrentPointerTool)
+                wasCaptured = obj.CurrentPointerTool.onKeyPress(src, event) || wasCaptured;
             end
 
             if ~nargout
@@ -285,8 +283,8 @@ classdef PointerManager < handle
 
         function wasCaptured = onKeyRelease(obj, src, event)
             wasCaptured = false;
-            if ~isempty(obj.currentPointerTool)
-                wasCaptured = obj.currentPointerTool.onKeyRelease(src, event);
+            if ~isempty(obj.CurrentPointerTool)
+                wasCaptured = obj.CurrentPointerTool.onKeyRelease(src, event);
             end
         end
 
@@ -295,32 +293,32 @@ classdef PointerManager < handle
 
             % If the pointerName refers to the current pointer tool, it
             % should be turned off.
-            if ~isfield(obj.pointers, pointerName); return; end
+            if ~isfield(obj.Pointers, pointerName); return; end
 
-            toggleOff = isequal(obj.currentPointerTool, obj.pointers.(pointerName));
+            toggleOff = isequal(obj.CurrentPointerTool, obj.Pointers.(pointerName));
 
-            switch obj.pointers.(pointerName).exitMode
+            switch obj.Pointers.(pointerName).ExitMode
 
                 case 'default'
 
-                    if ~isempty(obj.currentPointerTool)
-                        obj.currentPointerTool.deactivate();
-                        obj.previousPointerTool = []; %Make sure this is reset.
+                    if ~isempty(obj.CurrentPointerTool)
+                        obj.CurrentPointerTool.deactivate();
+                        obj.PreviousPointerTool = []; %Make sure this is reset.
                     end
 
                     if toggleOff  % Turn off tool which has exitmode default
 
                         % Change to default tool
-                        obj.currentPointerTool = obj.defaultPointerTool;
+                        obj.CurrentPointerTool = obj.DefaultPointerTool;
 
                     else  % Turn on tool which has exitmode default
 
                         % If previous tool is populated, turn off and flush
-                        if ~isempty(obj.previousPointerTool)
-                            obj.previousPointerTool.deactivate();
-                            obj.previousPointerTool = [];
+                        if ~isempty(obj.PreviousPointerTool)
+                            obj.PreviousPointerTool.deactivate();
+                            obj.PreviousPointerTool = [];
                         end
-                        obj.currentPointerTool = obj.pointers.(pointerName);
+                        obj.CurrentPointerTool = obj.Pointers.(pointerName);
                     end
 
                 case 'previous'
@@ -328,33 +326,33 @@ classdef PointerManager < handle
                     if toggleOff  % Turn off tool which has exitmode previous
 
                         % Set current to previous if available
-                        obj.currentPointerTool.deactivate();
-                        if ~isempty(obj.previousPointerTool)
-                            obj.currentPointerTool = obj.previousPointerTool;
+                        obj.CurrentPointerTool.deactivate();
+                        if ~isempty(obj.PreviousPointerTool)
+                            obj.CurrentPointerTool = obj.PreviousPointerTool;
                         else
-                            obj.currentPointerTool = [];
+                            obj.CurrentPointerTool = [];
                         end
 
                     else  % Turn on tool which has exitmode previous
-                        if ~isempty(obj.currentPointerTool)
-                            if strcmp(obj.currentPointerTool.exitMode, 'default')
-                                obj.currentPointerTool.suspend()
-                                obj.previousPointerTool = obj.currentPointerTool;
+                        if ~isempty(obj.CurrentPointerTool)
+                            if strcmp(obj.CurrentPointerTool.ExitMode, 'default')
+                                obj.CurrentPointerTool.suspend()
+                                obj.PreviousPointerTool = obj.CurrentPointerTool;
                             else
                                 % If exitMode is previous, we dont want to
                                 % store it in the "previous" property.
-                                obj.currentPointerTool.deactivate()
+                                obj.CurrentPointerTool.deactivate()
                             end
                         end
 
-                        obj.currentPointerTool = obj.pointers.(pointerName);
+                        obj.CurrentPointerTool = obj.Pointers.(pointerName);
                     end
             end
 
-            if ~isempty(obj.currentPointerTool)
-                obj.currentPointerTool.activate();
+            if ~isempty(obj.CurrentPointerTool)
+                obj.CurrentPointerTool.activate();
             else
-                obj.hFigure.Pointer = 'arrow';
+                obj.Figure.Pointer = 'arrow';
             end
         end
 
@@ -379,7 +377,7 @@ classdef PointerManager < handle
             if ~isempty(obj.MouseDownPointerTool)
                 pointerTool = obj.MouseDownPointerTool;
             else
-                pointerTool = obj.currentPointerTool;
+                pointerTool = obj.CurrentPointerTool;
             end
         end
 

@@ -10,26 +10,28 @@ classdef PointerTool < handle & matlab.mixin.Heterogeneous
 % not good style!
 
     properties (Abstract, Constant)
-        exitMode        % Go back to previous, or go back to default?
+        ExitMode        % Go back to previous, or go back to default?
     end
 
     properties
-        isActive = false % Is tool doing something right now?
+        IsActive = false % Is tool doing something right now?
 
-        hFigure
-        hAxes
-
-        buttonDownCallback % protected?
-        buttonUpCallback % protected?
-        buttonMotionCallback % protected?
+        ButtonDownFcn % protected?
+        ButtonUpFcn % protected?
+        ButtonMotionFcn % protected?
 
 %         activatedCallback  Just use toggle event instead??
 %         deactivatedCallback
     end
 
+    properties (SetAccess = protected)
+        Figure
+        Axes
+    end
+
     properties (Access = protected)
-        state = 'off';      % on | on hold | off
-        pointerCData = [];
+        State = 'off';      % on | on hold | off
+        PointerCData = [];
     end
 
     events
@@ -50,8 +52,8 @@ classdef PointerTool < handle & matlab.mixin.Heterogeneous
         %PointerTool Attach hAxes and its parent figure to the tool
 
             if nargin > 0
-                obj.hAxes = hAxes;
-                obj.hFigure = ancestor(hAxes, 'figure');
+                obj.Axes = hAxes;
+                obj.Figure = ancestor(hAxes, 'figure');
             end
         end
     end
@@ -68,7 +70,7 @@ classdef PointerTool < handle & matlab.mixin.Heterogeneous
 
         function activate(obj)
             obj.setPointerSymbol()
-            obj.state = 'on';
+            obj.State = 'on';
 
 %             if ~isempty(obj.activatedCallback)
 %                 obj.activatedCallback()
@@ -81,11 +83,11 @@ classdef PointerTool < handle & matlab.mixin.Heterogeneous
         function suspend(obj)
             eventData = uim.event.ToggleEvent(0);
             obj.notify('ToggledPointerTool', eventData)
-            obj.state = 'on_hold';
+            obj.State = 'on_hold';
         end
 
         function deactivate(obj)
-            obj.state = 'off';
+            obj.State = 'off';
             eventData = uim.event.ToggleEvent(0);
             obj.notify('ToggledPointerTool', eventData)
         end
@@ -93,11 +95,11 @@ classdef PointerTool < handle & matlab.mixin.Heterogeneous
         function tf = isPointerInsideAxes(obj, currentPoint)
 
             if nargin < 2
-                currentPoint = obj.hAxes.CurrentPoint(1, 1:2);
+                currentPoint = obj.Axes.CurrentPoint(1, 1:2);
             end
 
-            xLim = obj.hAxes.XLim;
-            yLim = obj.hAxes.YLim;
+            xLim = obj.Axes.XLim;
+            yLim = obj.Axes.YLim;
             axLim = [xLim(1), yLim(1), xLim(2), yLim(2)];
 
             % Check if mousepoint is within axes limits.

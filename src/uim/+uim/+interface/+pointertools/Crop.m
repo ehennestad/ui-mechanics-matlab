@@ -1,14 +1,14 @@
 classdef Crop < uim.interface.PointerTool
 
     properties (Constant)
-        exitMode = 'previous';
+        ExitMode = 'previous';
     end
 
     properties
         plotColor = [32, 32, 32]./255;
         textColor = ones(1,3)*0.8;
-        xLimOrig
-        yLimOrig
+        XLimOrig
+        YLimOrig
 
         currentXLim = []
         currentYLim = []
@@ -29,9 +29,9 @@ classdef Crop < uim.interface.PointerTool
 
         function obj = Crop(hAxes)
             obj@uim.interface.PointerTool(hAxes)
-            obj.xLimOrig = obj.hAxes.XLim;
-            obj.yLimOrig = obj.hAxes.YLim;
-            obj.hRectangleSizeText = text(obj.hAxes, 'Color', obj.textColor);
+            obj.XLimOrig = obj.Axes.XLim;
+            obj.YLimOrig = obj.Axes.YLim;
+            obj.hRectangleSizeText = text(obj.Axes, 'Color', obj.textColor);
         end
 
         function activate(obj)
@@ -44,7 +44,7 @@ classdef Crop < uim.interface.PointerTool
         function deactivate(obj)
 
             deactivate@uim.interface.PointerTool(obj)
-            uiresume(obj.hFigure)
+            uiresume(obj.Figure)
 
             if ~isempty(obj.hImrect)
 
@@ -102,9 +102,9 @@ classdef Crop < uim.interface.PointerTool
             % Move to non-class function
             if exist('drawrectangle', 'file')
                 if ~isempty(rccInit)
-                    hrect = drawrectangle(obj.hAxes, 'Position', rccInit);
+                    hrect = drawrectangle(obj.Axes, 'Position', rccInit);
                 else
-                    hrect = drawrectangle(obj.hAxes);
+                    hrect = drawrectangle(obj.Axes);
                 end
                 addlistener(hrect, 'MovingROI', @obj.onRectangleSizeChanged);
                 obj.updateRectangleContextMenu(hrect)
@@ -112,17 +112,17 @@ classdef Crop < uim.interface.PointerTool
                 hrect.LineWidth = 1;
                 hrect.Color = obj.plotColor;
                 hrect.StripeColor = ones(1,3)*0.8;
-                hrect.DrawingArea = [1, 1, obj.xLimOrig(2)-1, obj.yLimOrig(2)-1];
+                hrect.DrawingArea = [1, 1, obj.XLimOrig(2)-1, obj.YLimOrig(2)-1];
 
             else
-                hrect = imrect(obj.hAxes, rccInit); %#ok<IMRECT>
+                hrect = imrect(obj.Axes, rccInit); %#ok<IMRECT>
                 hrect.setColor(obj.plotColor)
-                restrainCropSelection = makeConstrainToRectFcn('imrect', obj.xLimOrig, obj.yLimOrig);
+                restrainCropSelection = makeConstrainToRectFcn('imrect', obj.XLimOrig, obj.YLimOrig);
                 hrect.setPositionConstraintFcn( restrainCropSelection );
             end
 
             obj.hImrect = hrect;
-            uiwait(obj.hFigure)
+            uiwait(obj.Figure)
 
             obj.deactivate();
         end
@@ -133,7 +133,7 @@ classdef Crop < uim.interface.PointerTool
             vertexX = rcc(1) + [0, rcc(3), rcc(3), 0];
             vertexY = rcc(2) + [0, 0, rcc(4), rcc(4)];
 
-            imSizeXY = [obj.xLimOrig(2), obj.yLimOrig(2)];
+            imSizeXY = [obj.XLimOrig(2), obj.YLimOrig(2)];
 
         %             mask = double(poly2mask(vertexX, vertexY, imSizeXY(2), imSizeXY(1)));
         %             mask(~mask) = 0.4;
@@ -145,7 +145,7 @@ classdef Crop < uim.interface.PointerTool
             innerBoxY = [vertexY, vertexY(1)];
 
             if isempty(obj.hCroppedBoundaryPatch)
-                h = patch(obj.hAxes, [outerBoxX, innerBoxX], [outerBoxY, innerBoxY], 'k');
+                h = patch(obj.Axes, [outerBoxX, innerBoxX], [outerBoxY, innerBoxY], 'k');
                 h.FaceAlpha = 0.3;
                 h.EdgeColor = 'none';
                 h.Tag = 'Crop Outline';
@@ -188,7 +188,7 @@ classdef Crop < uim.interface.PointerTool
         function onRectangleSizeChanged(obj, ~, evt)
 
             if isempty(obj.hRectangleSizeText)
-                obj.hRectangleSizeText = text(obj.hAxes);
+                obj.hRectangleSizeText = text(obj.Axes);
                 obj.hRectangleSizeText.Color = ones(1,3)*0.8;
             end
 
@@ -205,7 +205,7 @@ classdef Crop < uim.interface.PointerTool
 
             rcc = zeros(1,4);
             rcc(1:2) = 1;
-            rcc(3:4) = floor([obj.xLimOrig(2), obj.yLimOrig(2)]);
+            rcc(3:4) = floor([obj.XLimOrig(2), obj.YLimOrig(2)]);
             obj.hImrect.Position = rcc;
             drawnow
             obj.deactivate()

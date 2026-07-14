@@ -8,13 +8,13 @@ classdef Zoomable < handle
     %     axesDataLimits mixin (abstract) pointer tool...
 
     properties (Abstract)
-        zoomFactor
-        xLimOrig
-        yLimOrig
+        ZoomFactor
+        XLimOrig
+        YLimOrig
     end
 
     properties
-        zoomFinishedCallback
+        ZoomFinishedFcn
         % LimitsChangedFcn % Function to run when limits change.
     end
 
@@ -26,8 +26,8 @@ classdef Zoomable < handle
             % todo...
 
             % Get current axes limits
-            xlim = get(obj.hAxes, 'XLim');
-            ylim = get(obj.hAxes, 'YLim');
+            xlim = get(obj.Axes, 'XLim');
+            ylim = get(obj.Axes, 'YLim');
 
             % Convert mouse shift to image shift
             imshift = shift;
@@ -44,28 +44,28 @@ classdef Zoomable < handle
 
             switch direction
                 case 'in'
-                        zoomF = -obj.zoomFactor .* speed;
+                        zoomF = -obj.ZoomFactor .* speed;
                 case 'out'
-                        zoomF = obj.zoomFactor*2 .* speed;
+                        zoomF = obj.ZoomFactor*2 .* speed;
             end
 
-            xLim = get(obj.hAxes, 'XLim');
-            yLim = get(obj.hAxes, 'YLim');
+            xLim = get(obj.Axes, 'XLim');
+            yLim = get(obj.Axes, 'YLim');
 
             % Get cursor position in figure (in pixels). The point which is
             % clicked should appear under the pointer when zooming in.
-            figUnits = obj.hFigure.Units;
-            obj.hFigure.Units = 'pixel';
-            mp_f = get(obj.hFigure, 'CurrentPoint');
-            obj.hFigure.Units = figUnits;
+            figUnits = obj.Figure.Units;
+            obj.Figure.Units = 'pixel';
+            mp_f = get(obj.Figure, 'CurrentPoint');
+            obj.Figure.Units = figUnits;
 
-            axUnits = obj.hAxes.Units;
-            obj.hAxes.Units = 'pixel';
-            mp_a = get(obj.hAxes, 'CurrentPoint');
-            obj.hAxes.Units = axUnits;
+            axUnits = obj.Axes.Units;
+            obj.Axes.Units = 'pixel';
+            mp_a = get(obj.Axes, 'CurrentPoint');
+            obj.Axes.Units = axUnits;
             mp_a = mp_a(1, 1:2);
 
-            axPos = getpixelposition(obj.hAxes, true); % Need axes position in figure
+            axPos = getpixelposition(obj.Axes, true); % Need axes position in figure
 
             axLim = axPos + [0, 0, axPos(1), axPos(2)];
 
@@ -84,7 +84,7 @@ classdef Zoomable < handle
 
                 shiftX = (axPos(3)-mp_f(1)+0.25) / axPos(3)               * diff(xLimNew) - (xLim(1) + diff(xLim)/2 + diff(xLimNew)/2 - mp_a(1)) ;
 
-                switch obj.hAxes.YDir
+                switch obj.Axes.YDir
                     case 'normal'
                         shiftY = (axPos(4)-mp_f(2)) / axPos(4) * diff(yLimNew) - (yLim(1) + diff(yLim)/2 + diff(yLimNew)/2 - mp_a(2)) ;
                     case 'reverse'
@@ -95,8 +95,8 @@ classdef Zoomable < handle
                 yLimNew = yLimNew + shiftY;
             end
 
-            xLimNew = obj.clampRangeToOriginal(xLimNew, obj.xLimOrig);
-            yLimNew = obj.clampRangeToOriginal(yLimNew, obj.yLimOrig);
+            xLimNew = obj.clampRangeToOriginal(xLimNew, obj.XLimOrig);
+            yLimNew = obj.clampRangeToOriginal(yLimNew, obj.YLimOrig);
 
             setNewImageLimits(obj, xLimNew, yLimNew)
         end
@@ -106,7 +106,7 @@ classdef Zoomable < handle
             % Todo: Have tests here to prevent setting limits outside of
             % image limits.
 
-            pos = getpixelposition(obj.hAxes);
+            pos = getpixelposition(obj.Axes);
             axAR = pos(3)/pos(4); % Axes aspect ratio.
 
             xRange = diff(xLimNew); yRange = diff(yLimNew);
@@ -118,27 +118,27 @@ classdef Zoomable < handle
                 xLimNew = xLimNew + [-1, 1] * (yRange*axAR-xRange)/2;
             end
 
-            xLimNew = obj.clampRangeToOriginal(xLimNew, obj.xLimOrig);
-            yLimNew = obj.clampRangeToOriginal(yLimNew, obj.yLimOrig);
+            xLimNew = obj.clampRangeToOriginal(xLimNew, obj.XLimOrig);
+            yLimNew = obj.clampRangeToOriginal(yLimNew, obj.YLimOrig);
 
-            set(obj.hAxes, 'XLim', xLimNew, 'YLim', yLimNew)
+            set(obj.Axes, 'XLim', xLimNew, 'YLim', yLimNew)
             %plotZoomRegion(obj, xLimNew, yLimNew)
 
-            if ~isempty(obj.zoomFinishedCallback)
-                obj.zoomFinishedCallback()
+            if ~isempty(obj.ZoomFinishedFcn)
+                obj.ZoomFinishedFcn()
             end
         end
 
         function setNewXLims(obj, newLimits)
 
             if nargin == 1 || isempty(newLimits)
-                newLimits = obj.xLimOrig;
+                newLimits = obj.XLimOrig;
             end
 
             % Todo: Make sure XLim2 > XLim1
 
-            newLimits(1) = max([obj.xLimOrig(1), newLimits(1)]);
-            newLimits(2) = min([obj.xLimOrig(2), newLimits(2)]);
+            newLimits(1) = max([obj.XLimOrig(1), newLimits(1)]);
+            newLimits(2) = min([obj.XLimOrig(2), newLimits(2)]);
 
             % Set new limits
             set(obj.ax, 'XLim', newLimits);

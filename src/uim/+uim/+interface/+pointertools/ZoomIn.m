@@ -2,93 +2,93 @@ classdef ZoomIn < uim.interface.PointerTool & uim.interface.Zoomable & ...
         uim.interface.pointertools.mixin.DraggableRectangle
 
     properties (Constant)
-        exitMode = 'previous';
+        ExitMode = 'previous';
     end
 
     properties % Tool specific
-        zoomInCallback
-        rectangularZoomCallback
-        runDefault = false;
+        ZoomInFcn
+        RectangularZoomFcn
+        RunDefault = false;
     end
 
     properties % Implement abstract properties from zoom
-        zoomFactor = 0.25
-        xLimOrig
-        yLimOrig
+        ZoomFactor = 0.25
+        XLimOrig
+        YLimOrig
     end
 
     properties % Implement abstract properties hasDraggableRectangle
-        anchorPoint = [nan, nan]
-        isButtonDown = false
+        AnchorPoint = [nan, nan]
+        IsButtonDown = false
     end
 
     methods
 
         function obj = ZoomIn(hAxes)
             obj@uim.interface.PointerTool(hAxes)
-            obj.xLimOrig = obj.hAxes.XLim;
-            obj.yLimOrig = obj.hAxes.YLim;
+            obj.XLimOrig = obj.Axes.XLim;
+            obj.YLimOrig = obj.Axes.YLim;
         end
 
         function setPointerSymbol(obj)
-            setptr(obj.hFigure, 'glassplus');
+            setptr(obj.Figure, 'glassplus');
         end
 
         function onButtonDown(obj, ~, evt)
 
             if evt.Button==3; return; end
 
-            obj.isButtonDown = true;
-            obj.isActive = true;
+            obj.IsButtonDown = true;
+            obj.IsActive = true;
 
-            obj.anchorPoint = obj.hAxes.CurrentPoint(1, 1:2);
+            obj.AnchorPoint = obj.Axes.CurrentPoint(1, 1:2);
 
             obj.plotRectangle()
 
-            set(obj.hFigure, 'Pointer', 'crosshair');
+            set(obj.Figure, 'Pointer', 'crosshair');
         end
 
         function onButtonMotion(obj, ~, ~)
-            if obj.isButtonDown
+            if obj.IsButtonDown
                 obj.updateRectangle()
             end
         end
 
         function onButtonUp(obj, ~, ~)
-            if ~obj.isButtonDown; return; end % MouseDown happened before tool was activated
+            if ~obj.IsButtonDown; return; end % MouseDown happened before tool was activated
 
-            obj.isButtonDown = false;
-            obj.isActive = false;
+            obj.IsButtonDown = false;
+            obj.IsActive = false;
 
-            currentPoint = get(obj.hAxes, 'CurrentPoint');
+            currentPoint = get(obj.Axes, 'CurrentPoint');
             currentPoint = currentPoint(1, 1:2);
 
-            deltaErr = mean( [diff(obj.hAxes.XLim),diff(obj.hAxes.YLim) ] ) / 100;
+            deltaErr = mean( [diff(obj.Axes.XLim),diff(obj.Axes.YLim) ] ) / 100;
 
-            if all((abs(obj.anchorPoint - currentPoint)) < deltaErr) % No movement
-                if ~isempty(obj.zoomInCallback)
-                    if obj.runDefault
+            if all((abs(obj.AnchorPoint - currentPoint)) < deltaErr) % No movement
+                if ~isempty(obj.ZoomInFcn)
+                    if obj.RunDefault
                         obj.imageZoom('in')
                     end
-                    obj.zoomInCallback()
+                    obj.ZoomInFcn()
                 else
                     obj.imageZoom('in')
                 end
-                %obj.buttonUpCallback();
+                %obj.ButtonUpFcn();
             else
-                newXLim = sort( [obj.anchorPoint(1), currentPoint(1)] );
-                newYLim = sort( [obj.anchorPoint(2), currentPoint(2)] );
+                newXLim = sort( [obj.AnchorPoint(1), currentPoint(1)] );
+                newYLim = sort( [obj.AnchorPoint(2), currentPoint(2)] );
 
                 obj.resetRectangle();
 
-                if ~isempty( obj.rectangularZoomCallback )
-                    if obj.runDefault
+                if ~isempty( obj.RectangularZoomFcn )
+                    if obj.RunDefault
                         obj.setNewImageLimits(newXLim, newYLim)
                     end
-                    obj.rectangularZoomCallback(newXLim, newYLim);
+                    obj.RectangularZoomFcn(newXLim, newYLim);
                 else
                     obj.setNewImageLimits(newXLim, newYLim)
-                    % obj.buttonUpCallback(newXLim, newYLim);
+                    % obj.ButtonUpFcn(newXLim, newYLim);
                 end
 
 %                 obj.imageZoomRect(); % Set new limits based on new and old point

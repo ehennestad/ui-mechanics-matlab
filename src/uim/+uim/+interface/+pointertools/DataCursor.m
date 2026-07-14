@@ -8,17 +8,17 @@ classdef DataCursor < uim.interface.PointerTool
     %   3) Should it work on mouseover, or only on button click?
 
     properties (Constant)
-        exitMode = 'default';
+        ExitMode = 'default';
     end
 
     properties
-        xLimOrig
-        yLimOrig
+        XLimOrig
+        YLimOrig
         cursorColor = ones(1,3)*0.5
     end
 
     properties (Access = private)
-        isButtonDown = false
+        IsButtonDown = false
         hCrosshair % Line handle for temporary lines of data cursor crosshair
     end
 
@@ -26,8 +26,8 @@ classdef DataCursor < uim.interface.PointerTool
 
         function obj = DataCursor(hAxes)
             obj@uim.interface.PointerTool(hAxes)
-            obj.xLimOrig = obj.hAxes.XLim;
-            obj.yLimOrig = obj.hAxes.YLim;
+            obj.XLimOrig = obj.Axes.XLim;
+            obj.YLimOrig = obj.Axes.YLim;
         end
 
         function activate(obj)
@@ -35,7 +35,7 @@ classdef DataCursor < uim.interface.PointerTool
             obj.plotCrosshair()
 
             set(obj.hCrosshair, 'Visible', 'on')
-            obj.isActive = true;
+            obj.IsActive = true;
         end
 
         function suspend(obj)
@@ -46,33 +46,33 @@ classdef DataCursor < uim.interface.PointerTool
         function deactivate(obj)
             deactivate@uim.interface.PointerTool(obj)
             set(obj.hCrosshair, 'Visible', 'off')
-            obj.isActive = false;
+            obj.IsActive = false;
         end
 
         function setPointerSymbol(obj)
-            obj.hFigure.Pointer = 'circle';
+            obj.Figure.Pointer = 'circle';
         end
 
         function onButtonDown(obj, ~, ~)
-            obj.isButtonDown = true;
+            obj.IsButtonDown = true;
         end
 
         function onButtonMotion(obj, src, evt)
 
-            currentPoint = obj.hAxes.CurrentPoint(1, 1:2);
+            currentPoint = obj.Axes.CurrentPoint(1, 1:2);
 
             if ~obj.isPointerInsideAxes(currentPoint); return; end
-            if ~obj.isActive; return; end
+            if ~obj.IsActive; return; end
 
             obj.plotCrosshair(currentPoint)
 
-            if ~isempty(obj.buttonMotionCallback)
-            	obj.buttonMotionCallback(src, evt)
+            if ~isempty(obj.ButtonMotionFcn)
+            	obj.ButtonMotionFcn(src, evt)
             end
         end
 
         function onButtonUp(obj, ~, ~)
-            obj.isButtonDown = false;
+            obj.IsButtonDown = false;
         end
 
         function set.cursorColor(obj, newColor)
@@ -85,7 +85,7 @@ classdef DataCursor < uim.interface.PointerTool
 
         function plotCrosshair(obj, center)
 
-            hAx = obj.hAxes;
+            hAx = obj.Axes;
 
             if nargin < 2 && ~obj.isPointerInsideAxes()
                 y0 = mean(hAx.YLim);
@@ -99,10 +99,10 @@ classdef DataCursor < uim.interface.PointerTool
                 y0 = center(2);%+0;
             end
 
-            xdata1 = obj.xLimOrig;
+            xdata1 = obj.XLimOrig;
             ydata1 = ones(size(xdata1))*y0;
 
-            ydata2 = obj.yLimOrig;
+            ydata2 = obj.YLimOrig;
             xdata2 = ones(size(ydata2))*x0;
 
             % Plot Line
@@ -120,7 +120,7 @@ classdef DataCursor < uim.interface.PointerTool
                 set(obj.hCrosshair, 'LineStyle', '--')
                 set(obj.hCrosshair, 'HitTest', 'off', 'PickableParts', 'none')
 
-                obj.hCrosshair(5) = plot(obj.hAxes, x0, y0, '.', 'MarkerSize', 20);
+                obj.hCrosshair(5) = plot(obj.Axes, x0, y0, '.', 'MarkerSize', 20);
                 obj.hCrosshair(5).Color =  obj.cursorColor;
 
             else

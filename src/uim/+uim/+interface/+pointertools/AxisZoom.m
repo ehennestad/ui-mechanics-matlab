@@ -8,22 +8,22 @@ classdef AxisZoom < uim.interface.PointerTool
 %           dimensions)
 
     properties (Constant)
-        exitMode = 'previous';
+        ExitMode = 'previous';
     end
 
     properties
-        xLimOrig
-        yLimOrig
+        XLimOrig
+        YLimOrig
 
-        constrainX = true;
-        constrainY = true;
+        ConstrainX = true;
+        ConstrainY = true;
 
         CurrentAxis = ''
 
-        previousPoint (1,2) double = [nan, nan] % Todo: Should be property of pointermanager, or at least super class...???
-        isButtonDown (1,1) logical = false
+        PreviousPoint (1,2) double = [nan, nan] % Todo: Should be property of pointermanager, or at least super class...???
+        IsButtonDown (1,1) logical = false
 
-        isMouseDown
+        IsMouseDown
         PreviousMouseClickPoint   % Point where mouse was last clicked
         PreviousMousePoint
     end
@@ -32,16 +32,16 @@ classdef AxisZoom < uim.interface.PointerTool
 
         function obj = AxisZoom(hAxes)
             obj@uim.interface.PointerTool(hAxes)
-            obj.xLimOrig = obj.hAxes.XLim;
-            obj.yLimOrig = obj.hAxes.YLim;
+            obj.XLimOrig = obj.Axes.XLim;
+            obj.YLimOrig = obj.Axes.YLim;
         end
 
         function setPointerSymbol(obj)
             switch obj.CurrentAxis
                 case 'y'
-                    obj.hFigure.Pointer = 'top';
+                    obj.Figure.Pointer = 'top';
                 case 'x'
-                    obj.hFigure.Pointer = 'left';
+                    obj.Figure.Pointer = 'left';
                 otherwise
                     % Should be manages elsewhere
             end
@@ -51,13 +51,13 @@ classdef AxisZoom < uim.interface.PointerTool
 
             if evt.Button == 3; return; end
 
-            if strcmp(obj.hFigure.SelectionType, 'normal')
-                obj.isMouseDown = true;
-                obj.PreviousMouseClickPoint = obj.hFigure.CurrentPoint;
-                obj.PreviousMousePoint = obj.hFigure.CurrentPoint;
+            if strcmp(obj.Figure.SelectionType, 'normal')
+                obj.IsMouseDown = true;
+                obj.PreviousMouseClickPoint = obj.Figure.CurrentPoint;
+                obj.PreviousMousePoint = obj.Figure.CurrentPoint;
             end
 
-            obj.isActive = true;
+            obj.IsActive = true;
         end
 
         function onButtonMotion(obj, ~, ~)
@@ -65,16 +65,16 @@ classdef AxisZoom < uim.interface.PointerTool
             persistent isBusy
             if isempty(isBusy); isBusy = false; end
 
-            if obj.isButtonDown
+            if obj.IsButtonDown
                 if isBusy
                     return
                 end
                 isBusy = true;
-                currentPoint = obj.hFigure.CurrentPoint;
-                shift = currentPoint - obj.previousPoint;
+                currentPoint = obj.Figure.CurrentPoint;
+                shift = currentPoint - obj.PreviousPoint;
 
-                if ~isempty(obj.buttonMotionCallback)
-                    obj.buttonMotionCallback(shift)
+                if ~isempty(obj.ButtonMotionFcn)
+                    obj.ButtonMotionFcn(shift)
                 else
                     isBusy = false;
                     error('Not implemented')
@@ -82,35 +82,35 @@ classdef AxisZoom < uim.interface.PointerTool
                     % uim.interface.pointertools.Pan?
                 end
 
-                obj.previousPoint = currentPoint;
+                obj.PreviousPoint = currentPoint;
                 isBusy = false;
             end
         end
 
         function onButtonUp(obj, ~, ~)
-            obj.isMouseDown = false;
+            obj.IsMouseDown = false;
             obj.PreviousMouseClickPoint = [];
-            obj.isActive = false;
+            obj.IsActive = false;
         end
 
         function dragYLimits(obj, location)
 
-            currentPoint = obj.hFigure.CurrentPoint;
+            currentPoint = obj.Figure.CurrentPoint;
 
-            currentYAxisLocation = obj.hAxes.YAxisLocation;
+            currentYAxisLocation = obj.Axes.YAxisLocation;
             switchYAxis = ~strcmp(currentYAxisLocation, location);
 
             if switchYAxis
-                yyaxis(obj.hAxes, location)
+                yyaxis(obj.Axes, location)
             end
 
             deltaY = currentPoint(2) - obj.PreviousMousePoint(2);
-            deltaY = deltaY / obj.hAxes.Position(4);
+            deltaY = deltaY / obj.Axes.Position(4);
 
-            yLimRange = uim.utility.range(obj.hAxes.YLim);
+            yLimRange = uim.utility.range(obj.Axes.YLim);
             yLimDiff = yLimRange .* deltaY;
 
-            newYLim = [obj.hAxes.YLim(1)-yLimDiff, obj.hAxes.YLim(2)+yLimDiff];
+            newYLim = [obj.Axes.YLim(1)-yLimDiff, obj.Axes.YLim(2)+yLimDiff];
             obj.setNewYLims(newYLim)
 
 % %             if switchYAxis % Switch back...
@@ -121,14 +121,14 @@ classdef AxisZoom < uim.interface.PointerTool
 
         function dragXLimits(obj)
 
-            currentPoint = obj.hFigure.CurrentPoint;
+            currentPoint = obj.Figure.CurrentPoint;
             deltaX = currentPoint(1) - obj.PreviousMousePoint(1);
-            deltaX = deltaX / obj.hAxes.Position(3);
+            deltaX = deltaX / obj.Axes.Position(3);
 
-            xLimRange = uim.utility.range(obj.hAxes.XLim);
+            xLimRange = uim.utility.range(obj.Axes.XLim);
             xLimDiff = xLimRange .* deltaX;
 
-            newXLim = [obj.hAxes.XLim(1)-xLimDiff, obj.hAxes.XLim(2)+xLimDiff];
+            newXLim = [obj.Axes.XLim(1)-xLimDiff, obj.Axes.XLim(2)+xLimDiff];
             obj.setNewXLims(newXLim)
         end
     end
@@ -138,19 +138,19 @@ classdef AxisZoom < uim.interface.PointerTool
         function setNewXLims(obj, newLimits)
         % setNewXLims Set axes XLim, clamped to the original limits
 
-            newLimits(1) = max([obj.xLimOrig(1), newLimits(1)]);
-            newLimits(2) = min([obj.xLimOrig(2), newLimits(2)]);
+            newLimits(1) = max([obj.XLimOrig(1), newLimits(1)]);
+            newLimits(2) = min([obj.XLimOrig(2), newLimits(2)]);
 
-            set(obj.hAxes, 'XLim', newLimits);
+            set(obj.Axes, 'XLim', newLimits);
         end
 
         function setNewYLims(obj, newLimits)
         % setNewYLims Set axes YLim, clamped to the original limits
 
-            newLimits(1) = max([obj.yLimOrig(1), newLimits(1)]);
-            newLimits(2) = min([obj.yLimOrig(2), newLimits(2)]);
+            newLimits(1) = max([obj.YLimOrig(1), newLimits(1)]);
+            newLimits(2) = min([obj.YLimOrig(2), newLimits(2)]);
 
-            set(obj.hAxes, 'YLim', newLimits);
+            set(obj.Axes, 'YLim', newLimits);
         end
     end
 end

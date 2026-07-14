@@ -43,7 +43,7 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyEqual(slider.Low, 2);
             testCase.verifyEqual(slider.High, 8);
             testCase.verifyEqual(pages.CurrentPage, 1);
-            testCase.verifyEqual(numel(fieldnames(pointerManager.pointers)), 4);
+            testCase.verifyEqual(numel(fieldnames(pointerManager.Pointers)), 4);
         end
 
         function axesControlsRunInUiFigure(testCase)
@@ -96,8 +96,8 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 "Position", [50, 50, 300, 200], "XLim", [0, 10], "YLim", [0, 5]);
 
             pointerTool = uim.interface.pointertools.AxisZoom(hAxes);
-            testCase.verifyEqual(pointerTool.xLimOrig, [0, 10]);
-            testCase.verifyEqual(pointerTool.yLimOrig, [0, 5]);
+            testCase.verifyEqual(pointerTool.XLimOrig, [0, 10]);
+            testCase.verifyEqual(pointerTool.YLimOrig, [0, 5]);
 
             % Dragging right from a zoomed-in view widens XLim (zoom out).
             hAxes.XLim = [3, 7];
