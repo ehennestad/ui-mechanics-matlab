@@ -446,7 +446,7 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 
     end
 
-    methods % Update position / size / appearance
+    methods (Access = protected) % Update position / size / appearance
 
         function redraw(obj)
             if obj.IsConstructed
@@ -772,6 +772,9 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
             pos = obj.Position;
             pos(1:2) = pos(1:2) + parentPos(1:2);
         end
+    end
+
+    methods (Hidden) % Wrappers for placing matlab components (shadow builtins)
 
         function h = uicontrol(obj, varargin)
             hContainer = obj.getGraphicsContainer();

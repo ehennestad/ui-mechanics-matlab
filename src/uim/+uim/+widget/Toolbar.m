@@ -52,8 +52,14 @@ classdef Toolbar < uim.abstract.Container
 
     properties (Access = public)
         NewButtonSize double = 25; % Size of new buttons in pixels (default=40)
+    end
+
+    properties (Access = protected)
         NextButtonPosition (1,4) double = zeros(1,4) % Position (x,y) of next button
         AllButtonPosition = zeros(0,4) % for faster repositioning
+    end
+
+    properties (SetAccess = protected)
         NumButtons (1,1) double = 0
     end
 
@@ -172,6 +178,9 @@ classdef Toolbar < uim.abstract.Container
             ind = contains(tags, tagValue);
             h = obj.Buttons(ind);
         end
+    end
+
+    methods (Access = protected)
 
         function relocate(obj, shift)
             relocate@uim.abstract.Component(obj, shift)

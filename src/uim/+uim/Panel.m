@@ -8,8 +8,8 @@ classdef Panel < uim.abstract.Container
         Children uim.abstract.Component
     end
 
-    properties
-        hPanel = []
+    properties (Access = private)
+        PanelHandle = []
     end
 
     methods % Structors
@@ -21,19 +21,19 @@ classdef Panel < uim.abstract.Container
 
     methods (Access = protected)
         function createBackground(obj)
-            obj.hPanel = uipanel(obj.Parent);
-            obj.hPanel.BorderType = 'none';
-            obj.hPanel.Units = 'pixel';
+            obj.PanelHandle = uipanel(obj.Parent);
+            obj.PanelHandle.BorderType = 'none';
+            obj.PanelHandle.Units = 'pixel';
         end
     end
 
-    methods
+    methods (Access = protected)
         function updateSize(obj, mode)
             if nargin < 2; mode = obj.PositionMode; end
 
             updateSize@uim.abstract.Component(obj, mode)
-            if ~isequal(obj.hPanel.Position, obj.Position)
-                obj.hPanel.Position = obj.Position;
+            if ~isequal(obj.PanelHandle.Position, obj.Position)
+                obj.PanelHandle.Position = obj.Position;
             end
         end
 
@@ -41,8 +41,8 @@ classdef Panel < uim.abstract.Container
             if nargin < 2; mode = obj.PositionMode; end
 
             updateLocation@uim.abstract.Component(obj, mode)
-            if ~isequal(obj.hPanel.Position, obj.Position)
-                obj.hPanel.Position = obj.Position;
+            if ~isequal(obj.PanelHandle.Position, obj.Position)
+                obj.PanelHandle.Position = obj.Position;
             end
         end
     end
@@ -50,18 +50,18 @@ classdef Panel < uim.abstract.Container
     methods (Access = protected)
         function onStyleChanged(obj)
             if obj.IsConstructed
-                obj.hPanel.BackgroundColor = obj.BackgroundColor;
+                obj.PanelHandle.BackgroundColor = obj.BackgroundColor;
             end
         end
 
         function onVisibleChanged(obj, newValue)
-            obj.hPanel.Visible = newValue;
+            obj.PanelHandle.Visible = newValue;
         end
     end
 
     methods
         function hContainer = getGraphicsContainer(obj)
-            hContainer = obj.hPanel;
+            hContainer = obj.PanelHandle;
         end
     end
 end

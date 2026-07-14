@@ -14,7 +14,7 @@ classdef Box < uim.abstract.Control
         end
     end
 
-    methods
+    methods (Access = protected)
         function updateSize(obj, mode)
             if nargin < 2; mode = obj.PositionMode; end
             updateSize@uim.abstract.Component(obj, mode)

@@ -258,6 +258,29 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         end
     end
 
+    methods (Access = protected)
+
+        function updateLocation(obj, mode)
+            if ~obj.IsConstructed; return; end
+
+            if nargin < 2; mode = obj.PositionMode; end
+            updateLocation@uim.abstract.Component(obj, mode)
+            obj.plotTrack()
+            obj.plotKnobs()
+            obj.plotText()
+            obj.plotLabel()
+        end
+
+        function updateSize(obj, mode)
+            if ~obj.IsConstructed; return; end
+
+            if nargin < 2; mode = obj.PositionMode; end
+            updateSize@uim.abstract.Component(obj, mode)
+            obj.plotTrack()
+            obj.plotKnobs()
+        end
+    end
+
     methods (Access = private) % Internal updating
 
         function [xCoords, yCoords] = getTextCoordinates(obj, whichKnob)
@@ -482,26 +505,6 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
                 evtData = struct('Low', obj.Low, 'High', obj.High);
                 obj.Callback(obj, evtData)
             end
-        end
-
-        function updateLocation(obj, mode)
-            if ~obj.IsConstructed; return; end
-
-            if nargin < 2; mode = obj.PositionMode; end
-            updateLocation@uim.abstract.Component(obj, mode)
-            obj.plotTrack()
-            obj.plotKnobs()
-            obj.plotText()
-            obj.plotLabel()
-        end
-
-        function updateSize(obj, mode)
-            if ~obj.IsConstructed; return; end
-
-            if nargin < 2; mode = obj.PositionMode; end
-            updateSize@uim.abstract.Component(obj, mode)
-            obj.plotTrack()
-            obj.plotKnobs()
         end
 
         function onValueChanging(obj, newValue, whichValue)

@@ -1,5 +1,5 @@
 classdef Line < uim.abstract.Control
-%Separator A decorator for separating groups of controls in a widget.
+%Line A decorator for drawing a plain line in a widget.
 
     % Todo:
     %   [ ] Should there be a list of allowed parents?
@@ -22,7 +22,7 @@ classdef Line < uim.abstract.Control
     end
 
     properties (Access = protected, Transient)
-        hLine
+        LineHandle
     end
 
     methods
@@ -55,7 +55,7 @@ classdef Line < uim.abstract.Control
             h.Color = obj.Color;
             h.LineWidth = obj.LineWidth;
 
-            obj.hLine = h;
+            obj.LineHandle = h;
         end
 
         function [X, Y] = getPlotData(obj)
@@ -73,23 +73,21 @@ classdef Line < uim.abstract.Control
         end
     end
 
-    methods
+    methods (Access = protected)
         function relocate(obj, ~)
             if obj.IsConstructed
                 [X, Y] = obj.getPlotData();
-                set(obj.hLine, 'XData', X, 'YData', Y)
+                set(obj.LineHandle, 'XData', X, 'YData', Y)
             end
         end
 
         function resize(obj)
             if obj.IsConstructed
                 [X, Y] = obj.getPlotData();
-                set(obj.hLine, 'XData', X, 'YData', Y)
+                set(obj.LineHandle, 'XData', X, 'YData', Y)
             end
         end
-    end
 
-    methods
         function updateLocation(obj, ~)
             if obj.IsConstructed
             end
@@ -100,9 +98,9 @@ classdef Line < uim.abstract.Control
         function onVisibleChanged(obj, ~)
             switch obj.Visible
                 case 'on'
-                    obj.hLine.Visible = 'on';
+                    obj.LineHandle.Visible = 'on';
                 case 'off'
-                    obj.hLine.Visible = 'off';
+                    obj.LineHandle.Visible = 'off';
             end
         end
     end

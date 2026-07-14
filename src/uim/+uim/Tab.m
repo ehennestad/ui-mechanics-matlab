@@ -56,7 +56,7 @@ classdef Tab < uim.Handle & uim.mixin.NameValueAssignable
 
     methods % Wrappers for placing matlab components
         function hContainer = getGraphicsContainer(obj)
-            hContainer = obj.Panel.hPanel;
+            hContainer = obj.Panel.getGraphicsContainer();
         end
     end
 end

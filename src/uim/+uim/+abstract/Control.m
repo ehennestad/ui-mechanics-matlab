@@ -57,7 +57,7 @@ classdef Control < uim.abstract.Component
         end
     end
 
-    methods
+    methods (Access = protected)
 
         function relocate(obj, shift)
             relocate@uim.abstract.Component(obj, shift)

@@ -14,7 +14,7 @@ classdef Image < uim.abstract.Component
     end
 
     properties (Access = private)
-        hImage
+        ImageHandle
     end
 
     properties (Transient, Dependent)
@@ -38,8 +38,8 @@ classdef Image < uim.abstract.Component
         end
 
         function delete(obj)
-            if ~isempty(obj.hImage) && isvalid(obj.hImage)
-                delete(obj.hImage)
+            if ~isempty(obj.ImageHandle) && isvalid(obj.ImageHandle)
+                delete(obj.ImageHandle)
             end
         end
     end
@@ -70,7 +70,7 @@ classdef Image < uim.abstract.Component
         end
     end
 
-    methods
+    methods (Access = protected)
         function resize(obj)
             resize@uim.abstract.Component(obj)
             obj.setImagePosition()
@@ -79,8 +79,8 @@ classdef Image < uim.abstract.Component
         function relocate(obj, shift)
             relocate@uim.abstract.Component(obj, shift)
 
-            obj.hImage.XData = obj.hImage.XData + shift(1);
-            obj.hImage.YData = obj.hImage.YData + shift(2);
+            obj.ImageHandle.XData = obj.ImageHandle.XData + shift(1);
+            obj.ImageHandle.YData = obj.ImageHandle.YData + shift(2);
         end
     end
 
@@ -90,15 +90,15 @@ classdef Image < uim.abstract.Component
             if ~obj.IsConstructed; return; end
 
             % Set visibility of graphics components.
-            obj.hImage.Visible =  obj.Visible;
+            obj.ImageHandle.Visible =  obj.Visible;
         end
 
         function onAlphaSet(obj)
 
             if ~obj.IsConstructed; return; end
-            if isempty(obj.hImage); return; end
+            if isempty(obj.ImageHandle); return; end
 
-            obj.hImage.AlphaData = obj.Alpha;
+            obj.ImageHandle.AlphaData = obj.Alpha;
         end
     end
 
@@ -107,16 +107,16 @@ classdef Image < uim.abstract.Component
         function plotImage(obj)
             if ~obj.IsConstructed; return; end
 
-            if ~isempty(obj.hImage)
-                delete(obj.hImage)
-                obj.hImage=[];
+            if ~isempty(obj.ImageHandle)
+                delete(obj.ImageHandle)
+                obj.ImageHandle=[];
             end
 
-            obj.hImage = image(obj.CanvasAxes, 'CData', obj.CData);
-            obj.hImage.AlphaData = obj.Alpha;
+            obj.ImageHandle = image(obj.CanvasAxes, 'CData', obj.CData);
+            obj.ImageHandle.AlphaData = obj.Alpha;
 
-            obj.hImage.HitTest = 'off';
-            obj.hImage.PickableParts = 'none';
+            obj.ImageHandle.HitTest = 'off';
+            obj.ImageHandle.PickableParts = 'none';
 
             obj.setImagePosition()
         end
@@ -136,8 +136,8 @@ classdef Image < uim.abstract.Component
             xPos = obj.Position(1) + [0, imSize(1)];
             yPos = obj.Position(2) + [0, imSize(2)];
 
-            obj.hImage.XData = xPos;
-            obj.hImage.YData = yPos;
+            obj.ImageHandle.XData = xPos;
+            obj.ImageHandle.YData = yPos;
         end
     end
 end

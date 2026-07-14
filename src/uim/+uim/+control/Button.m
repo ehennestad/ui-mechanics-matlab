@@ -510,6 +510,20 @@ classdef Button < uim.abstract.Control
            obj.ToggleButtonListener = el;
         end
 
+        function toggleState(obj, ~, event)
+        %toggleState Toggle the state (value) of the button.
+
+        % Todo: make sure mechanical action is switch type...
+
+            if obj.Value ~= event.Value
+                obj.Value = event.Value;
+                obj.changeAppearance()
+            end
+        end
+    end
+
+    methods (Access = protected)
+
         function relocate(obj, shift)
             relocate@uim.abstract.Component(obj, shift)
 
@@ -526,17 +540,6 @@ classdef Button < uim.abstract.Control
             end
 
             obj.setTooltipPosition()
-        end
-
-        function toggleState(obj, ~, event)
-        %toggleState Toggle the state (value) of the button.
-
-        % Todo: make sure mechanical action is switch type...
-
-            if obj.Value ~= event.Value
-                obj.Value = event.Value;
-                obj.changeAppearance()
-            end
         end
     end
 

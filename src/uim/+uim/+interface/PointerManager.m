@@ -136,10 +136,19 @@ classdef PointerManager < handle
         end
     end
 
-    methods
+    methods (Hidden)
 
         function onFigureChanged(obj)
         end
+
+        function updatePointerSymbol(obj)
+            if ~isempty(obj.CurrentPointerTool)
+                obj.CurrentPointerTool.setPointerSymbol()
+            end
+        end
+    end
+
+    methods
 
         function initializePointers(obj, hAxes, pointerRef)
 
@@ -159,76 +168,6 @@ classdef PointerManager < handle
                     thisPointerName = [lower(thisPointerName(1)), thisPointerName(2:end)];
                 end
                 obj.Pointers.(thisPointerName) = thisPointerRef(hAxes);
-            end
-        end
-
-        function updatePointerSymbol(obj)
-            if ~isempty(obj.CurrentPointerTool)
-                obj.CurrentPointerTool.setPointerSymbol()
-            end
-        end
-
-        function onButtonDown(obj, src, event)
-
-            % Todo: rename onButtonDownInAxes
-
-            % 1) Call default axes button down callback
-%             if ~isempty(obj.OriginalAxesButtonDownFcn)
-%                 obj.OriginalAxesButtonDownFcn(src, event)
-%             end
-
-            % 2) Call active pointer tool
-            if obj.isCursorInsideAxes(obj.Axes)
-                if ~isempty(obj.CurrentPointerTool)
-                    obj.MouseDownPointerTool = obj.CurrentPointerTool;
-                    try
-                        obj.MouseDownPointerTool.onButtonDown(src, event)
-                    catch ME
-                        obj.MouseDownPointerTool = [];
-                        rethrow(ME)
-                    end
-                end
-            end
-        end
-
-        function onButtonMotion(obj, src, event)
-
-            pointerTool = obj.getMouseEventPointerTool();
-            if isempty(pointerTool); return; end
-            tf = obj.isCursorInsideAxes(obj.Axes);
-
-            % Change cursor symbol when pointer enters or leaves axes
-            if tf && ~obj.WasCursorInAxes % Entered axes
-                pointerTool.setPointerSymbol()
-                pointerTool.onPointerEnteredAxes()
-            elseif ~tf && obj.WasCursorInAxes % Left axes
-                set(obj.Figure, 'Pointer', 'arrow');
-                pointerTool.onPointerExitedAxes()
-            end
-
-            % Create extended eventdata containing mousepoint coordinates?
-
-            % Keep sending motion events to the mouse-down owner. This lets
-            % tools such as zoom/pan continue after a valid press even if
-            % the cursor leaves the axes.
-            pointerTool.onButtonMotion(src, event)
-
-            if tf
-                obj.WasCursorInAxes = true;
-            else
-                obj.WasCursorInAxes = false;
-            end
-
-            %drawnow limitrate
-        end
-
-        function onButtonRelease(obj, src, event)
-
-            % Redirect to callback of active pointer tool
-            pointerTool = obj.getMouseEventPointerTool();
-            if ~isempty(pointerTool)
-                cleanupObj = onCleanup(@() obj.resetMouseDownPointerTool());
-                pointerTool.onButtonUp(src, event)
             end
         end
 
@@ -355,6 +294,73 @@ classdef PointerManager < handle
                 obj.Figure.Pointer = 'arrow';
             end
         end
+    end
+
+    methods (Access = private)
+
+        function onButtonDown(obj, src, event)
+
+            % Todo: rename onButtonDownInAxes
+
+            % 1) Call default axes button down callback
+%             if ~isempty(obj.OriginalAxesButtonDownFcn)
+%                 obj.OriginalAxesButtonDownFcn(src, event)
+%             end
+
+            % 2) Call active pointer tool
+            if obj.isCursorInsideAxes(obj.Axes)
+                if ~isempty(obj.CurrentPointerTool)
+                    obj.MouseDownPointerTool = obj.CurrentPointerTool;
+                    try
+                        obj.MouseDownPointerTool.onButtonDown(src, event)
+                    catch ME
+                        obj.MouseDownPointerTool = [];
+                        rethrow(ME)
+                    end
+                end
+            end
+        end
+
+        function onButtonMotion(obj, src, event)
+
+            pointerTool = obj.getMouseEventPointerTool();
+            if isempty(pointerTool); return; end
+            tf = obj.isCursorInsideAxes(obj.Axes);
+
+            % Change cursor symbol when pointer enters or leaves axes
+            if tf && ~obj.WasCursorInAxes % Entered axes
+                pointerTool.setPointerSymbol()
+                pointerTool.onPointerEnteredAxes()
+            elseif ~tf && obj.WasCursorInAxes % Left axes
+                set(obj.Figure, 'Pointer', 'arrow');
+                pointerTool.onPointerExitedAxes()
+            end
+
+            % Create extended eventdata containing mousepoint coordinates?
+
+            % Keep sending motion events to the mouse-down owner. This lets
+            % tools such as zoom/pan continue after a valid press even if
+            % the cursor leaves the axes.
+            pointerTool.onButtonMotion(src, event)
+
+            if tf
+                obj.WasCursorInAxes = true;
+            else
+                obj.WasCursorInAxes = false;
+            end
+
+            %drawnow limitrate
+        end
+
+        function onButtonRelease(obj, src, event)
+
+            % Redirect to callback of active pointer tool
+            pointerTool = obj.getMouseEventPointerTool();
+            if ~isempty(pointerTool)
+                cleanupObj = onCleanup(@() obj.resetMouseDownPointerTool());
+                pointerTool.onButtonUp(src, event)
+            end
+        end
 
         function tf = isCursorInsideAxes(~, hAx)
 
@@ -368,10 +374,6 @@ classdef PointerManager < handle
             % Check if mousepoint is within axes limits.
             tf = ~any(any(diff([axLim(1:2); currentPoint; axLim(3:4)]) < 0));
         end
-
-    end
-
-    methods (Access = private)
 
         function pointerTool = getMouseEventPointerTool(obj)
             if ~isempty(obj.MouseDownPointerTool)

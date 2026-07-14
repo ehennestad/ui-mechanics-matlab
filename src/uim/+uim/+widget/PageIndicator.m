@@ -217,14 +217,6 @@ classdef PageIndicator < uim.abstract.Control
         function restyle(obj)
         end
 
-        function redraw(obj)
-        end
-
-        function relocate(obj, shift)
-            relocate@uim.abstract.Control(obj, shift)
-            obj.shiftComponents(shift)
-        end
-
         function updateBarVisibility(obj)
 
             if strcmp(obj.BarVisibility, 'off')
@@ -342,6 +334,14 @@ classdef PageIndicator < uim.abstract.Control
 
     methods (Access = protected)
         function onStyleChanged(obj)
+        end
+
+        function redraw(obj)
+        end
+
+        function relocate(obj, shift)
+            relocate@uim.abstract.Control(obj, shift)
+            obj.shiftComponents(shift)
         end
     end
 

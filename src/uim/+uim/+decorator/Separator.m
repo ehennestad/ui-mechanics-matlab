@@ -18,7 +18,7 @@ classdef Separator < uim.abstract.Control
     end
 
     properties (Access = protected, Transient)
-        hSeparator
+        SeparatorHandle
     end
 
     methods
@@ -50,7 +50,7 @@ classdef Separator < uim.abstract.Control
             h.Color = obj.Color;
             h.LineWidth = obj.LineWidth;
 
-            obj.hSeparator = h;
+            obj.SeparatorHandle = h;
         end
 
         function [X, Y] = getPlotData(obj)
@@ -69,23 +69,21 @@ classdef Separator < uim.abstract.Control
         end
     end
 
-    methods
+    methods (Access = protected)
         function relocate(obj, ~)
             if obj.IsConstructed
                 [X, Y] = obj.getPlotData();
-                set(obj.hSeparator, 'XData', X, 'YData', Y)
+                set(obj.SeparatorHandle, 'XData', X, 'YData', Y)
             end
         end
 
         function resize(obj)
             if obj.IsConstructed
                 [X, Y] = obj.getPlotData();
-                set(obj.hSeparator, 'XData', X, 'YData', Y)
+                set(obj.SeparatorHandle, 'XData', X, 'YData', Y)
             end
         end
-    end
 
-    methods
         function updateLocation(obj, ~)
             if obj.IsConstructed
             end
@@ -96,9 +94,9 @@ classdef Separator < uim.abstract.Control
         function onVisibleChanged(obj, ~)
             switch obj.Visible
                 case 'on'
-                    obj.hSeparator.Visible = 'on';
+                    obj.SeparatorHandle.Visible = 'on';
                 case 'off'
-                    obj.hSeparator.Visible = 'off';
+                    obj.SeparatorHandle.Visible = 'off';
             end
         end
     end
