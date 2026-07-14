@@ -48,7 +48,7 @@ classdef UIComponentCanvas < handle
         Parent matlab.graphics.Graphics             % Parent handle (figure/uifigure)
         Axes matlab.graphics.axis.Axes               % Handle to the axes which components are plotted in
         Children uim.abstract.Component % Flat list of all components drawn on this canvas
-        Tag (1,:) char = 'UI Component Canvas' % A tag which is also applied to the axes.
+        Tag (1,1) string = "UI Component Canvas" % A tag which is also applied to the axes.
     end
 
     properties (Dependent, Transient)
@@ -75,7 +75,7 @@ classdef UIComponentCanvas < handle
 
             arguments
                 hParent (1,1) matlab.graphics.Graphics = figure()
-                options.Tag (1,:) char = 'UI Component Canvas'
+                options.Tag (1,1) string = "UI Component Canvas"
             end
 
             obj.Tag = options.Tag;

@@ -257,7 +257,7 @@ classdef TestCoreComponents < matlab.unittest.TestCase
 
             canvas = uim.UIComponentCanvas(hFigure, "Tag", "My Canvas");
 
-            testCase.verifyEqual(canvas.Tag, 'My Canvas');
+            testCase.verifyEqual(canvas.Tag, "My Canvas");
             testCase.verifyEqual(canvas.Axes.Tag, 'My Canvas Axes');
         end
 
