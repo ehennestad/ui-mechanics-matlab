@@ -53,11 +53,11 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
     end
 
     properties (Access = private)
-        hTrack
-        hSliderKnob
-        hText
-        hTicks
-        hLabel
+        Track
+        Knob
+        ValueLabel
+        Ticks
+        LabelHandle
 
         IsKnobPressed = false
 
@@ -82,9 +82,9 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         end
 
         function delete(obj)
-            delete(obj.hTrack)
-            delete(obj.hSliderKnob)
-            delete(obj.hText)
+            delete(obj.Track)
+            delete(obj.Knob)
+            delete(obj.ValueLabel)
         end
     end
 
@@ -104,20 +104,20 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             %obj.plotTicks()
 
             % Set visibility of subcomponents.
-            obj.hTrack.Visible = obj.Visible;
-            set(obj.hSliderKnob, 'Visible', obj.Visible);
+            obj.Track.Visible = obj.Visible;
+            set(obj.Knob, 'Visible', obj.Visible);
         end
 
         function plotLabel(obj)
 
             [xCoords, yCoords] = obj.getTrackCoordinates();
 
-            if isempty(obj.hLabel)
-                obj.hLabel = text(obj.Canvas.Axes, 1, 1, obj.Label);
-                obj.hLabel.Color = obj.TextColor;
-                obj.hLabel.HitTest = 'off';
-                obj.hLabel.PickableParts = 'none';
-                obj.hLabel.Visible = obj.Visible;
+            if isempty(obj.LabelHandle)
+                obj.LabelHandle = text(obj.Canvas.Axes, 1, 1, obj.Label);
+                obj.LabelHandle.Color = obj.TextColor;
+                obj.LabelHandle.HitTest = 'off';
+                obj.LabelHandle.PickableParts = 'none';
+                obj.LabelHandle.Visible = obj.Visible;
             end
 
             switch obj.LabelLocation
@@ -143,9 +143,9 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
                     vAlign = 'top';
             end
 
-            obj.hLabel.Position(1:2) = [x, y];
-            obj.hLabel.HorizontalAlignment = hAlign;
-            obj.hLabel.VerticalAlignment = vAlign;
+            obj.LabelHandle.Position(1:2) = [x, y];
+            obj.LabelHandle.HorizontalAlignment = hAlign;
+            obj.LabelHandle.VerticalAlignment = vAlign;
         end
 
         function plotTrack(obj)
@@ -153,19 +153,19 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             % Plot the track as a line
             [xCoords, yCoords] = obj.getTrackCoordinates();
 
-            if isempty(obj.hTrack)
-                obj.hTrack = plot(obj.Canvas.Axes, xCoords, yCoords);
+            if isempty(obj.Track)
+                obj.Track = plot(obj.Canvas.Axes, xCoords, yCoords);
 
-                obj.hTrack.LineWidth = obj.TrackWidth;
-                obj.hTrack.HitTest = 'on';
-                obj.hTrack.PickableParts = 'visible';
-                obj.hTrack.Color = obj.TrackColor;
-                obj.hTrack.Tag = 'Range Slider Track';
+                obj.Track.LineWidth = obj.TrackWidth;
+                obj.Track.HitTest = 'on';
+                obj.Track.PickableParts = 'visible';
+                obj.Track.Color = obj.TrackColor;
+                obj.Track.Tag = 'Range Slider Track';
 
                 obj.Background.ButtonDownFcn = @(src, event) obj.onSliderMoved(src);
-                obj.hTrack.ButtonDownFcn = @(src, event) obj.onSliderMoved(src);
+                obj.Track.ButtonDownFcn = @(src, event) obj.onSliderMoved(src);
             else
-                set(obj.hTrack, 'XData', xCoords, 'YData', yCoords)
+                set(obj.Track, 'XData', xCoords, 'YData', yCoords)
             end
         end
 
@@ -184,7 +184,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
             y = repmat([y1;y2;nan], 1, numTicks);
 
-            obj.hTicks = plot(obj.Canvas.Axes,x,y, obj.TrackColor);
+            obj.Ticks = plot(obj.Canvas.Axes,x,y, obj.TrackColor);
         end
 
         function plotKnobs(obj)
@@ -193,28 +193,28 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             [xCoordsLow, yCoordsLow] = obj.getKnobCoordinates('low');
             [xCoordsHigh, yCoordsHigh] = obj.getKnobCoordinates('high');
 
-            if isempty(obj.hSliderKnob)
+            if isempty(obj.Knob)
                 h1 = patch(obj.Canvas.Axes, xCoordsLow, yCoordsLow, 'k');
                 h2 = patch(obj.Canvas.Axes, xCoordsHigh, yCoordsHigh, 'k');
 
                 h1.Tag = 'Range Slider Low';
                 h2.Tag = 'Range Slider High';
 
-                obj.hSliderKnob = [h1, h2];
+                obj.Knob = [h1, h2];
 
-                set(obj.hSliderKnob, 'LineWidth', 1)
-                set(obj.hSliderKnob, 'Clipping', 'off')
+                set(obj.Knob, 'LineWidth', 1)
+                set(obj.Knob, 'Clipping', 'off')
 
-                set(obj.hSliderKnob, 'FaceColor', obj.KnobFaceColorInactive)
-                set(obj.hSliderKnob, 'EdgeColor', obj.KnobEdgeColorInactive)
-                set(obj.hSliderKnob, 'ButtonDownFcn', @obj.onSliderKnobPressed);
+                set(obj.Knob, 'FaceColor', obj.KnobFaceColorInactive)
+                set(obj.Knob, 'EdgeColor', obj.KnobEdgeColorInactive)
+                set(obj.Knob, 'ButtonDownFcn', @obj.onSliderKnobPressed);
 
-                setPointerBehavior(obj, obj.hSliderKnob(1))
-                setPointerBehavior(obj, obj.hSliderKnob(2))
+                setPointerBehavior(obj, obj.Knob(1))
+                setPointerBehavior(obj, obj.Knob(2))
 
             else
-                set(obj.hSliderKnob(1), 'XData', xCoordsLow, 'YData', yCoordsLow)
-                set(obj.hSliderKnob(2), 'XData', xCoordsHigh, 'YData', yCoordsHigh)
+                set(obj.Knob(1), 'XData', xCoordsLow, 'YData', yCoordsLow)
+                set(obj.Knob(2), 'XData', xCoordsHigh, 'YData', yCoordsHigh)
             end
         end
 
@@ -226,14 +226,14 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
             [xCoords, yCoords] = obj.getTextCoordinates(whichSlider);
 
-            if isempty(obj.hText)
-                obj.hText = text(obj.CanvasAxes, xCoords, yCoords, '');
-                obj.hText.VerticalAlignment = 'Bottom';
-                obj.hText.HorizontalAlignment = 'left';
-                obj.hText.Color = obj.TextColor;
-                obj.hText.Visible = 'off';
+            if isempty(obj.ValueLabel)
+                obj.ValueLabel = text(obj.CanvasAxes, xCoords, yCoords, '');
+                obj.ValueLabel.VerticalAlignment = 'Bottom';
+                obj.ValueLabel.HorizontalAlignment = 'left';
+                obj.ValueLabel.Color = obj.TextColor;
+                obj.ValueLabel.Visible = 'off';
             else
-                obj.hText.Position(1:2) = [xCoords, yCoords];
+                obj.ValueLabel.Position(1:2) = [xCoords, yCoords];
             end
         end
     end
@@ -245,9 +245,9 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             if ~obj.IsConstructed; return; end
 
             % Set visibility of subcomponents.
-            obj.hTrack.Visible = obj.Visible;
-            set(obj.hSliderKnob, 'Visible', obj.Visible);
-            obj.hLabel.Visible = obj.Visible;
+            obj.Track.Visible = obj.Visible;
+            set(obj.Knob, 'Visible', obj.Visible);
+            obj.LabelHandle.Visible = obj.Visible;
 
             switch obj.Visible
                 case 'on'
@@ -344,7 +344,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
         function updateValuetipString(obj, whichKnob)
             [xCoords, ~] = obj.getTextCoordinates(whichKnob);
-            obj.hText.Position(1) = xCoords;
+            obj.ValueLabel.Position(1) = xCoords;
 
             switch whichKnob
                 case 'low'
@@ -354,9 +354,9 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             end
 
             if mod(obj.StepSize, 1) < 1e-6
-                obj.hText.String = num2str(value, '%.d');
+                obj.ValueLabel.String = num2str(value, '%.d');
             else
-                obj.hText.String = num2str(value, '%.2f');
+                obj.ValueLabel.String = num2str(value, '%.2f');
             end
         end
 
@@ -397,11 +397,11 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             end
 
             % todo: use button scheme for changing this
-            obj.hSliderKnob(ind).FaceColor = obj.KnobFaceColorActive;
-            obj.hSliderKnob(ind).EdgeColor = obj.KnobEdgeColorActive;
+            obj.Knob(ind).FaceColor = obj.KnobFaceColorActive;
+            obj.Knob(ind).EdgeColor = obj.KnobEdgeColorActive;
 
             if obj.ShowLabel
-                obj.hText.Visible = 'on';
+                obj.ValueLabel.Visible = 'on';
             end
         end
 
@@ -471,11 +471,11 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             end
 
             % todo: use button scheme for changing this
-            obj.hSliderKnob(ind).FaceColor = obj.KnobFaceColorInactive;
-            obj.hSliderKnob(ind).EdgeColor = obj.KnobEdgeColorInactive;
+            obj.Knob(ind).FaceColor = obj.KnobFaceColorInactive;
+            obj.Knob(ind).EdgeColor = obj.KnobEdgeColorInactive;
 
             if obj.ShowLabel
-                obj.hText.Visible = 'off';
+                obj.ValueLabel.Visible = 'off';
             end
 
             if ~isempty(obj.Callback)

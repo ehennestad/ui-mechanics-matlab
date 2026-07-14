@@ -44,20 +44,20 @@ classdef ScrollBar < uim.Handle
     end % /properties
 
     properties (Access = private)
-        hParent
-        hScrollbarAxes
-        hScrollbar
-        figureCallbackStore
-        isInitialized = false
+        Parent
+        Axes
+        Bar
+        FigureCallbackStore
+        IsInitialized = false
 
-        scrollHistory = zeros(5,1)
-        moveStartPosition = [];
-        barInitialCoords = [];
+        ScrollHistory = zeros(5,1)
+        MoveStartPosition = [];
+        BarInitialCoords = [];
 
-        isCursorOnTrack = false
-        isCursorOnBar = false
+        IsCursorOnTrack = false
+        IsCursorOnBar = false
 
-        isTrackVisible = false;
+        IsTrackVisible = false;
         ParentSizeChangedListener event.listener
 
         CallbacksEnabled = true
@@ -66,16 +66,16 @@ classdef ScrollBar < uim.Handle
     end % /properties (private)
 
     properties (Dependent, Access = private)
-        barPosition
+        BarPosition
     end
 
     methods
 
         function obj = ScrollBar(parentContainer, varargin)
-        %scrollerBar Create a scrollerbar in a specified panel.
+        %ScrollBar Create a scrollerbar in a specified panel.
 
             % make assertions, e.g. check that its a valid figure/panel.
-            obj.hParent = parentContainer;
+            obj.Parent = parentContainer;
 
             % Assign name value pairs to object.
             for i = 1:2:numel(varargin)
@@ -85,10 +85,10 @@ classdef ScrollBar < uim.Handle
             obj.createScrollbar;
             obj.setPointerBehavior()
 
-            obj.ParentSizeChangedListener = listener(obj.hParent, ...
+            obj.ParentSizeChangedListener = listener(obj.Parent, ...
                 'SizeChanged', @(s, e) obj.updateBarLength);
 
-            obj.isInitialized = true;
+            obj.IsInitialized = true;
             obj.redraw()
 
             % Unwrap varargin
@@ -99,7 +99,7 @@ classdef ScrollBar < uim.Handle
             % track
             % chamfer...
 
-        end % /scrollerBar
+        end % /ScrollBar
 
         function delete(obj)
             if isvalid(obj.ParentSizeChangedListener)
@@ -171,34 +171,34 @@ classdef ScrollBar < uim.Handle
 
         function showTrack(obj)
         %showTrack Show the track which the scrollbar slides on top.
-            obj.hScrollbar(1).Visible = 'on';
-            obj.isTrackVisible = true;
+            obj.Bar(1).Visible = 'on';
+            obj.IsTrackVisible = true;
         end % /showTrack
 
         function hideTrack(obj)
         %hideTrack Hide the track which the scrollbar slides on top.
-            obj.hScrollbar(1).Visible = 'off';
-            obj.isTrackVisible = false;
+            obj.Bar(1).Visible = 'off';
+            obj.IsTrackVisible = false;
         end % /hideTrack
 
         function show(obj)
             if obj.VisibleAmount < obj.Maximum
-                if obj.isTrackVisible
-                    obj.hScrollbar(1).Visible = 'on';
+                if obj.IsTrackVisible
+                    obj.Bar(1).Visible = 'on';
                 end
-                obj.hScrollbar(2).Visible = 'on';
+                obj.Bar(2).Visible = 'on';
             else
-                obj.hScrollbar(1).Visible = 'off';
-                obj.hScrollbar(2).Visible = 'off';
+                obj.Bar(1).Visible = 'off';
+                obj.Bar(2).Visible = 'off';
             end
         end
 
         function hide(obj)
 
-            if obj.isTrackVisible
-                obj.hScrollbar(1).Visible = 'off';
+            if obj.IsTrackVisible
+                obj.Bar(1).Visible = 'off';
             end
-            obj.hScrollbar(2).Visible = 'off';
+            obj.Bar(2).Visible = 'off';
         end
 
         function setPointerBehavior(obj)
@@ -208,55 +208,55 @@ classdef ScrollBar < uim.Handle
             pointerBehavior.exitFcn     = @(s,e)obj.lowlightBar;
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            iptSetPointerBehavior(obj.hScrollbar(2), pointerBehavior);
-            iptPointerManager(ancestor(obj.hScrollbar(2), 'figure'));
+            iptSetPointerBehavior(obj.Bar(2), pointerBehavior);
+            iptPointerManager(ancestor(obj.Bar(2), 'figure'));
         end
 
         function highlightBar(obj)
         %highlightBar Change the barcolor (make lighter).
-            %obj.hScrollbar(2).FaceColor = obj.BarColor*1.2;
-            obj.hScrollbar(2).FaceAlpha = 0.8;
+            %obj.Bar(2).FaceColor = obj.BarColor*1.2;
+            obj.Bar(2).FaceAlpha = 0.8;
         end % /highlightBar
 
         function lowlightBar(obj)
         %lowlightBar Change the barcolor (make default color).
-            obj.hScrollbar(2).FaceColor = obj.BarColor;
-            obj.hScrollbar(2).FaceAlpha = 0.6;
+            obj.Bar(2).FaceColor = obj.BarColor;
+            obj.Bar(2).FaceAlpha = 0.6;
         end % /lowlightBar
 
         function hittest(obj, h)
         %hittest Will change appearance and cursor mode if scrollbar is "hit".
 
-            if isequal(h, obj.hScrollbar(1))
-                if ~obj.isCursorOnTrack
-                    obj.isCursorOnTrack = true;
-                    hFig = ancestor(obj.hScrollbar(1), 'figure');
+            if isequal(h, obj.Bar(1))
+                if ~obj.IsCursorOnTrack
+                    obj.IsCursorOnTrack = true;
+                    hFig = ancestor(obj.Bar(1), 'figure');
                     hFig.Pointer = 'hand';
-                    obj.hScrollbar(1).EdgeColor = obj.hScrollbar(1).FaceColor*1.5;
+                    obj.Bar(1).EdgeColor = obj.Bar(1).FaceColor*1.5;
                 end
 
             else
-                if obj.isCursorOnTrack
-                    obj.isCursorOnTrack = false;
-                    hFig = ancestor(obj.hScrollbar(1), 'figure');
+                if obj.IsCursorOnTrack
+                    obj.IsCursorOnTrack = false;
+                    hFig = ancestor(obj.Bar(1), 'figure');
                     hFig.Pointer = 'arrow';
-                    obj.hScrollbar(1).EdgeColor = 'none';
+                    obj.Bar(1).EdgeColor = 'none';
                 end
             end
 
-            if isequal(h, obj.hScrollbar(2))
-                if ~obj.isCursorOnBar
+            if isequal(h, obj.Bar(2))
+                if ~obj.IsCursorOnBar
                     obj.highlightBar()
-                    obj.isCursorOnBar = true;
-                    hFig = ancestor(obj.hScrollbar(1), 'figure');
+                    obj.IsCursorOnBar = true;
+                    hFig = ancestor(obj.Bar(1), 'figure');
                     hFig.Pointer = 'hand';
                 end
             else
-                if obj.isCursorOnBar
+                if obj.IsCursorOnBar
                     obj.lowlightBar()
-                    obj.isCursorOnBar = false;
-                    if ~obj.isCursorOnTrack
-                        hFig = ancestor(obj.hScrollbar(2), 'figure');
+                    obj.IsCursorOnBar = false;
+                    if ~obj.IsCursorOnTrack
+                        hFig = ancestor(obj.Bar(2), 'figure');
                         hFig.Pointer = 'arrow';
                     end
                 end
@@ -280,22 +280,22 @@ classdef ScrollBar < uim.Handle
 
             hFig = ancestor(src, 'figure');
 
-            obj.hScrollbar(2).FaceColor = ones(1,3)*0.65;
+            obj.Bar(2).FaceColor = ones(1,3)*0.65;
 
             % Get current mouse position, and save it to obj
-            mousePointAx = get(obj.hScrollbarAxes, 'CurrentPoint');
+            mousePointAx = get(obj.Axes, 'CurrentPoint');
 
             switch lower(obj.Orientation)
                 case 'horizontal'
-                    obj.moveStartPosition = mousePointAx(1, 1);
-                    obj.barInitialCoords = get(obj.hScrollbar(2), 'XData');
+                    obj.MoveStartPosition = mousePointAx(1, 1);
+                    obj.BarInitialCoords = get(obj.Bar(2), 'XData');
                 case 'vertical'
-                    obj.moveStartPosition = mousePointAx(1, 2);
-                    obj.barInitialCoords = get(obj.hScrollbar(2), 'YData');
+                    obj.MoveStartPosition = mousePointAx(1, 2);
+                    obj.BarInitialCoords = get(obj.Bar(2), 'YData');
             end
 
-            obj.figureCallbackStore.WindowButtonMotionFcn = hFig.WindowButtonMotionFcn;
-            obj.figureCallbackStore.WindowButtonUpFcn = hFig.WindowButtonUpFcn;
+            obj.FigureCallbackStore.WindowButtonMotionFcn = hFig.WindowButtonMotionFcn;
+            obj.FigureCallbackStore.WindowButtonUpFcn = hFig.WindowButtonUpFcn;
 
             hFig.WindowButtonMotionFcn = @obj.moveScrollbar;
             hFig.WindowButtonUpFcn = @obj.stopScrollbarMove;
@@ -308,7 +308,7 @@ classdef ScrollBar < uim.Handle
 
             if isa(event, 'matlab.ui.eventdata.WindowMouseData')
 
-                newMousePointAx = get(obj.hScrollbarAxes, 'CurrentPoint');
+                newMousePointAx = get(obj.Axes, 'CurrentPoint');
 
                 switch lower(obj.Orientation)
                     case 'horizontal'
@@ -317,27 +317,27 @@ classdef ScrollBar < uim.Handle
                         newPosition = newMousePointAx(1, 2);
                 end
 
-                change = newPosition - obj.moveStartPosition;
-                barInitialPosition = min(obj.barInitialCoords);
+                change = newPosition - obj.MoveStartPosition;
+                barInitialPosition = min(obj.BarInitialCoords);
 
             elseif isa(event, 'matlab.ui.eventdata.ScrollWheelData')
 
                 switch lower(obj.Orientation)
                     case 'horizontal'
-                        initialCoords = obj.hScrollbar(2).XData;
+                        initialCoords = obj.Bar(2).XData;
                     case 'vertical'
-                        initialCoords = obj.hScrollbar(2).YData;
+                        initialCoords = obj.Bar(2).YData;
                 end
                 barInitialPosition = min(initialCoords);
 
-                % Use the scrollHistory to avoid "glitchy" scrolling. For small
+                % Use the ScrollHistory to avoid "glitchy" scrolling. For small
                 % movements on a mousepad, scroll values can come in as 0, 1, 1,
                 % -1, 1, 1 even if fingers are moving in on direction.
-                obj.scrollHistory = cat(1, obj.scrollHistory(2:5), event.VerticalScrollCount);
+                obj.ScrollHistory = cat(1, obj.ScrollHistory(2:5), event.VerticalScrollCount);
 
-                if event.VerticalScrollCount > 0 && sum(obj.scrollHistory) > 0
+                if event.VerticalScrollCount > 0 && sum(obj.ScrollHistory) > 0
                     change = event.VerticalScrollCount .* obj.Maximum ./ 20;    %Todo: Scroll increment should be a property.
-                elseif event.VerticalScrollCount < 0  && sum(obj.scrollHistory) < 0
+                elseif event.VerticalScrollCount < 0  && sum(obj.ScrollHistory) < 0
                     change = event.VerticalScrollCount .* obj.Maximum ./ 20;
                 else
                     return;
@@ -361,15 +361,15 @@ classdef ScrollBar < uim.Handle
             hFig = ancestor(src, 'figure');
 
             % Restore original figure interactivity callbacks.
-            hFig.WindowButtonMotionFcn = obj.figureCallbackStore.WindowButtonMotionFcn;
-            hFig.WindowButtonUpFcn = obj.figureCallbackStore.WindowButtonUpFcn;
+            hFig.WindowButtonMotionFcn = obj.FigureCallbackStore.WindowButtonMotionFcn;
+            hFig.WindowButtonUpFcn = obj.FigureCallbackStore.WindowButtonUpFcn;
 
             % Reset the scrollbar color.
-            obj.hScrollbar(2).FaceColor = obj.BarColor;
+            obj.Bar(2).FaceColor = obj.BarColor;
             drawnow
 
             % Get shift of scroller
-            newMousePointAx = get(obj.hScrollbarAxes, 'CurrentPoint');
+            newMousePointAx = get(obj.Axes, 'CurrentPoint');
 
             switch lower(obj.Orientation)
                 case 'horizontal'
@@ -378,9 +378,9 @@ classdef ScrollBar < uim.Handle
                     newPosition = newMousePointAx(1, 2);
             end
 
-            change = newPosition - obj.moveStartPosition;
+            change = newPosition - obj.MoveStartPosition;
 
-            barInitialPosition = min(obj.barInitialCoords);
+            barInitialPosition = min(obj.BarInitialCoords);
             change = obj.checkMoveLimits(change, barInitialPosition);
 
             % Todo: Make change part of an eventdata object.
@@ -388,7 +388,7 @@ classdef ScrollBar < uim.Handle
                 obj.StopMoveCallback(obj, change./obj.Maximum) % Todo: Change this, (e.g. add both change and maximum to eventdata... Update dependent apps)
             end
 
-            obj.barInitialCoords = [];
+            obj.BarInitialCoords = [];
 
         end % /stopScrollbarMove
 
@@ -399,15 +399,15 @@ classdef ScrollBar < uim.Handle
         %   the scroller track. The bar will jump to a new position.
 
             % Get change of scroller
-            newMousePointAx = get(obj.hScrollbarAxes, 'CurrentPoint');
+            newMousePointAx = get(obj.Axes, 'CurrentPoint');
 
             switch lower(obj.Orientation)
                 case 'horizontal'
                     newPosition = newMousePointAx(1, 1);
-                    currentPosition = min(obj.hScrollbar(2).XData);
+                    currentPosition = min(obj.Bar(2).XData);
                 case 'vertical'
                     newPosition = newMousePointAx(1, 2);
-                    currentPosition = min(obj.hScrollbar(2).YData);
+                    currentPosition = min(obj.Bar(2).YData);
             end
 
             change = newPosition - currentPosition;
@@ -434,17 +434,17 @@ classdef ScrollBar < uim.Handle
 
     methods
 
-        function position = get.barPosition(obj)
+        function position = get.BarPosition(obj)
 
-            if isempty(obj.barInitialCoords)
+            if isempty(obj.BarInitialCoords)
                 switch lower(obj.Orientation)
                     case 'horizontal'
-                        scrollerData = obj.hScrollbar(2).XData;
+                        scrollerData = obj.Bar(2).XData;
                     case 'vertical'
-                        scrollerData = obj.hScrollbar(2).YData;
+                        scrollerData = obj.Bar(2).YData;
                 end
             else
-                scrollerData = obj.barInitialCoords;
+                scrollerData = obj.BarInitialCoords;
             end
 
             position = min(scrollerData);
@@ -456,28 +456,28 @@ classdef ScrollBar < uim.Handle
         function createScrollbar(obj)
         %createScrollbar Initialize the scrollbar graphical objects.
 
-            if ~isvalid(obj.hParent); return; end
+            if ~isvalid(obj.Parent); return; end
 
             % Create an axes object to plot the scrollbar in
-            obj.hScrollbarAxes = axes('Parent', obj.hParent);
-            obj.hScrollbarAxes.Units = obj.Units;
-            obj.hScrollbarAxes.Position = obj.Position;
-            obj.hScrollbarAxes.Tag = 'Scrollbar Axes';
-            obj.hScrollbarAxes.HandleVisibility = 'off';
+            obj.Axes = axes('Parent', obj.Parent);
+            obj.Axes.Units = obj.Units;
+            obj.Axes.Position = obj.Position;
+            obj.Axes.Tag = 'Scrollbar Axes';
+            obj.Axes.HandleVisibility = 'off';
 
             % Set axes limits to "normalized" units.
-            obj.hScrollbarAxes.Visible = 'off';
-            hold(obj.hScrollbarAxes, 'on')
-            obj.hScrollbarAxes.XLim = [0,1];
-            obj.hScrollbarAxes.YLim = [0,1];
+            obj.Axes.Visible = 'off';
+            hold(obj.Axes, 'on')
+            obj.Axes.XLim = [0,1];
+            obj.Axes.YLim = [0,1];
 
             switch obj.Direction
                 case 'normal'
-                    obj.hScrollbarAxes.YDir = 'reverse'; % Scroll from top to bottom
+                    obj.Axes.YDir = 'reverse'; % Scroll from top to bottom
             end
 
             % Determine if scroller should be horizontal or vertical
-            axPixelPos = getpixelposition(obj.hScrollbarAxes);
+            axPixelPos = getpixelposition(obj.Axes);
             AR = axPixelPos(3)/axPixelPos(4);
             if AR > 1
                 obj.Orientation = 'horizontal';
@@ -499,24 +499,24 @@ classdef ScrollBar < uim.Handle
             end
 
             % Plot the "scroller track" and the scrollerbar
-            obj.hScrollbar = gobjects(2,1);
-            obj.hScrollbar(1) = patch(xDataTrack, yDataTrack, obj.TrackColor);
-            obj.hScrollbar(2) = patch(xDataBar, yDataBar, obj.BarColor);
-            obj.hScrollbar(2).FaceAlpha = 0.6;
-            set(obj.hScrollbar, 'Parent', obj.hScrollbarAxes)
-            set(obj.hScrollbar, 'Visible', obj.Visible)
+            obj.Bar = gobjects(2,1);
+            obj.Bar(1) = patch(xDataTrack, yDataTrack, obj.TrackColor);
+            obj.Bar(2) = patch(xDataBar, yDataBar, obj.BarColor);
+            obj.Bar(2).FaceAlpha = 0.6;
+            set(obj.Bar, 'Parent', obj.Axes)
+            set(obj.Bar, 'Visible', obj.Visible)
 
             % Tag scroller handles
-            obj.hScrollbar(1).Tag = 'Sidebar';
-            obj.hScrollbar(2).Tag = 'Scrollbar';
+            obj.Bar(1).Tag = 'Sidebar';
+            obj.Bar(2).Tag = 'Scrollbar';
 
             % Assign methods for when scroller handles are pressed.
-            obj.hScrollbar(1).ButtonDownFcn = @obj.jumpToNewValue;
-            obj.hScrollbar(2).ButtonDownFcn = @obj.startScrollbarMove;
+            obj.Bar(1).ButtonDownFcn = @obj.jumpToNewValue;
+            obj.Bar(2).ButtonDownFcn = @obj.startScrollbarMove;
 
-            obj.hScrollbar(1).Visible = 'off';
-            obj.hScrollbar(2).Visible = obj.Visible;
-            set(obj.hScrollbar, 'EdgeColor', 'none')
+            obj.Bar(1).Visible = 'off';
+            obj.Bar(2).Visible = obj.Visible;
+            set(obj.Bar, 'EdgeColor', 'none')
             obj.updateBarLength()
 
         end % /createScrollbar
@@ -535,17 +535,17 @@ classdef ScrollBar < uim.Handle
         end % /onValueChanged
 
         function onPositionChanged(obj)
-            if obj.isInitialized
-                if any( obj.hScrollbarAxes.Position(3:4) ~=  obj.Position(3:4))
+            if obj.IsInitialized
+                if any( obj.Axes.Position(3:4) ~=  obj.Position(3:4))
                     obj.redraw()
                 end
-                obj.hScrollbarAxes.Position = obj.Position;
+                obj.Axes.Position = obj.Position;
             end
         end
 
         function onVisibleChanged(obj)
 
-            if obj.isInitialized
+            if obj.IsInitialized
                 switch obj.Visible
                     case 'on'
                         obj.show()
@@ -556,16 +556,16 @@ classdef ScrollBar < uim.Handle
         end
 
         function onStyleChanged(obj)
-            if obj.isInitialized
-                obj.hScrollbar(1).FaceColor = obj.TrackColor;
-                obj.hScrollbar(2).FaceColor = obj.BarColor;
+            if obj.IsInitialized
+                obj.Bar(1).FaceColor = obj.TrackColor;
+                obj.Bar(2).FaceColor = obj.BarColor;
             end
         end
 
         function onEnableMouseScrollValueChanged(obj)
 
             if obj.EnableMouseScroll
-                hFigure = ancestor(obj.hParent, 'figure');
+                hFigure = ancestor(obj.Parent, 'figure');
                 obj.MouseScrollListener = listener(hFigure, ...
                     'WindowScrollWheel', @obj.onMouseScrolled);
             else
@@ -579,9 +579,9 @@ classdef ScrollBar < uim.Handle
         function updateBarLength(obj)
         %updateBarLength Update scrollerbar height.
 
-            if ~obj.isInitialized; return; end
+            if ~obj.IsInitialized; return; end
 
-            axSize = getpixelposition(obj.hScrollbarAxes);
+            axSize = getpixelposition(obj.Axes);
             axSize = axSize(3:4);
 
             if obj.VisibleAmount == inf
@@ -595,13 +595,13 @@ classdef ScrollBar < uim.Handle
             switch lower(obj.Orientation)
                 case 'horizontal'
                     isDim = [0, 1];
-                    obj.hScrollbarAxes.XLim = newAxesLimits;
+                    obj.Axes.XLim = newAxesLimits;
                     barLength = axSize(1) .* obj.VisibleAmount ./ axesRange;
                     %barLength = max([barLength, obj.BarWidth]);
                     barSize = round( [barLength, obj.BarWidth] );
                 case 'vertical'
                     isDim = [1, 0];
-                    obj.hScrollbarAxes.YLim = newAxesLimits;
+                    obj.Axes.YLim = newAxesLimits;
                     barLength = axSize(2) .* obj.VisibleAmount ./ obj.Maximum;
                     barSize = round( [obj.BarWidth, barLength] );
             end
@@ -612,7 +612,7 @@ classdef ScrollBar < uim.Handle
 
             % Get coordinates for scrollbar patch.
             [edgeX, edgeY] = uim.shape.rectangle(barSize, obj.BarWidth/2);
-            coords = uim.utility.px2du(obj.hScrollbarAxes, [edgeX', edgeY']);
+            coords = uim.utility.px2du(obj.Axes, [edgeX', edgeY']);
 
             % Correct so that minimum is at (0,0)
             coords = coords - min(coords);
@@ -621,7 +621,7 @@ classdef ScrollBar < uim.Handle
             coords = coords + (1-uim.utility.range(coords(:, :)))/2 .* isDim;
 
             % Set new coordinates of scrollbar patch
-            set(obj.hScrollbar(2), 'XData', coords(:,1), 'YData', coords(:,2));
+            set(obj.Bar(2), 'XData', coords(:,1), 'YData', coords(:,2));
             obj.updateBarPosition()
             drawnow limitrate
 
@@ -632,17 +632,17 @@ classdef ScrollBar < uim.Handle
         %
         % Mostly relevant if value is change from external source...
 
-            if obj.isInitialized
+            if obj.IsInitialized
 
-                if isempty(obj.barInitialCoords)
+                if isempty(obj.BarInitialCoords)
                     switch lower(obj.Orientation)
                         case 'horizontal'
-                            scrollerData = obj.hScrollbar(2).XData;
+                            scrollerData = obj.Bar(2).XData;
                         case 'vertical'
-                            scrollerData = obj.hScrollbar(2).YData;
+                            scrollerData = obj.Bar(2).YData;
                     end
                 else
-                    scrollerData = obj.barInitialCoords;
+                    scrollerData = obj.BarInitialCoords;
                 end
 
                 scrollerPos = min(scrollerData);
@@ -656,9 +656,9 @@ classdef ScrollBar < uim.Handle
                 % Update the position of the scrollbar
                 switch lower(obj.Orientation)
                     case 'horizontal'
-                        obj.hScrollbar(2).XData =  scrollerData + change;
+                        obj.Bar(2).XData =  scrollerData + change;
                     case 'vertical'
-                        obj.hScrollbar(2).YData =  scrollerData + change;
+                        obj.Bar(2).YData =  scrollerData + change;
                 end
             end
 
@@ -668,12 +668,12 @@ classdef ScrollBar < uim.Handle
 
             switch lower(obj.Orientation)
                 case 'horizontal'
-                    xDataTrack = obj.hScrollbarAxes.XLim([1,2,2,1]);
-                    obj.hScrollbar(1).YData = xDataTrack;
+                    xDataTrack = obj.Axes.XLim([1,2,2,1]);
+                    obj.Bar(1).YData = xDataTrack;
 
                 case 'vertical'
-                    yDataTrack = obj.hScrollbarAxes.YLim([2,1,1,2]);
-                    obj.hScrollbar(1).YData = yDataTrack;
+                    yDataTrack = obj.Axes.YLim([2,1,1,2]);
+                    obj.Bar(1).YData = yDataTrack;
             end
         end
 

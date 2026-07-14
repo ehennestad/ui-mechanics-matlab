@@ -12,8 +12,8 @@ classdef Resizable < uim.Handle
 
     properties
         Children = []            % Should maybe not be transient
-        isMoveable = true
-        isResizeable = true
+        IsMovable = true
+        IsResizable = true
     end
 
     properties (Hidden, Transient)
@@ -26,12 +26,12 @@ classdef Resizable < uim.Handle
     properties (Hidden, Transient, Access = protected)
         PickableParts = 'all'; % When visible... Is set to none when invisible.
         ImrectCallbacks = [];
-        rectDestroyedListener = event.listener.empty
+        RectDestroyedListener = event.listener.empty
         IsConstructed = false;
     end
 
     properties (Hidden, Transient, Access = public)
-        interactiveRectangle
+        InteractiveRectangle
     end
 
     methods (Abstract, Access = protected)
@@ -46,8 +46,8 @@ classdef Resizable < uim.Handle
                 delete(obj.Children(i))
             end
 
-            if ~isempty(obj.interactiveRectangle) && isvalid(obj.interactiveRectangle)
-                delete(obj.interactiveRectangle)
+            if ~isempty(obj.InteractiveRectangle) && isvalid(obj.InteractiveRectangle)
+                delete(obj.InteractiveRectangle)
             end
         end
 
@@ -56,8 +56,8 @@ classdef Resizable < uim.Handle
             % Make an imrect for interactively moving and resizing the
             % virtualPanel.
 
-            if ~isempty(obj.interactiveRectangle)
-                delete(obj.interactiveRectangle)
+            if ~isempty(obj.InteractiveRectangle)
+                delete(obj.InteractiveRectangle)
             end
 
             hRect = imrect(obj.Parent, obj.Position);
@@ -66,7 +66,7 @@ classdef Resizable < uim.Handle
             hRect.addNewPositionCallback(@(pos) obj.onSizeChanged(pos));
 
             el = addlistener(hRect, 'ObjectBeingDestroyed', @(src,evt) delete(obj));
-            obj.rectDestroyedListener = el;
+            obj.RectDestroyedListener = el;
 
             % todo: work on this....
 % % %             hFunc = makeConstrainToRectFcn('imrect', obj.margins([1,3]), obj.margins([2,4]));
@@ -96,39 +96,39 @@ classdef Resizable < uim.Handle
             imrectGroup = findobj(hRect, 'Type', 'hggroup', 'Tag', 'imrect');
             %uistack(imrectGroup, 'down')
 
-            obj.interactiveRectangle = hRect;
+            obj.InteractiveRectangle = hRect;
          end
 
         function hideInteractiveRectangle(obj)
-            if isempty(obj.interactiveRectangle); return; end
+            if isempty(obj.InteractiveRectangle); return; end
 
-            imrectGroup = findobj(obj.interactiveRectangle, ...
+            imrectGroup = findobj(obj.InteractiveRectangle, ...
                 'Type', 'hggroup', 'Tag', 'imrect');
             set(imrectGroup, 'Visible', 'off');
 
-            pTmp = findobj(obj.interactiveRectangle, 'Type', 'patch');
+            pTmp = findobj(obj.InteractiveRectangle, 'Type', 'patch');
             pTmp.HitTest = 'off';
             pTmp.PickableParts = 'none';
         end
 
         function showInteractiveRectangle(obj)
-            if isempty(obj.interactiveRectangle); return; end
+            if isempty(obj.InteractiveRectangle); return; end
 
-            if obj.isResizeable
-                imrectGroup = findobj(obj.interactiveRectangle, ...
+            if obj.IsResizable
+                imrectGroup = findobj(obj.InteractiveRectangle, ...
                     'Type', 'hggroup', 'Tag', 'imrect');
                 set(imrectGroup, 'Visible', 'on');
             end
 
-            if obj.isMoveable || obj.isResizeable
-                pTmp = findobj(obj.interactiveRectangle, 'Type', 'patch');
+            if obj.IsMovable || obj.IsResizable
+                pTmp = findobj(obj.InteractiveRectangle, 'Type', 'patch');
                 pTmp.HitTest = 'on';
                 pTmp.PickableParts = obj.PickableParts;
             end
         end
 
         function setPositionConstraintFcn(obj, hFunc)
-            obj.interactiveRectangle.setPositionConstraintFcn(hFunc);
+            obj.InteractiveRectangle.setPositionConstraintFcn(hFunc);
         end
 
         function setPosition(obj, newPosition, mode)
@@ -138,19 +138,19 @@ classdef Resizable < uim.Handle
             end
 
             if strcmp(mode, 'constrained')
-                obj.interactiveRectangle.setConstrainedPosition(newPosition)
+                obj.InteractiveRectangle.setConstrainedPosition(newPosition)
             elseif strcmp(mode, 'unconstrained')
-                obj.interactiveRectangle.setPosition(newPosition)
+                obj.InteractiveRectangle.setPosition(newPosition)
             end
         end
 
         function setColor(obj, newColor)
         %setColor Set color of imrect
-            obj.interactiveRectangle.setColor(newColor)
+            obj.InteractiveRectangle.setColor(newColor)
         end
 
         function pos = getPosition(obj)
-            pos = obj.interactiveRectangle.getPosition();
+            pos = obj.InteractiveRectangle.getPosition();
         end
 
         function lim = getPositionLimits(obj)
@@ -164,7 +164,7 @@ classdef Resizable < uim.Handle
         end
 
         function hArray = getImrectHandles(obj)
-            hArray = findobj( obj.interactiveRectangle, ...
+            hArray = findobj( obj.InteractiveRectangle, ...
                                 'Type', 'line', '-or', 'Type', 'patch');
         end
 
@@ -260,11 +260,11 @@ classdef Resizable < uim.Handle
         function configNewResizeButtonDownFcn(obj, newFunc)
         %configNewResizeButtonDownFcn
 
-            if isempty(obj.interactiveRectangle); return; end
+            if isempty(obj.InteractiveRectangle); return; end
 
-            pTmp = findobj(obj.interactiveRectangle, 'Type', 'patch');
-            cTmp = findobj(obj.interactiveRectangle, '-regexp', 'Tag', 'corner');
-            lTmp = findobj(obj.interactiveRectangle, '-regexp', 'Tag', 'top line');
+            pTmp = findobj(obj.InteractiveRectangle, 'Type', 'patch');
+            cTmp = findobj(obj.InteractiveRectangle, '-regexp', 'Tag', 'corner');
+            lTmp = findobj(obj.InteractiveRectangle, '-regexp', 'Tag', 'top line');
 
             if isempty(obj.ImrectCallbacks)
                 obj.ImrectCallbacks = {pTmp.ButtonDownFcn, ...
