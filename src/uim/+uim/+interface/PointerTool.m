@@ -1,5 +1,5 @@
-classdef abstractPointer < handle & matlab.mixin.Heterogeneous
-%uim.interface.abstractPointer
+classdef PointerTool < handle & matlab.mixin.Heterogeneous
+%uim.interface.PointerTool
 %
 % Abstract class framework for a pointer tool
 
@@ -46,8 +46,8 @@ classdef abstractPointer < handle & matlab.mixin.Heterogeneous
 
     methods
 
-        function obj = abstractPointer(hAxes)
-        %abstractPointer Attach hAxes and its parent figure to the tool
+        function obj = PointerTool(hAxes)
+        %PointerTool Attach hAxes and its parent figure to the tool
 
             if nargin > 0
                 obj.hAxes = hAxes;

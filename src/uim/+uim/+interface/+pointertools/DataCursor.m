@@ -1,4 +1,4 @@
-classdef dataCursor < uim.interface.abstractPointer
+classdef DataCursor < uim.interface.PointerTool
 
     % Todo:
     %   1) Implement different modes.
@@ -24,14 +24,14 @@ classdef dataCursor < uim.interface.abstractPointer
 
     methods
 
-        function obj = dataCursor(hAxes)
-            obj@uim.interface.abstractPointer(hAxes)
+        function obj = DataCursor(hAxes)
+            obj@uim.interface.PointerTool(hAxes)
             obj.xLimOrig = obj.hAxes.XLim;
             obj.yLimOrig = obj.hAxes.YLim;
         end
 
         function activate(obj)
-            activate@uim.interface.abstractPointer(obj)
+            activate@uim.interface.PointerTool(obj)
             obj.plotCrosshair()
 
             set(obj.hCrosshair, 'Visible', 'on')
@@ -39,12 +39,12 @@ classdef dataCursor < uim.interface.abstractPointer
         end
 
         function suspend(obj)
-            suspend@uim.interface.abstractPointer(obj)
+            suspend@uim.interface.PointerTool(obj)
             set(obj.hCrosshair, 'Visible', 'off')
         end
 
         function deactivate(obj)
-            deactivate@uim.interface.abstractPointer(obj)
+            deactivate@uim.interface.PointerTool(obj)
             set(obj.hCrosshair, 'Visible', 'off')
             obj.isActive = false;
         end

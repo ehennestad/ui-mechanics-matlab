@@ -1,4 +1,4 @@
-classdef crop < uim.interface.abstractPointer
+classdef Crop < uim.interface.PointerTool
 
     properties (Constant)
         exitMode = 'previous';
@@ -27,15 +27,15 @@ classdef crop < uim.interface.abstractPointer
 
     methods
 
-        function obj = crop(hAxes)
-            obj@uim.interface.abstractPointer(hAxes)
+        function obj = Crop(hAxes)
+            obj@uim.interface.PointerTool(hAxes)
             obj.xLimOrig = obj.hAxes.XLim;
             obj.yLimOrig = obj.hAxes.YLim;
             obj.hRectangleSizeText = text(obj.hAxes, 'Color', obj.textColor);
         end
 
         function activate(obj)
-            activate@uim.interface.abstractPointer(obj)
+            activate@uim.interface.PointerTool(obj)
             obj.hRectangleSizeText.Visible = 'on';
             obj.selectRectangularRoi()
             obj.updateInitialCornerText()
@@ -43,7 +43,7 @@ classdef crop < uim.interface.abstractPointer
 
         function deactivate(obj)
 
-            deactivate@uim.interface.abstractPointer(obj)
+            deactivate@uim.interface.PointerTool(obj)
             uiresume(obj.hFigure)
 
             if ~isempty(obj.hImrect)

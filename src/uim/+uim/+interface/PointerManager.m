@@ -1,8 +1,8 @@
-classdef pointerManager < handle
-%pointerManager.m A manager for switching between different interactive
+classdef PointerManager < handle
+%PointerManager A manager for switching between different interactive
 % pointer tools in axes.
 %
-%   See also uim.interface.abstractPointer
+%   See also uim.interface.PointerTool
 
 % List of things to implement
 %   Keypress sequences should be read from settings somehow
@@ -48,8 +48,8 @@ classdef pointerManager < handle
 
     methods % Structors
 
-        function obj = pointerManager(hFigure, hAxes, pointerNames)
-        %pointerManager Attach a pointerManager to a figure
+        function obj = PointerManager(hFigure, hAxes, pointerNames)
+        %PointerManager Attach a PointerManager to a figure
 
             obj.hFigure = hFigure;
             obj.hAxes = hAxes;
@@ -67,7 +67,7 @@ classdef pointerManager < handle
                 obj.OriginalAxesButtonDownFcn = hAxes.ButtonDownFcn;
             end
 
-            % Assign pointerManager callbacks to figure
+            % Assign PointerManager callbacks to figure
             hAxes.ButtonDownFcn = @obj.onButtonDown; % Use button down callback of axes..
             hAxes.Interruptible = 'off'; % Todo: are there cases where its better if this is on?
 
@@ -83,7 +83,7 @@ classdef pointerManager < handle
         end
 
         function delete(obj)
-        %delete Delete method for pointermanager.
+        %delete Delete method for PointerManager.
 
             obj.deleteFigureMouseListeners()
 
@@ -152,12 +152,13 @@ classdef pointerManager < handle
                 if ischar(pointerRef{i}) || ...
                         (isstring(pointerRef{i}) && isscalar(pointerRef{i}))
                     thisPointerName = char(pointerRef{i});
-                    thisPointerRef = str2func(sprintf(...
-                        'uim.interface.pointerTool.%s', thisPointerName));
+                    thisPointerRef = obj.resolvePointerToolConstructor(thisPointerName);
                 else
                     thisPointerRef = pointerRef{i};
                     thisPointerName = strsplit(func2str(thisPointerRef), '.');
                     thisPointerName = thisPointerName{end};
+                    % Normalize class name (PascalCase) to tool key (camelCase)
+                    thisPointerName = [lower(thisPointerName(1)), thisPointerName(2:end)];
                 end
                 obj.pointers.(thisPointerName) = thisPointerRef(hAxes);
             end
@@ -391,6 +392,31 @@ classdef pointerManager < handle
 
             % The figure's CurrentPoint property is only updated if a
             % mousemotion callback is assigned.
+        end
+    end
+
+    methods (Static, Access = private)
+
+        function constructorFcn = resolvePointerToolConstructor(pointerName)
+        %resolvePointerToolConstructor Map a tool key to its class constructor
+
+            switch pointerName
+                case 'axisZoom'
+                    constructorFcn = @uim.interface.pointertools.AxisZoom;
+                case 'crop'
+                    constructorFcn = @uim.interface.pointertools.Crop;
+                case 'dataCursor'
+                    constructorFcn = @uim.interface.pointertools.DataCursor;
+                case 'pan'
+                    constructorFcn = @uim.interface.pointertools.Pan;
+                case 'zoomIn'
+                    constructorFcn = @uim.interface.pointertools.ZoomIn;
+                case 'zoomOut'
+                    constructorFcn = @uim.interface.pointertools.ZoomOut;
+                otherwise
+                    error('uim:PointerManager:UnknownPointerTool', ...
+                        'Unknown pointer tool "%s".', pointerName)
+            end
         end
     end
 end

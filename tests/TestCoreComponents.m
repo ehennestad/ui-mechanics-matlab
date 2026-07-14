@@ -34,7 +34,7 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             slider = uim.widget.rangeslider(canvas, "Min", 0, "Max", 10, ...
                 "Low", 2, "High", 8);
             pages = uim.widget.PageIndicator(canvas, {"One", "Two"});
-            pointerManager = uim.interface.pointerManager(hFigure, canvas.Axes, ...
+            pointerManager = uim.interface.PointerManager(hFigure, canvas.Axes, ...
                 {"zoomIn", "zoomOut", "pan", "dataCursor"});
             testCase.addTeardown(@deleteValid, pointerManager);
 
@@ -95,7 +95,7 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             hAxes = axes("Parent", hFigure, "Units", "pixels", ...
                 "Position", [50, 50, 300, 200], "XLim", [0, 10], "YLim", [0, 5]);
 
-            pointerTool = uim.interface.pointerTool.axisZoom(hAxes);
+            pointerTool = uim.interface.pointertools.AxisZoom(hAxes);
             testCase.verifyEqual(pointerTool.xLimOrig, [0, 10]);
             testCase.verifyEqual(pointerTool.yLimOrig, [0, 5]);
 

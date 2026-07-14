@@ -1,5 +1,5 @@
-classdef zoomIn < uim.interface.abstractPointer & uim.interface.zoom & ...
-        uim.interface.pointerTool.mixin.DraggableRectangle
+classdef ZoomIn < uim.interface.PointerTool & uim.interface.Zoomable & ...
+        uim.interface.pointertools.mixin.DraggableRectangle
 
     properties (Constant)
         exitMode = 'previous';
@@ -24,8 +24,8 @@ classdef zoomIn < uim.interface.abstractPointer & uim.interface.zoom & ...
 
     methods
 
-        function obj = zoomIn(hAxes)
-            obj@uim.interface.abstractPointer(hAxes)
+        function obj = ZoomIn(hAxes)
+            obj@uim.interface.PointerTool(hAxes)
             obj.xLimOrig = obj.hAxes.XLim;
             obj.yLimOrig = obj.hAxes.YLim;
         end

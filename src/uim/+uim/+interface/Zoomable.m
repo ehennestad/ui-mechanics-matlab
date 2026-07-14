@@ -1,4 +1,4 @@
-classdef zoom < handle
+classdef Zoomable < handle
 
     % TODO:
     % [ ] Add switcher to only zoom in x or only zoom in y.

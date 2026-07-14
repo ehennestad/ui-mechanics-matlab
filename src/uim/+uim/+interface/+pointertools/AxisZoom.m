@@ -1,4 +1,4 @@
-classdef axisZoom < uim.interface.abstractPointer
+classdef AxisZoom < uim.interface.PointerTool
 %
 %   Tool for changing limits of axis (XLim or YLim) by dragging the axis.
 
@@ -30,8 +30,8 @@ classdef axisZoom < uim.interface.abstractPointer
 
     methods
 
-        function obj = axisZoom(hAxes)
-            obj@uim.interface.abstractPointer(hAxes)
+        function obj = AxisZoom(hAxes)
+            obj@uim.interface.PointerTool(hAxes)
             obj.xLimOrig = obj.hAxes.XLim;
             obj.yLimOrig = obj.hAxes.YLim;
         end
@@ -79,7 +79,7 @@ classdef axisZoom < uim.interface.abstractPointer
                     isBusy = false;
                     error('Not implemented')
                     % moveAxes(obj, shift) Possibly referring to method in
-                    % uim.interface.pointerTool.pan?
+                    % uim.interface.pointertools.Pan?
                 end
 
                 obj.previousPoint = currentPoint;

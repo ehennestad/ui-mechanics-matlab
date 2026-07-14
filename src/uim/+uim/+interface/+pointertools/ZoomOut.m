@@ -1,4 +1,4 @@
-classdef zoomOut < uim.interface.abstractPointer & uim.interface.zoom
+classdef ZoomOut < uim.interface.PointerTool & uim.interface.Zoomable
 
     properties (Constant)
         exitMode = 'previous';
@@ -13,8 +13,8 @@ classdef zoomOut < uim.interface.abstractPointer & uim.interface.zoom
 
     methods
 
-        function obj = zoomOut(hAxes)
-            obj@uim.interface.abstractPointer(hAxes)
+        function obj = ZoomOut(hAxes)
+            obj@uim.interface.PointerTool(hAxes)
             obj.xLimOrig = obj.hAxes.XLim;
             obj.yLimOrig = obj.hAxes.YLim;
         end

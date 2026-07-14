@@ -1,4 +1,4 @@
-classdef pan < uim.interface.abstractPointer
+classdef Pan < uim.interface.PointerTool
 
     properties (Constant)
         exitMode = 'previous';
@@ -17,8 +17,8 @@ classdef pan < uim.interface.abstractPointer
 
     methods
 
-        function obj = pan(hAxes)
-            obj@uim.interface.abstractPointer(hAxes)
+        function obj = Pan(hAxes)
+            obj@uim.interface.PointerTool(hAxes)
             obj.xLimOrig = obj.hAxes.XLim;
             obj.yLimOrig = obj.hAxes.YLim;
         end
