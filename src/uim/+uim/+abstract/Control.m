@@ -6,24 +6,24 @@ classdef Control < uim.abstract.Component
 
         Callback = []
 
-        Label = '' % Todo: Create label class
+        Label (1,:) char = '' % Todo: Create label class
 
         %HorizontalAlignment
         %VerticalAlignment
 
-        Tooltip = ''
+        Tooltip (1,:) char = ''
         ContextMenu = []
     end
 
     properties (Hidden)
-        TooltipYOffset = 15;
+        TooltipYOffset (1,1) double = 15;
     end
 
     properties (Hidden, Access = protected, Transient)
-        TooltipPosition = [0, 0]
+        TooltipPosition (1,2) double = [0, 0]
 
-        IsMousePressed = false
-        IsMouseOver = false
+        IsMousePressed (1,1) logical = false
+        IsMouseOver (1,1) logical = false
 
         MouseReleasedListener
         LastPointer
@@ -49,9 +49,6 @@ classdef Control < uim.abstract.Component
 
     methods
         function set.Tooltip(obj, newValue)
-
-            assert(ischar(newValue), 'Tooltip must be a character vector')
-
             obj.Tooltip = newValue;
             obj.onTooltipChanged()
         end
