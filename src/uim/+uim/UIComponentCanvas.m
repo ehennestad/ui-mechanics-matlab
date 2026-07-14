@@ -271,11 +271,22 @@ classdef UIComponentCanvas < handle
             catch ME
                 switch ME.identifier
                     case 'MATLAB:ui:uifigure:UnsupportedAppDesignerFunctionality'
+                        % uistack is unsupported in uifigures (in the
+                        % releases that raise this error), so reorder the
+                        % parent's Children directly. The canvas axes must
+                        % temporarily be handle-visible to appear in
+                        % Children at all.
                         obj.Axes.HandleVisibility = 'on';
-                        IND = 1:numel(obj.Parent.Children);
-                        IND(end-1:end) = IND([end,end-1]);
-                        obj.Parent.Children = obj.Parent.Children(IND);
-                        obj.Axes.HandleVisibility = 'off';
+                        restoreVisibility = onCleanup(...
+                            @() set(obj.Axes, 'HandleVisibility', 'off'));
+
+                        siblings = obj.Parent.Children;
+                        isCanvasAxes = siblings == obj.Axes;
+                        if any(isCanvasAxes)
+                            % Children(1) is the top of the stack.
+                            obj.Parent.Children = ...
+                                [siblings(isCanvasAxes); siblings(~isCanvasAxes)];
+                        end
                 end
             end
         end
