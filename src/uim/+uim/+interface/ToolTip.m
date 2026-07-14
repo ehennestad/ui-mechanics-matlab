@@ -1,4 +1,4 @@
-classdef ToolTip < uim.handle
+classdef ToolTip < uim.Handle
 %ToolTip Interface for adding a tooltip display in a component canvas.
 
     % TODO:

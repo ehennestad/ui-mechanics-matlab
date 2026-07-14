@@ -1,4 +1,4 @@
-classdef tiledImageAxes < uim.handle
+classdef tiledImageAxes < uim.Handle
 %tiledImageAxes Class for creating image tiles in an axes
 %
 %   Create an axes with a grid of tiles, where each tile can hold an image,

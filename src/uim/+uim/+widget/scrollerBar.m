@@ -1,4 +1,4 @@
-classdef scrollerBar < uim.handle
+classdef scrollerBar < uim.Handle
 %scrollerBar A very simple scrollerbar that can be made to look awesome.
 %
 %   h = uim.widget.scrollerBar(hParent) creates a scrollbar in hParent.

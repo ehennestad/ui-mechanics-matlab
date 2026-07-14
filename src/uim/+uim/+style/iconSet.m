@@ -1,4 +1,4 @@
-classdef iconSet < uim.handle
+classdef iconSet < uim.Handle
 %iconSet Class for interfacing an icon library.
 %
 % How to use: Create a folder and add pngs with icons. Preferably high

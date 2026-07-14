@@ -1,4 +1,4 @@
-classdef tab < uim.handle & uim.mixin.assignProperties
+classdef tab < uim.Handle & uim.mixin.assignProperties
 %tab Logical wrapper registering a titled panel with a tabgroup.
 %
 %   A tab has no position/style of its own - all drawing is delegated to

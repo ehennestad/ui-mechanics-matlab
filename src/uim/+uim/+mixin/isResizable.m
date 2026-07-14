@@ -1,4 +1,4 @@
-classdef isResizable < uim.handle
+classdef isResizable < uim.Handle
 %isResizeable
 
 % Todo:

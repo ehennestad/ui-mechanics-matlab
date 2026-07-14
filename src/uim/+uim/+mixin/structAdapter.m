@@ -1,4 +1,4 @@
-classdef structAdapter < uim.handle & matlab.mixin.SetGet
+classdef structAdapter < uim.Handle & matlab.mixin.SetGet
 % structAdapter Class interface for converting a class instance to a struct.
 %   This class can also be used to initialize an object from a struct or
 %   cell array of name value pairs that will be assigned to properties upon

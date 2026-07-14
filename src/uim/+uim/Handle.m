@@ -1,4 +1,4 @@
-classdef handle < handle
+classdef Handle < handle
     % Super handle where handle methods dont show up in doc list.
 
     %Overload matlab handle methods to hide them
