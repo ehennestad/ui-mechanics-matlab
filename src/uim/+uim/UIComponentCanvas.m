@@ -47,7 +47,7 @@ classdef UIComponentCanvas < handle
     properties (SetAccess = private, Transient)
         Parent = []                 % Parent handle (figure/uifigure)
         Axes = []                   % Handle to the axes which components are plotted in
-        Children = []               % List of uicomponents
+        Children uim.abstract.Component % Flat list of all components drawn on this canvas
         Tag = 'UI Component Canvas' % A tag which is also applied to the axes.
     end
 
@@ -97,6 +97,17 @@ classdef UIComponentCanvas < handle
         end
 
         function delete(obj)
+            % Delete components before the axes so each component can run
+            % its own teardown against valid graphics objects. (Components
+            % also self-delete via a canvas-destroyed listener; this pass
+            % covers any that no longer hold that listener.)
+            childList = obj.Children;
+            for i = 1:numel(childList)
+                if isvalid(childList(i))
+                    delete(childList(i))
+                end
+            end
+
             if ~isempty(obj.Parent) && isvalid(obj.Parent)
                 obj.removeParent()
             else
@@ -135,6 +146,21 @@ classdef UIComponentCanvas < handle
             if ~isempty(obj.Tooltip) && isvalid(obj.Tooltip)
                 obj.Tooltip.hideTooltip()
             end
+        end
+    end
+
+    methods (Access = {?uim.abstract.Component}) % Child registration
+
+        function registerChild(obj, component)
+        %registerChild Add a component to the canvas' list of children
+            if ~any(obj.Children == component)
+                obj.Children = [obj.Children, component];
+            end
+        end
+
+        function unregisterChild(obj, component)
+        %unregisterChild Remove a component from the canvas' list of children
+            obj.Children(obj.Children == component) = [];
         end
     end
 

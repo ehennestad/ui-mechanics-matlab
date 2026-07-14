@@ -278,6 +278,26 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyNotSameHandle(newCanvas, canvas);
         end
 
+        function canvasRegistersAndUnregistersChildren(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure);
+            canvas = uim.UIComponentCanvas(hPanel);
+
+            toolbar = uim.widget.Toolbar(canvas);
+            slider = uim.widget.RangeSlider(canvas);
+
+            testCase.verifyTrue(any(canvas.Children == toolbar));
+            testCase.verifyTrue(any(canvas.Children == slider));
+
+            delete(slider)
+            testCase.verifyFalse(any(canvas.Children == slider));
+            testCase.verifyTrue(any(canvas.Children == toolbar));
+
+            delete(canvas)
+            testCase.verifyFalse(isvalid(toolbar));
+        end
+
         function canvasShowsAndHidesTooltip(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);

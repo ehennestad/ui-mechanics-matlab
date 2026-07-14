@@ -187,9 +187,17 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 
             % Call updateLocation to trigger location update
             obj.updateLocation(obj.PositionMode)
+
+            if isa(obj.Canvas, 'uim.UIComponentCanvas')
+                obj.Canvas.registerChild(obj)
+            end
         end
 
         function delete(obj)
+
+            if isa(obj.Canvas, 'uim.UIComponentCanvas') && isvalid(obj.Canvas)
+                obj.Canvas.unregisterChild(obj)
+            end
 
             if ~isempty(obj.Background) && isvalid(obj.Background)
                 delete(obj.Background)
