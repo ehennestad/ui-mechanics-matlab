@@ -75,8 +75,7 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
             obj.configureParentPositionChangedListener()
             obj.configureSiblingCreatedListener()
 
-            el = addlistener(obj.Parent, 'ObjectBeingDestroyed', @(src,evt) delete(obj));
-            obj.ParentDestroyedListener = el;
+            obj.configureParentDestroyedListener()
 
             if ~nargout
                 clear obj
@@ -104,6 +103,10 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
     end
 
     methods
+
+        function reparent(obj, newParent)
+            obj.Parent = newParent;
+        end
 
         function showTooltip(obj, text, position)
             if ~isempty(obj.TooltipHandle) && isvalid(obj.TooltipHandle)
@@ -197,6 +200,17 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
 
         end
 
+        function configureParentDestroyedListener(obj)
+
+            if ~isempty(obj.ParentDestroyedListener) && ...
+                    isvalid(obj.ParentDestroyedListener)
+                delete(obj.ParentDestroyedListener)
+            end
+
+            obj.ParentDestroyedListener = addlistener(obj.Parent, ...
+                'ObjectBeingDestroyed', @(~,~) delete(obj));
+        end
+
         function configureSiblingCreatedListener(obj)
         %configureSiblingCreatedListener Need to know when a sibling is born
 
@@ -263,8 +277,10 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
             obj.PixelPosition = uim.utility.getContentPixelPosition(obj.Parent);
         end
 
-        function onSiblingCreated(obj, ~, ~)
+        function onSiblingCreated(obj, src, evt)
         %onSiblingCreated Keep our axes on top of the uistack
+            obj.invokePreviousDefaultAxesCreateFcn(src, evt)
+
             try
                 uistack(obj.Axes, 'top')
             catch ME
@@ -356,6 +372,12 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
                 set(obj.Parent, 'DefaultAxesCreateFcn', obj.PreviousDefaultAxesCreateFcn)
             end
 
+            if ~isempty(obj.Parent) && isvalid(obj.Parent) && ...
+                    isappdata(obj.Parent, 'UIComponentCanvas') && ...
+                    isequal(getappdata(obj.Parent, 'UIComponentCanvas'), obj)
+                rmappdata(obj.Parent, 'UIComponentCanvas')
+            end
+
             if ~isempty(obj.ParentDestroyedListener)
                 delete(obj.ParentDestroyedListener)
                 obj.ParentDestroyedListener = [];
@@ -380,6 +402,19 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
 
             obj.configureParentPositionChangedListener()
             obj.configureSiblingCreatedListener()
+            obj.configureParentDestroyedListener()
+        end
+
+        function invokePreviousDefaultAxesCreateFcn(obj, src, evt)
+
+            callback = obj.PreviousDefaultAxesCreateFcn;
+            if isempty(callback); return; end
+
+            if isa(callback, 'function_handle')
+                callback(src, evt)
+            elseif iscell(callback)
+                callback{1}(src, evt, callback{2:end})
+            end
         end
     end
 

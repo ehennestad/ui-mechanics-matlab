@@ -46,10 +46,13 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
     properties (Access = private, Transient = true)
         StepSize
-        Min_ (1,1) double = 0
-        Max_ (1,1) double = 1
-        Low_ (1,1) double = 0
-        High_ (1,1) double = 1
+        % Sentinels keep each dependent value temporarily unconstrained
+        % while parseInputs assigns name-value pairs in property order.
+        % initializeFiniteRange replaces omitted values with public defaults.
+        Min_ (1,1) double = -inf
+        Max_ (1,1) double = inf
+        Low_ (1,1) double = -inf
+        High_ (1,1) double = inf
     end
 
     properties (Access = private)
@@ -95,6 +98,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
     methods (Access = private) % Component construction
 
         function initializeFiniteRange(obj)
+        %initializeFiniteRange Resolve construction sentinels after parsing.
             if ~isfinite(obj.Min_)
                 obj.Min_ = 0;
             end

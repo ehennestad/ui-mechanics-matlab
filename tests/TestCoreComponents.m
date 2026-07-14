@@ -270,6 +270,46 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 func2str(replacementCallback));
         end
 
+        function canvasReparentsAndCleansUpParentOwnership(testCase)
+            firstFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, firstFigure);
+            secondFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, secondFigure);
+            canvas = uim.UIComponentCanvas(firstFigure);
+
+            canvas.reparent(secondFigure);
+
+            testCase.verifyEqual(canvas.Parent, secondFigure);
+            testCase.verifyEqual(canvas.Axes.Parent, secondFigure);
+            testCase.verifyFalse(isappdata(firstFigure, "UIComponentCanvas"));
+            testCase.verifyEqual(getappdata(secondFigure, "UIComponentCanvas"), canvas);
+
+            delete(secondFigure);
+            testCase.verifyFalse(isvalid(canvas));
+        end
+
+        function canvasChainsPriorAxesCreationCallback(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure);
+            setappdata(hPanel, "PriorAxesCreateFcnArguments", {});
+            priorCallback = @(src, ~, value) setappdata(hPanel, ...
+                "PriorAxesCreateFcnArguments", {src, value});
+            set(hPanel, "DefaultAxesCreateFcn", {priorCallback, true});
+            canvas = uim.UIComponentCanvas(hPanel);
+
+            siblingAxes = axes(hPanel);
+
+            callbackArguments = getappdata(hPanel, "PriorAxesCreateFcnArguments");
+            testCase.verifyEqual(callbackArguments{1}, siblingAxes);
+            testCase.verifyTrue(callbackArguments{2});
+            delete(canvas);
+            restoredCallback = get(hPanel, "DefaultAxesCreateFcn");
+            testCase.verifyEqual(func2str(restoredCallback{1}), ...
+                func2str(priorCallback));
+            testCase.verifyTrue(restoredCallback{2});
+        end
+
         function pointerManagerRestoresOnlyItsOwnMotionCallback(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
