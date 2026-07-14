@@ -60,7 +60,7 @@ classdef UIComponentCanvas < handle
         PixelSize = [nan, nan]
         ParentSizeChangedListener event.listener = event.listener.empty
         ParentLocationChangedListener event.listener = event.listener.empty
-        TooltipHandle
+        Tooltip uim.interface.ToolTip
         ParentDestroyedListener
         PreviousDefaultAxesCreateFcn = []
         SiblingCreatedFcn = []
@@ -84,7 +84,7 @@ classdef UIComponentCanvas < handle
             obj.onSizeChanged() % Call update because we set the parent
 
             obj.createAxes()
-            obj.createTooltipHandle()
+            obj.Tooltip = uim.interface.ToolTip(obj);
 
             obj.configureParentPositionChangedListener()
             obj.configureSiblingCreatedListener()
@@ -110,6 +110,9 @@ classdef UIComponentCanvas < handle
                     delete(obj.ParentLocationChangedListener)
                 end
             end
+            if ~isempty(obj.Tooltip) && isvalid(obj.Tooltip)
+                delete(obj.Tooltip)
+            end
             if ~isempty(obj.Axes) && isvalid(obj.Axes)
                 delete(obj.Axes)
             end
@@ -123,39 +126,15 @@ classdef UIComponentCanvas < handle
         end
 
         function showTooltip(obj, text, position)
-            if ~isempty(obj.TooltipHandle) && isvalid(obj.TooltipHandle)
-
-                obj.TooltipHandle.String = text;
-                obj.TooltipHandle.Visible = 'on';
-
-                extent = obj.TooltipHandle.Extent;
-                lim = {'XLim', 'YLim'};
-                for i = 1:2
-                    if position(i) < obj.Axes.(lim{i})(1) % Tooltip too far left
-                        position(i) = obj.Axes.(lim{i})(1) + obj.TooltipHandle.Margin*2;
-                    elseif position(i) + extent(i+2) > obj.Axes.(lim{i})(2)  % Tooltip too far right
-                        position(i) = obj.Axes.(lim{i})(2) - extent(i+2)*1.1;% - obj.TooltipHandle.Margin*2;
-                    end
-                end
-
-                obj.TooltipHandle.Position(1:2) = position;
-                % drawnow limitrate
+            if ~isempty(obj.Tooltip) && isvalid(obj.Tooltip)
+                obj.Tooltip.showTooltip(text, position)
             end
         end
 
         function hideTooltip(obj)
-            if ~isempty(obj.TooltipHandle) && isvalid(obj.TooltipHandle)
-                obj.TooltipHandle.String = '';
-                obj.TooltipHandle.Visible = 'off';
+            if ~isempty(obj.Tooltip) && isvalid(obj.Tooltip)
+                obj.Tooltip.hideTooltip()
             end
-        end
-
-        function arrangeTooltipHandle(obj)
-            uistack(obj.TooltipHandle, 'top')
-        end
-
-        function bringTooltipToFront(obj)
-            uistack(obj.TooltipHandle, 'top')
         end
     end
 
@@ -233,23 +212,6 @@ classdef UIComponentCanvas < handle
             set(obj.Parent, 'DefaultAxesCreateFcn', obj.SiblingCreatedFcn)
         end
 
-        function createTooltipHandle(obj) %todo: Make class...
-
-            hAx = obj.Axes;
-
-            % Create a tooltip...
-            obj.TooltipHandle = text(hAx, 1,1, '');
-            obj.TooltipHandle.BackgroundColor = ones(1,3) * 0.2;
-            obj.TooltipHandle.Color = ones(1,3) * 0.8;
-            obj.TooltipHandle.EdgeColor = 'none';
-            obj.TooltipHandle.FontName = 'Avenir Next';
-            obj.TooltipHandle.FontSize = 12;
-            obj.TooltipHandle.HorizontalAlignment = 'left';
-            obj.TooltipHandle.VerticalAlignment = 'top';
-            obj.TooltipHandle.Visible = 'off';
-            obj.TooltipHandle.HitTest = 'off';
-            obj.TooltipHandle.PickableParts = 'none';
-        end
     end
 
     methods (Access = protected) % Event callbacks

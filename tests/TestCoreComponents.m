@@ -278,6 +278,22 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyNotSameHandle(newCanvas, canvas);
         end
 
+        function canvasShowsAndHidesTooltip(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(hFigure);
+
+            canvas.showTooltip('Tooltip message', [50, 50]);
+            tooltipText = findall(canvas.Axes, "Type", "text", ...
+                "String", "Tooltip message");
+            testCase.verifyNumElements(tooltipText, 1);
+            testCase.verifyEqual(char(tooltipText.Visible), 'on');
+
+            canvas.hideTooltip();
+            testCase.verifyEqual(char(tooltipText.Visible), 'off');
+            testCase.verifyEmpty(tooltipText.String);
+        end
+
         function canvasRestoresAndPreservesAxesCreationCallbacks(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
