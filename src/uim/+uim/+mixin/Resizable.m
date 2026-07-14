@@ -1,5 +1,5 @@
-classdef isResizable < uim.Handle
-%isResizeable
+classdef Resizable < uim.Handle
+%Resizable
 
 % Todo:
 %   [ ] Generalize so that it can be used on any object that implements a

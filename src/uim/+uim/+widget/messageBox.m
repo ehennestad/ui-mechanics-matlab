@@ -1,4 +1,4 @@
-classdef messageBox < uim.mixin.isResizable
+classdef messageBox < uim.mixin.Resizable
 %uim.widget.messageBox A class that implements a messagebox for showing
 % popupmessages within a figure window.
 
@@ -31,7 +31,7 @@ classdef messageBox < uim.mixin.isResizable
     end
 
     properties
-        %Parent %isResizable property for which axes the imrect is plotted into
+        %Parent %Resizable property for which axes the imrect is plotted into
         Position
         BackgroundColor = ones(1,3) * 0.2
         BackgroundAlpha = 0.7

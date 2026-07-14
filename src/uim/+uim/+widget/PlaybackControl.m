@@ -1,4 +1,4 @@
-classdef PlaybackControl < uim.mixin.assignProperties
+classdef PlaybackControl < uim.mixin.NameValueAssignable
 %PlaybackControl Widget with controls playing and scrolling through videos
 %
 %     This widget provides 3 playback buttons (play/pause, increase speed

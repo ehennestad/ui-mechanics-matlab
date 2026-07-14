@@ -1,4 +1,4 @@
-classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.assignProperties
+classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameValueAssignable
 %uim.Component Abstract class for ui components to place in a uim.Canvas
 % This class provides basic positioning (layout) and style methods.
 %
@@ -241,7 +241,7 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.assignP
                 C(ind*2 - [1,0])=[];
             end
 
-            parseInputs@uim.mixin.assignProperties(obj, C{:})
+            parseInputs@uim.mixin.NameValueAssignable(obj, C{:})
         end
 
         function assignComponentCanvas(obj)

@@ -1,4 +1,4 @@
-classdef UIComponentCanvas < handle & uim.mixin.assignProperties
+classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
 %UIComponentCanvas A class based canvas for drawing modern ui components
 %
 %   Description

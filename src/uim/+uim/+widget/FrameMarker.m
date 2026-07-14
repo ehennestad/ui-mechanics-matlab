@@ -1,4 +1,4 @@
-classdef FrameMarker < uim.mixin.assignProperties
+classdef FrameMarker < uim.mixin.NameValueAssignable
 
     % Todo
     % [ ] Create Interactive frame marker

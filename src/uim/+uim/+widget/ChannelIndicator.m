@@ -1,4 +1,4 @@
-classdef ChannelIndicator < uim.mixin.assignProperties
+classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
     % Copied some properties and methods from PlaybackControl. Should make
     % a super class for simple widgets for placing in an axes, or

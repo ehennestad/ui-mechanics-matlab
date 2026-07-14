@@ -1,4 +1,4 @@
-classdef Waitbar < uim.mixin.assignProperties
+classdef Waitbar < uim.mixin.NameValueAssignable
 
     properties (Dependent)
         Position (1,4) double

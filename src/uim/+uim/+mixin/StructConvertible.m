@@ -1,5 +1,5 @@
-classdef structAdapter < uim.Handle & matlab.mixin.SetGet
-% structAdapter Class interface for converting a class instance to a struct.
+classdef StructConvertible < uim.Handle & matlab.mixin.SetGet
+% StructConvertible Class interface for converting a class instance to a struct.
 %   This class can also be used to initialize an object from a struct or
 %   cell array of name value pairs that will be assigned to properties upon
 %   instantiation.
@@ -80,7 +80,7 @@ classdef structAdapter < uim.Handle & matlab.mixin.SetGet
             for iProp = 1:numel(propertyNames)
                 thisProp = propertyNames{iProp};
                 for jInstance = 1:numel(S)
-                    if isa( S(jInstance).(thisProp), 'uim.mixin.structAdapter' )
+                    if isa( S(jInstance).(thisProp), 'uim.mixin.StructConvertible' )
                         S(jInstance).(thisProp) = S(jInstance).(thisProp).toStruct();
                     end
                 end

@@ -1,4 +1,4 @@
-classdef PlaneSwitcher < uim.mixin.assignProperties
+classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 
     properties (Dependent)
         Position (1,4) double

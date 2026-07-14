@@ -1,5 +1,5 @@
-classdef assignProperties < uim.Handle & matlab.mixin.SetGet
-%assignProperties Class interface for parsing inputs to properties.
+classdef NameValueAssignable < uim.Handle & matlab.mixin.SetGet
+%NameValueAssignable Class interface for parsing inputs to properties.
 %
 %   Parse inputs in the form of either a) cell array of name value pairs or
 %   b) a struct of fields reflecting class properties. This class should
@@ -65,7 +65,7 @@ classdef assignProperties < uim.Handle & matlab.mixin.SetGet
 
             varargout = {C};
 
-            %parseInputs@uim.mixin.assignProperties(obj, C{:})
+            %parseInputs@uim.mixin.NameValueAssignable(obj, C{:})
         end
     end
 
