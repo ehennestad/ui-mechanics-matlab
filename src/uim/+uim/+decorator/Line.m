@@ -30,8 +30,8 @@ classdef Line < uim.abstract.Control
 
             obj@uim.abstract.Control(varargin{:})
 
-            %delete(obj.hBackground);
-            obj.hBackground.Visible = 'off';
+            %delete(obj.Background);
+            obj.Background.Visible = 'off';
             obj.plotLine()
 
             %obj.Tag = 'Toolbar Separator';

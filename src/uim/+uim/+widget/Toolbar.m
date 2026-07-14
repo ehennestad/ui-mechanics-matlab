@@ -58,7 +58,7 @@ classdef Toolbar < uim.abstract.Container
     end
 
     properties (Access = protected, Transient)
-        hButtons uim.abstract.Component
+        Buttons uim.abstract.Component
         ButtonSizeChangedListener event.listener
     end
 
@@ -77,7 +77,7 @@ classdef Toolbar < uim.abstract.Container
 
         function delete(obj)
             % Delete all buttons and separators.
-            delete(obj.hButtons)
+            delete(obj.Buttons)
             delete(obj.ButtonSizeChangedListener)
         end
     end
@@ -108,9 +108,9 @@ classdef Toolbar < uim.abstract.Container
 
             % Todo: Fix this!
             try
-                obj.hButtons(end+1) = hSep;
+                obj.Buttons(end+1) = hSep;
             catch
-                obj.hButtons = cat(2, obj.hButtons, hSep);
+                obj.Buttons = cat(2, obj.Buttons, hSep);
             end
 
             obj.NumButtons = obj.NumButtons+1;
@@ -143,7 +143,7 @@ classdef Toolbar < uim.abstract.Container
             obj.ButtonSizeChangedListener(end+1) = el;
 
             obj.AllButtonPosition(end+1, :) = hButton.Position;
-            obj.hButtons(end+1) = hButton;
+            obj.Buttons(end+1) = hButton;
             obj.Children(end+1) = hButton;
 
             obj.NumButtons = obj.NumButtons+1;
@@ -168,9 +168,9 @@ classdef Toolbar < uim.abstract.Container
 
         function h = getHandle(obj, tagValue)
 
-            tags = {obj.hButtons.Tag};
+            tags = {obj.Buttons.Tag};
             ind = contains(tags, tagValue);
-            h = obj.hButtons(ind);
+            h = obj.Buttons(ind);
         end
 
         function relocate(obj, shift)
@@ -181,7 +181,7 @@ classdef Toolbar < uim.abstract.Container
         function onButtonSizeChanged(obj, src, ~)
         %onButtonSizeChanged Update buttonsize and reposition all other buttons
 
-            isButton = ismember(obj.hButtons, src);
+            isButton = ismember(obj.Buttons, src);
             obj.AllButtonPosition(isButton, :) = src.Position;
             obj.repositionButtons()
         end
@@ -353,10 +353,10 @@ classdef Toolbar < uim.abstract.Container
             end
 
             % Start replacing buttons starting from left/top
-            for i = 1:numel(obj.hButtons)
-                obj.hButtons(i).Position(obj.DimL_) = anchorPoint;
+            for i = 1:numel(obj.Buttons)
+                obj.Buttons(i).Position(obj.DimL_) = anchorPoint;
                 obj.AllButtonPosition(i,obj.DimL_) = anchorPoint;
-                anchorPoint = anchorPoint + obj.hButtons(i).Position(obj.DimL_+2) + obj.Spacing;
+                anchorPoint = anchorPoint + obj.Buttons(i).Position(obj.DimL_+2) + obj.Spacing;
             end
 
             if strcmp(obj.BackgroundMode, 'wrap')
@@ -374,8 +374,8 @@ classdef Toolbar < uim.abstract.Container
             shifts(:, obj.DimL_) = deltaSpacing .* (0:obj.NumButtons-1);
 
             for i = 1:obj.NumButtons
-                obj.hButtons(i).Position(1:2) = obj.hButtons(i).Position(1:2) + shifts(i,:);
-                obj.AllButtonPosition(i,:) = obj.hButtons(i).Position;
+                obj.Buttons(i).Position(1:2) = obj.Buttons(i).Position(1:2) + shifts(i,:);
+                obj.AllButtonPosition(i,:) = obj.Buttons(i).Position;
             end
 
             if strcmp(obj.BackgroundMode, 'wrap')
@@ -386,14 +386,14 @@ classdef Toolbar < uim.abstract.Container
         function shiftChildren(obj, shift)
 
             for i = 1:obj.NumButtons
-                obj.hButtons(i).Position(1:2) = obj.hButtons(i).Position(1:2) + shift(1:2);
-                obj.AllButtonPosition(i,:) = obj.hButtons(i).Position;
+                obj.Buttons(i).Position(1:2) = obj.Buttons(i).Position(1:2) + shift(1:2);
+                obj.AllButtonPosition(i,:) = obj.Buttons(i).Position;
             end
         end
 
         function redrawBackground(obj)
 
-            if ~isempty(obj.hBackground) && obj.IsConstructed
+            if ~isempty(obj.Background) && obj.IsConstructed
                 switch obj.BackgroundMode
                     case 'full'
                         redrawBackground@uim.abstract.Component(obj)
@@ -410,7 +410,7 @@ classdef Toolbar < uim.abstract.Container
                         X = X + minPos(1);
                         Y = Y + minPos(2);
 
-                        set(obj.hBackground, 'XData', X, 'YData', Y)
+                        set(obj.Background, 'XData', X, 'YData', Y)
 
                     otherwise
                         error('This should not happen!')
@@ -431,9 +431,9 @@ classdef Toolbar < uim.abstract.Container
                     style = uim.style.ButtonLightMode2;
             end
 
-            for i = 1:numel(obj.hButtons)
-                if isa(obj.hButtons(i), 'uim.control.Button')
-                    obj.hButtons(i).Style = style;
+            for i = 1:numel(obj.Buttons)
+                if isa(obj.Buttons(i), 'uim.control.Button')
+                    obj.Buttons(i).Style = style;
                 end
             end
         end
@@ -449,14 +449,14 @@ classdef Toolbar < uim.abstract.Container
                     obj.BackgroundColor = 'w';
             end
 
-            obj.hBackground.FaceAlpha = obj.BackgroundAlpha;
-            obj.hBackground.FaceColor = obj.BackgroundColor;
+            obj.Background.FaceAlpha = obj.BackgroundAlpha;
+            obj.Background.FaceColor = obj.BackgroundColor;
         end
 
         function onVisibleChanged(obj, newValue)
-            obj.hBackground.Visible = newValue;
+            obj.Background.Visible = newValue;
             for i = 1:obj.NumButtons
-                obj.hButtons(i).Visible = newValue;
+                obj.Buttons(i).Visible = newValue;
             end
         end
     end

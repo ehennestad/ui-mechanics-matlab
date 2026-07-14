@@ -70,11 +70,11 @@ classdef Button < uim.abstract.Control
 
     properties (Access = protected, Transient)
 
-        hForeground % Todo: remove
+        Foreground % Todo: remove
 
-        hButtonIcon = gobjects(0,1)
-        hButtonText = gobjects(0,1)
-        buttonContextMenu % Move to control.
+        ButtonIcon = gobjects(0,1)
+        ButtonText = gobjects(0,1)
+        ButtonContextMenu % Move to control.
     end
 
     properties (Access = private, Dependent, Transient)
@@ -95,9 +95,9 @@ classdef Button < uim.abstract.Control
             obj.IsConstructed = true; % IsConstructed will trigger the drawing of the component....
 
             % Configure button interactive behavior.
-            obj.hBackground.ButtonDownFcn = @obj.onMousePressed;
-            obj.hBackground.HitTest = 'on';
-            obj.hBackground.PickableParts = 'all';
+            obj.Background.ButtonDownFcn = @obj.onMousePressed;
+            obj.Background.HitTest = 'on';
+            obj.Background.PickableParts = 'all';
 
             % Todo ... This should be done in a resize method...
             obj.autoWrapButtonText()
@@ -111,12 +111,12 @@ classdef Button < uim.abstract.Control
 
         function delete(obj)
 
-            if ~isempty(obj.hButtonText) && isvalid(obj.hButtonText)
-                delete(obj.hButtonText)
+            if ~isempty(obj.ButtonText) && isvalid(obj.ButtonText)
+                delete(obj.ButtonText)
             end
 
-            if ~isempty(obj.hButtonIcon) && isvalid(obj.hButtonIcon)
-                delete(obj.hButtonIcon)
+            if ~isempty(obj.ButtonIcon) && isvalid(obj.ButtonIcon)
+                delete(obj.ButtonIcon)
             end
 
             if ~isempty(obj.ToggleButtonListener)
@@ -140,10 +140,10 @@ classdef Button < uim.abstract.Control
             if nargin < 2; updateFlag = false; end
 
             if updateFlag
-                delete(obj.hForeground)
+                delete(obj.Foreground)
                 obj.plotButtonIcon();
             else
-                if ~isempty(obj.hForeground); return; end
+                if ~isempty(obj.Foreground); return; end
 
                 if ~isempty(obj.Icon) % Give priority
                     obj.plotButtonIcon()
@@ -158,23 +158,23 @@ classdef Button < uim.abstract.Control
         function plotButtonText(obj)
         %plotButtonText Plot button text
 
-            obj.hButtonText = text(obj.CanvasAxes, 0, 0, obj.Text);
-            obj.hButtonText.VerticalAlignment = 'bottom';
-            obj.hButtonText.Color = obj.ForegroundColor;
-            obj.hButtonText.Interpreter = 'none';
-            obj.hButtonText.FontUnits = 'pixels';
-            obj.hButtonText.FontSize = obj.FontSize;
-            obj.hButtonText.PickableParts = 'none';
-            obj.hButtonText.HitTest = 'off';
+            obj.ButtonText = text(obj.CanvasAxes, 0, 0, obj.Text);
+            obj.ButtonText.VerticalAlignment = 'bottom';
+            obj.ButtonText.Color = obj.ForegroundColor;
+            obj.ButtonText.Interpreter = 'none';
+            obj.ButtonText.FontUnits = 'pixels';
+            obj.ButtonText.FontSize = obj.FontSize;
+            obj.ButtonText.PickableParts = 'none';
+            obj.ButtonText.HitTest = 'off';
 
             obj.updateTextLocation()
         end
 
         function updateButtonText(obj)
-            if isempty(obj.hButtonText)
+            if isempty(obj.ButtonText)
                 obj.plotButtonText()
             else
-                obj.hButtonText.String = obj.Text;
+                obj.ButtonText.String = obj.Text;
             end
             %obj.autoWrapButtonText()
             %obj.updateBackgroundSize()
@@ -185,10 +185,10 @@ classdef Button < uim.abstract.Control
 
             if ~obj.IsConstructed; return; end
 
-            if isempty(obj.hButtonText); return; end
+            if isempty(obj.ButtonText); return; end
 
             % Todo (UI4) Create dependent properties for innerpostion
-            buttonTextWidth = obj.hButtonText.Extent(3);
+            buttonTextWidth = obj.ButtonText.Extent(3);
             buttonInnerWidth = obj.Position(3);
 
             % Align text horizontally within button:
@@ -206,24 +206,24 @@ classdef Button < uim.abstract.Control
                 case 'bottom'
                     dY = obj.Padding(2);
                 case 'middle'
-                    dY = (obj.Position(4) - obj.hButtonText.Extent(4))/2;
+                    dY = (obj.Position(4) - obj.ButtonText.Extent(4))/2;
                 case 'top'
-                    dY = obj.Position(4) - obj.Padding(4) - obj.hButtonText.Extent(4);
+                    dY = obj.Position(4) - obj.Padding(4) - obj.ButtonText.Extent(4);
             end
 
             % Todo: Expand to more cases...
             if ~isempty(obj.Icon)
-                dX = dX + obj.hButtonIcon.Width + obj.IconTextSpacing;
+                dX = dX + obj.ButtonIcon.Width + obj.IconTextSpacing;
             end
 
-            obj.hButtonText.Position(1:2) = obj.Position(1:2) + [dX, dY];
+            obj.ButtonText.Position(1:2) = obj.Position(1:2) + [dX, dY];
         end
 
         function autoWrapButtonText(obj)
 
             if obj.AutoWrapText
-                pixelWidth = obj.hButtonText.Extent(3);
-                obj.Position(3) = pixelWidth + obj.hButtonText.Margin*2 + sum(obj.Padding([1,3]));
+                pixelWidth = obj.ButtonText.Extent(3);
+                obj.Position(3) = pixelWidth + obj.ButtonText.Margin*2 + sum(obj.Padding([1,3]));
             end
         end
 
@@ -236,32 +236,32 @@ classdef Button < uim.abstract.Control
             end
 
             % Delete icon graphics if it already exists.
-            if ~isempty(obj.hButtonIcon) && isvalid(obj.hButtonIcon)
-                delete(obj.hButtonIcon)
+            if ~isempty(obj.ButtonIcon) && isvalid(obj.ButtonIcon)
+                delete(obj.ButtonIcon)
             end
 
             % Use the imageVector to plot the icon
-            obj.hButtonIcon = uim.graphics.ImageVector(obj.Canvas.Axes, obj.Icon);
+            obj.ButtonIcon = uim.graphics.ImageVector(obj.Canvas.Axes, obj.Icon);
 
             % Imagevector are upside down... Should be taken care of
             % somewhere else...
-            obj.hButtonIcon.flipud()
+            obj.ButtonIcon.flipud()
 
             % Prevent it from capturing clicks
-            obj.hButtonIcon.PickableParts = 'none';
-            obj.hButtonIcon.HitTest = 'off';
+            obj.ButtonIcon.PickableParts = 'none';
+            obj.ButtonIcon.HitTest = 'off';
 
             obj.updateIconSize()
 
             % Align icon relative to anchor point.
-            obj.hButtonIcon.VerticalAlignment = 'bottom';
-            obj.hButtonIcon.HorizontalAlignment = 'left';
+            obj.ButtonIcon.VerticalAlignment = 'bottom';
+            obj.ButtonIcon.HorizontalAlignment = 'left';
 
             obj.updateIconLocation()
 
 % %             % Set color
 % %             if ~obj.UseDefaultIcon
-% %                 obj.hForeground.Color = obj.ForegroundColor;
+% %                 obj.Foreground.Color = obj.ForegroundColor;
 % %             end
         end
 
@@ -269,22 +269,22 @@ classdef Button < uim.abstract.Control
         %updateIconSize Update size of the icon within the button
 
             % Get aspect ratios of icon and button...
-            iconAr = obj.hButtonIcon.Width / obj.hButtonIcon.Height;
+            iconAr = obj.ButtonIcon.Width / obj.ButtonIcon.Height;
             buttonAr = (obj.Position(3) - sum(obj.Padding([1,3]))) / ...
                             (obj.Position(4) - sum(obj.Padding([2,4])));
 
             if all(~isnan(obj.IconSize))
                 if iconAr > 1
-                    obj.hButtonIcon.Width = obj.IconSize(1);
+                    obj.ButtonIcon.Width = obj.IconSize(1);
                 else
-                    obj.hButtonIcon.Height = obj.IconSize(2);
+                    obj.ButtonIcon.Height = obj.IconSize(2);
                 end
             else
                 %... in order to scale icon to fit within button
                 if iconAr >= buttonAr
-                    obj.hButtonIcon.Width = obj.Size(1) - sum(obj.Padding([1,3]));
+                    obj.ButtonIcon.Width = obj.Size(1) - sum(obj.Padding([1,3]));
                 else
-                    obj.hButtonIcon.Height = obj.Size(2) - sum(obj.Padding([2,4]));
+                    obj.ButtonIcon.Height = obj.Size(2) - sum(obj.Padding([2,4]));
                 end
             end
         end
@@ -292,12 +292,12 @@ classdef Button < uim.abstract.Control
         function updateIconLocation(obj)
         %updateIconLocation Update location of the icon within the button
 
-            if isempty(obj.hButtonIcon); return; end
+            if isempty(obj.ButtonIcon); return; end
 
             try
-                iconSize = [obj.hButtonIcon.Width, obj.hButtonIcon.Height];
+                iconSize = [obj.ButtonIcon.Width, obj.ButtonIcon.Height];
             catch
-                iconSize = [obj.hButtonIcon.MarkerSize, obj.hButtonIcon.MarkerSize];
+                iconSize = [obj.ButtonIcon.MarkerSize, obj.ButtonIcon.MarkerSize];
             end
 
             % Calculate offset deltaX
@@ -313,7 +313,7 @@ classdef Button < uim.abstract.Control
             % Calculate offset deltaY
             deltaY = (obj.Position(4) - iconSize(2)) / 2;
 
-            obj.hButtonIcon.Position = obj.Position(1:2) + [deltaX, deltaY];
+            obj.ButtonIcon.Position = obj.Position(1:2) + [deltaX, deltaY];
         end
 
         function plotSymbol(obj)
@@ -323,13 +323,13 @@ classdef Button < uim.abstract.Control
             x = obj.Position(1) + obj.Size(1)/2;
             y = obj.Position(2) + obj.Size(2)/2;
 
-            obj.hButtonIcon = plot(obj.Canvas.Axes, x, y, obj.Icon);
-            obj.hButtonIcon.MarkerSize = 12;
-            obj.hButtonIcon.Color = obj.ForegroundColor;
-            obj.hButtonIcon.LineWidth = 2;
+            obj.ButtonIcon = plot(obj.Canvas.Axes, x, y, obj.Icon);
+            obj.ButtonIcon.MarkerSize = 12;
+            obj.ButtonIcon.Color = obj.ForegroundColor;
+            obj.ButtonIcon.LineWidth = 2;
 
-            obj.hButtonIcon.PickableParts = 'none';
-            obj.hButtonIcon.HitTest = 'off';
+            obj.ButtonIcon.PickableParts = 'none';
+            obj.ButtonIcon.HitTest = 'off';
 
             %obj.updateForeground()
         end
@@ -385,10 +385,10 @@ classdef Button < uim.abstract.Control
 
             if ~obj.IsConstructed; return; end
 
-            if ~isempty(obj.hButtonText)
-                obj.hButtonText.FontName = obj.FontName;
-                obj.hButtonText.FontSize = obj.FontSize;
-                obj.hButtonText.FontWeight = obj.FontWeight;
+            if ~isempty(obj.ButtonText)
+                obj.ButtonText.FontName = obj.FontName;
+                obj.ButtonText.FontSize = obj.FontSize;
+                obj.ButtonText.FontWeight = obj.FontWeight;
 
                 obj.updateTextLocation()
             end
@@ -458,19 +458,19 @@ classdef Button < uim.abstract.Control
             % Change interactive behavior of background.
             switch obj.Visible
                 case 'on'
-                    obj.hBackground.PickableParts = 'all';
+                    obj.Background.PickableParts = 'all';
                 case 'off'
-                    obj.hBackground.PickableParts = 'visible';
+                    obj.Background.PickableParts = 'visible';
             end
 
             % Set visibility of graphics components.
-            obj.hBackground.Visible =  obj.Visible;
+            obj.Background.Visible =  obj.Visible;
 
-            if ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'uim.graphics.ImageVector')
-                obj.hButtonIcon.Visible = obj.Visible;
+            if ~isempty(obj.ButtonIcon) && isa(obj.ButtonIcon, 'uim.graphics.ImageVector')
+                obj.ButtonIcon.Visible = obj.Visible;
             end
-            if ~isempty(obj.hButtonText) && isgraphics(obj.hButtonText)
-                obj.hButtonText.Visible = obj.Visible;
+            if ~isempty(obj.ButtonText) && isgraphics(obj.ButtonText)
+                obj.ButtonText.Visible = obj.Visible;
             end
         end
     end
@@ -482,16 +482,16 @@ classdef Button < uim.abstract.Control
 
             if obj.IsConstructed
 
-                if ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'uim.graphics.ImageVector')
-                    obj.hButtonIcon.Color = obj.ForegroundColor;
+                if ~isempty(obj.ButtonIcon) && isa(obj.ButtonIcon, 'uim.graphics.ImageVector')
+                    obj.ButtonIcon.Color = obj.ForegroundColor;
                 end
 
-                if ~isempty(obj.hButtonText) && isgraphics(obj.hButtonText)
-                    obj.hButtonText.Color = obj.ForegroundColor;
+                if ~isempty(obj.ButtonText) && isgraphics(obj.ButtonText)
+                    obj.ButtonText.Color = obj.ForegroundColor;
                 end
 
-                if ~isempty(obj.hButtonText)
-                    obj.hButtonText.FontWeight = obj.FontWeight;
+                if ~isempty(obj.ButtonText)
+                    obj.ButtonText.FontWeight = obj.FontWeight;
                 end
             end
         end
@@ -513,16 +513,16 @@ classdef Button < uim.abstract.Control
         function relocate(obj, shift)
             relocate@uim.abstract.Component(obj, shift)
 
-            if ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'uim.graphics.ImageVector')
-                obj.hButtonIcon.translate(shift(1:2))
-            elseif ~isempty(obj.hButtonIcon) && isa(obj.hButtonIcon, 'matlab.graphics.chart.primitive.Line')
-                obj.hButtonIcon.XData = obj.hButtonIcon.XData + shift(1);
-                obj.hButtonIcon.YData = obj.hButtonIcon.YData + shift(2);
+            if ~isempty(obj.ButtonIcon) && isa(obj.ButtonIcon, 'uim.graphics.ImageVector')
+                obj.ButtonIcon.translate(shift(1:2))
+            elseif ~isempty(obj.ButtonIcon) && isa(obj.ButtonIcon, 'matlab.graphics.chart.primitive.Line')
+                obj.ButtonIcon.XData = obj.ButtonIcon.XData + shift(1);
+                obj.ButtonIcon.YData = obj.ButtonIcon.YData + shift(2);
             end
 
-            if ~isempty(obj.hButtonText) && isa(obj.hButtonText, 'matlab.graphics.primitive.Text')
+            if ~isempty(obj.ButtonText) && isa(obj.ButtonText, 'matlab.graphics.primitive.Text')
                 obj.updateTextLocation()
-                %obj.hButtonText.Position(1:2) = obj.hButtonText.Position(1:2)+shift(1:2);
+                %obj.ButtonText.Position(1:2) = obj.ButtonText.Position(1:2)+shift(1:2);
             end
 
             obj.setTooltipPosition()
@@ -552,12 +552,12 @@ classdef Button < uim.abstract.Control
 
         function value = get.Extent(obj)
 
-            if ~isempty(obj.hButtonText)
-                offset = obj.hButtonText.Position(1:2) - obj.Position(1:2);
-                extent = obj.hButtonText.Extent(3:4) + obj.Padding(3:4);
+            if ~isempty(obj.ButtonText)
+                offset = obj.ButtonText.Position(1:2) - obj.Position(1:2);
+                extent = obj.ButtonText.Extent(3:4) + obj.Padding(3:4);
                 value = [obj.Position(1:2), offset + extent];
                 value(3:4) = max([obj.Position(3:4), value(3:4)]);
-            elseif ~isempty(obj.hButtonIcon)
+            elseif ~isempty(obj.ButtonIcon)
 
                 error('Not implemented')
             end

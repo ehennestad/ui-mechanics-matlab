@@ -37,8 +37,8 @@ classdef Control < uim.abstract.Component
         function delete(obj)
 
             % Reset pointerbehavior
-            if ~isempty(obj.hBackground) && isvalid(obj.hBackground)
-                iptSetPointerBehavior(obj.hBackground, [])
+            if ~isempty(obj.Background) && isvalid(obj.Background)
+                iptSetPointerBehavior(obj.Background, [])
             end
 
             if ~isempty(obj.MouseReleasedListener)
@@ -75,8 +75,8 @@ classdef Control < uim.abstract.Component
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
             try % Use try/catch because this requires image processing toolbox.
-                iptPointerManager(ancestor(obj.hBackground, 'figure'));
-                iptSetPointerBehavior(obj.hBackground, pointerBehavior);
+                iptPointerManager(ancestor(obj.Background, 'figure'));
+                iptSetPointerBehavior(obj.Background, pointerBehavior);
             catch
                 disp('failed to set pointerbehavior')
             end
@@ -109,8 +109,8 @@ classdef Control < uim.abstract.Component
             if isempty(obj.Tooltip); return; end
             if ~obj.IsConstructed; return; end
 
-            centerX = mean(obj.hBackground.XData);
-            centerY = mean(obj.hBackground.YData);
+            centerX = mean(obj.Background.XData);
+            centerY = mean(obj.Background.YData);
 
             obj.TooltipPosition = [centerX, centerY - 0.5*obj.Size(2)-obj.TooltipYOffset];
         end
@@ -125,7 +125,7 @@ classdef Control < uim.abstract.Component
             obj.IsMouseOver = true;
             obj.changeAppearance()
 
-            hFig = ancestor(obj.hBackground, 'figure');
+            hFig = ancestor(obj.Background, 'figure');
             %obj.LastPointer = hFig.Pointer;
             hFig.Pointer = 'hand';
 
@@ -144,7 +144,7 @@ classdef Control < uim.abstract.Component
 
             obj.changeAppearance()
 
-            hFig = ancestor(obj.hBackground, 'figure');
+            hFig = ancestor(obj.Background, 'figure');
             %hFig.Pointer = obj.LastPointer;
             hFig.Pointer = 'arrow';
 
@@ -159,7 +159,7 @@ classdef Control < uim.abstract.Component
             obj.IsMousePressed = true;
 
             if isempty(obj.MouseReleasedListener)
-                hFig = ancestor(obj.hBackground, 'figure');
+                hFig = ancestor(obj.Background, 'figure');
                 el = addlistener(hFig, 'WindowMouseRelease', @obj.onMouseReleased);
                 obj.MouseReleasedListener = el;
             end

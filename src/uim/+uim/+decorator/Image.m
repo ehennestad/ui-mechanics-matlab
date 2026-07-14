@@ -29,8 +29,8 @@ classdef Image < uim.abstract.Component
             % Image specific construction....
 
             % Todo: might want to keep bg...
-            delete( obj.hBackground )
-            obj.hBackground = [];
+            delete( obj.Background )
+            obj.Background = [];
 
             obj.IsConstructed = true;
 

@@ -79,7 +79,6 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 
     properties (Dependent) % SetAccess = private?
         Size (1,2) double = [0, 0] % necessary??
-        %CanvasAxes
     end
 
     properties % Position properties
@@ -129,10 +128,6 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
         Position_ (1,4) double = [1,1,80,20]  % Internally used position
     end
 
-    properties (Access = protected, Dependent, Transient) % SetAccess = private?
-        CanvasAxes
-    end
-
     properties (Hidden, Access = protected, Transient)
         ParentContainerSizeChangedListener event.listener
         ParentContainerLocationChangedListener event.listener
@@ -140,9 +135,9 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
         CanvasDestroyedListener event.listener
         IsConstructed = false
         IsDrawCompleted = false
-        hAxes  % Make this dependent property?
-        hBackground
-        hBorder
+        CanvasAxes
+        Background
+        Border
     end
 
     properties (Hidden, Access = private, Transient)
@@ -196,12 +191,12 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 
         function delete(obj)
 
-            if ~isempty(obj.hBackground) && isvalid(obj.hBackground)
-                delete(obj.hBackground)
+            if ~isempty(obj.Background) && isvalid(obj.Background)
+                delete(obj.Background)
             end
 
-            if ~isempty(obj.hBorder) && isvalid(obj.hBorder)
-                delete(obj.hBorder)
+            if ~isempty(obj.Border) && isvalid(obj.Border)
+                delete(obj.Border)
             end
         end
     end
@@ -261,9 +256,9 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
             end
 
             if isa(obj.Canvas, 'matlab.graphics.axis.Axes')
-                obj.hAxes = obj.Canvas;
+                obj.CanvasAxes = obj.Canvas;
             else
-                obj.hAxes = obj.Canvas.Axes;
+                obj.CanvasAxes = obj.Canvas.Axes;
             end
         end
 
@@ -271,15 +266,15 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
         %createBackground Plot the component background
 
             % Make a patch, without spatial extent
-            obj.hBackground = patch(obj.CanvasAxes, nan, nan, 'w');
+            obj.Background = patch(obj.CanvasAxes, nan, nan, 'w');
 
             % Set interactive properties
-            obj.hBackground.HitTest = 'off';
-            obj.hBackground.PickableParts = 'none';
+            obj.Background.HitTest = 'off';
+            obj.Background.PickableParts = 'none';
 
             % Set style properties
-            obj.hBackground.EdgeColor = 'none';
-            obj.hBackground.FaceAlpha = 0;
+            obj.Background.EdgeColor = 'none';
+            obj.Background.FaceAlpha = 0;
         end
 
         function createBorder(obj) % Subclasses can override
@@ -449,18 +444,6 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
             end
         end
 
-        function hAx = get.CanvasAxes(obj)
-            hAx = obj.hAxes;
-            return;
-
-%             if isa(obj.Canvas, 'uim.UIComponentCanvas')
-%                 hAx = obj.Canvas.Axes;
-%             elseif isa(obj.Canvas, 'matlab.graphics.axis.Axes')
-%                 hAx = obj.Canvas;
-%             else
-%                 error('This should not happen...')
-%             end
-        end
     end
 
     methods % Update position / size / appearance
@@ -651,12 +634,12 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
         end
 
         function moveBackground(obj, shift)
-            if ~isempty(obj.hBackground) && obj.IsConstructed
+            if ~isempty(obj.Background) && obj.IsConstructed
                 if shift(1) ~= 0
-                    obj.hBackground.XData = obj.hBackground.XData + shift(1);
+                    obj.Background.XData = obj.Background.XData + shift(1);
                 end
                 if shift(2) ~= 0
-                    obj.hBackground.YData = obj.hBackground.YData + shift(2);
+                    obj.Background.YData = obj.Background.YData + shift(2);
                 end
             end
             %drawnow limitrate
@@ -668,7 +651,7 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 
         function redrawBackground(obj)
 
-            if ~isempty(obj.hBackground) && obj.IsConstructed
+            if ~isempty(obj.Background) && obj.IsConstructed
 
                 [X, Y] = uim.shape.rectangle(obj.Size, obj.CornerRadius);
 
@@ -677,7 +660,7 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
                     Y = Y + obj.Position_(2);
                 end
 
-                set(obj.hBackground, 'XData', X, 'YData', Y)
+                set(obj.Background, 'XData', X, 'YData', Y)
             end
         end
 
@@ -737,11 +720,11 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
         end
 
         function onStyleChanged(obj)
-            if ~isempty(obj.hBackground) && obj.IsConstructed
-                obj.hBackground.FaceColor = obj.BackgroundColor;
-                obj.hBackground.FaceAlpha = obj.BackgroundAlpha;
-                obj.hBackground.EdgeColor = obj.BorderColor;
-                obj.hBackground.LineWidth = obj.BorderWidth;
+            if ~isempty(obj.Background) && obj.IsConstructed
+                obj.Background.FaceColor = obj.BackgroundColor;
+                obj.Background.FaceAlpha = obj.BackgroundAlpha;
+                obj.Background.EdgeColor = obj.BorderColor;
+                obj.Background.LineWidth = obj.BorderWidth;
             end
         end
 

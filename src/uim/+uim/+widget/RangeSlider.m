@@ -78,7 +78,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
             obj.onVisibleChanged()
 
-            obj.hBackground.Tag = 'Range Slider Background';
+            obj.Background.Tag = 'Range Slider Background';
         end
 
         function delete(obj)
@@ -95,8 +95,8 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             % Slider and especially the slider track is thin, and its easy
             % to miss when pressing it. Patch background so that
             % mousepresses are still captured by this widget on close miss.
-            obj.hBackground.HitTest = 'on';
-            obj.hBackground.PickableParts = 'all';
+            obj.Background.HitTest = 'on';
+            obj.Background.PickableParts = 'all';
 
             obj.plotTrack()
             obj.plotKnobs()
@@ -162,7 +162,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
                 obj.hTrack.Color = obj.TrackColor;
                 obj.hTrack.Tag = 'Range Slider Track';
 
-                obj.hBackground.ButtonDownFcn = @(src, event) obj.onSliderMoved(src);
+                obj.Background.ButtonDownFcn = @(src, event) obj.onSliderMoved(src);
                 obj.hTrack.ButtonDownFcn = @(src, event) obj.onSliderMoved(src);
             else
                 set(obj.hTrack, 'XData', xCoords, 'YData', yCoords)
@@ -227,7 +227,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             [xCoords, yCoords] = obj.getTextCoordinates(whichSlider);
 
             if isempty(obj.hText)
-                obj.hText = text(obj.hAxes, xCoords, yCoords, '');
+                obj.hText = text(obj.CanvasAxes, xCoords, yCoords, '');
                 obj.hText.VerticalAlignment = 'Bottom';
                 obj.hText.HorizontalAlignment = 'left';
                 obj.hText.Color = obj.TextColor;
@@ -251,9 +251,9 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
             switch obj.Visible
                 case 'on'
-                    obj.hBackground.PickableParts = 'all';
+                    obj.Background.PickableParts = 'all';
                 case 'off'
-                    obj.hBackground.PickableParts = 'none';
+                    obj.Background.PickableParts = 'none';
             end
         end
     end
@@ -407,7 +407,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
         function onSliderMoved(obj, src, ~)
 
-            mousePoint = obj.hAxes.CurrentPoint(1, 1:2);
+            mousePoint = obj.CanvasAxes.CurrentPoint(1, 1:2);
 
             % Calculate value based on position in axes and relative range
             % of axes.

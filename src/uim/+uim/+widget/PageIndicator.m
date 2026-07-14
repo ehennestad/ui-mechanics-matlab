@@ -128,7 +128,7 @@ classdef PageIndicator < uim.abstract.Control
                 X_ = X + pos(1);
                 Y_ = Y;
 
-                obj.hPageButtons(i) = patch(obj.hAxes, X_, Y_, obj.IndicatorColor);
+                obj.hPageButtons(i) = patch(obj.CanvasAxes, X_, Y_, obj.IndicatorColor);
                 obj.setPointerBehavior(obj.hPageButtons(i))
                 obj.hPageButtons(i).ButtonDownFcn = @obj.onPageButtonPressed;
 
@@ -137,10 +137,10 @@ classdef PageIndicator < uim.abstract.Control
 % %                     'Position', [pos(1:2)+10, 10*R, 10*R], 'Size', [2*R, 2*R], ...
 % %                     'PositionMode', 'manual', 'CornerRadius', 6, 'Style', uim.style.ButtonScheme);
 
-                obj.hPageLabels(i) = text(obj.hAxes, pos(1), pos(2)+3*R, obj.PageNames{i}, 'Color', obj.FontColor);
+                obj.hPageLabels(i) = text(obj.CanvasAxes, pos(1), pos(2)+3*R, obj.PageNames{i}, 'Color', obj.FontColor);
                 obj.hPageLabels(i).FontUnits = 'pixel';
 
-                obj.hVBar(i) = plot(obj.hAxes, ones(1,2)*(pos(1)+R), [y1, y2]);
+                obj.hVBar(i) = plot(obj.CanvasAxes, ones(1,2)*(pos(1)+R), [y1, y2]);
 
                 if i == 1
                     obj.hPageButtons(i).FaceColor = obj.BarColor;
@@ -153,7 +153,7 @@ classdef PageIndicator < uim.abstract.Control
             end
 
             xEnd = pos(1) - S;
-            obj.hHBar = plot(obj.hAxes, [xInit, xEnd], ones(1,2) * y2 );
+            obj.hHBar = plot(obj.CanvasAxes, [xInit, xEnd], ones(1,2) * y2 );
 
             set([obj.hHBar, obj.hVBar], 'Color', obj.BarColor)
             set([obj.hHBar, obj.hVBar], 'LineWidth', 1.5)

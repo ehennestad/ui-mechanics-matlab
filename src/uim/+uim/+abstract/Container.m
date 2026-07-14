@@ -37,28 +37,28 @@ classdef Container < uim.abstract.Component
 
             args = uim.utility.getAxesToolbarArgs();
 
-            obj.hAxes = axes('Parent', hGraphicsParent, args{:});
-            hold(obj.hAxes, 'on');
+            obj.CanvasAxes = axes('Parent', hGraphicsParent, args{:});
+            hold(obj.CanvasAxes, 'on');
 
-            set(obj.hAxes, 'XTick', [], 'YTick', [])
-            obj.hAxes.Visible = 'off';
-            obj.hAxes.Units = 'pixel';
-            obj.hAxes.HandleVisibility = 'off';
-            obj.hAxes.Tag = sprintf('%s Widget Canvas', obj.Type);
+            set(obj.CanvasAxes, 'XTick', [], 'YTick', [])
+            obj.CanvasAxes.Visible = 'off';
+            obj.CanvasAxes.Units = 'pixel';
+            obj.CanvasAxes.HandleVisibility = 'off';
+            obj.CanvasAxes.Tag = sprintf('%s Widget Canvas', obj.Type);
 
-            axis(obj.hAxes, 'equal')
+            axis(obj.CanvasAxes, 'equal')
 
             if all(isfinite(obj.Position))
-                obj.hAxes.Position = obj.Position;
-                obj.hAxes.YLim = [1, obj.Position(4)];
-                obj.hAxes.XLim = [1, obj.Position(3)];
+                obj.CanvasAxes.Position = obj.Position;
+                obj.CanvasAxes.YLim = [1, obj.Position(4)];
+                obj.CanvasAxes.XLim = [1, obj.Position(3)];
             end
 
             if ~isempty(args)
-                disableDefaultInteractivity(obj.hAxes)
+                disableDefaultInteractivity(obj.CanvasAxes)
             end
 
-            obj.Canvas = obj.hAxes;
+            obj.Canvas = obj.CanvasAxes;
         end
 
         function onChildAdded(~, ~)

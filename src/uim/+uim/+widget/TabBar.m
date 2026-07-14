@@ -33,9 +33,9 @@ classdef TabBar < uim.widget.Toolbar
 
             obj.AllButtonPosition(end+1, :) = hSep.Position;
             try
-                obj.hButtons(end+1) = hSep;
+                obj.Buttons(end+1) = hSep;
             catch
-                obj.hButtons = cat(2, obj.hButtons, hSep);
+                obj.Buttons = cat(2, obj.Buttons, hSep);
             end
             obj.NumButtons = obj.NumButtons+1;
 
