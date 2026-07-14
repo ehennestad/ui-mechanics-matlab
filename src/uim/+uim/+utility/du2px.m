@@ -10,12 +10,19 @@ function pixelCoordinates = du2px(ax, dataUnits, recursive)
     end
 
     axPos = getpixelposition(ax, recursive);
-    axLim = reshape(axis(ax), 2, 2);
+    axLim = [ax.XLim; ax.YLim]';
     axRange = diff(axLim);
+    relativeCoordinates = (dataUnits - axLim(1, :)) ./ axRange;
 
-% %     ax.YDir
-% %     ax.XDir
+    if strcmp(ax.XDir, 'reverse')
+        relativeCoordinates(:, 1) = 1 - relativeCoordinates(:, 1);
+    end
+    if strcmp(ax.YDir, 'reverse')
+        relativeCoordinates(:, 2) = 1 - relativeCoordinates(:, 2);
+    end
 
-    pixelCoordinates = axPos(1:2) + ...
-        (dataUnits - axLim(1, 1:2)) .* axPos(3:4) ./ axRange;
+    pixelCoordinates = relativeCoordinates .* axPos(3:4);
+    if recursive
+        pixelCoordinates = pixelCoordinates + axPos(1:2);
+    end
 end

@@ -3,9 +3,6 @@ function varargout = px2du(ax, pixelCoords, recursive)
 %
 %   dataUnits = px2du(ax, pixelCoords)
 
-    % Note: Only supports axes with xlim and ylim [0,1]
-    % Todo: Normalize by xRange and yRange
-
     if nargin < 3
         recursive = false; % See getpixelposition doc
     end
@@ -22,10 +19,17 @@ function varargout = px2du(ax, pixelCoords, recursive)
     axRange = diff(axLim);
 
     if recursive
-        dataUnits = (pixelCoords-axPos(1:2)) ./ axPos(3:4) .* axRange + axLim(1, 1:2);
-    else
-        dataUnits = pixelCoords ./ axPos(3:4) .* axRange + axLim(1, 1:2);
+        pixelCoords = pixelCoords - axPos(1:2);
     end
+    relativeCoordinates = pixelCoords ./ axPos(3:4);
+    if strcmp(ax.XDir, 'reverse')
+        relativeCoordinates(:, 1) = 1 - relativeCoordinates(:, 1);
+    end
+    if strcmp(ax.YDir, 'reverse')
+        relativeCoordinates(:, 2) = 1 - relativeCoordinates(:, 2);
+    end
+
+    dataUnits = relativeCoordinates .* axRange + axLim(1, 1:2);
 
     if nargout == 1
         varargout = {dataUnits};
