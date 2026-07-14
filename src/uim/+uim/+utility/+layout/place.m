@@ -9,11 +9,12 @@ function place(hFigure, location, offset)
 %   an offset. offset can be a scalar or a vector with x- and y-offset.
 
     if nargin < 3; offset = [0, 0]; end
-    screenSize = uim.utility.getCurrentScreenSize(hFigure);
 
-    if numel(offset) == 1
+    if isscalar(offset)
         offset = [offset, offset];
     end
+
+    screenSize = uim.utility.getCurrentScreenSize(hFigure);
 
     switch location
 
@@ -21,7 +22,7 @@ function place(hFigure, location, offset)
             hFigure.Position(2) = screenSize(2) + offset(2);
 
         case 'top'
-            hFigure.Position(2) = screenSize(4) - hFigure.Position(4) + offset(2);
+            hFigure.Position(2) = screenSize(2) + screenSize(4) - hFigure.Position(4) + offset(2);
 
         case 'center'
             uim.utility.centerFigureOnScreen(hFigure)
@@ -30,22 +31,22 @@ function place(hFigure, location, offset)
             hFigure.Position(1) = screenSize(1) + offset(1);
 
         case 'right'
-            hFigure.Position(1) = screenSize(3) - hFigure.Position(3) + offset(1);
+            hFigure.Position(1) = screenSize(1) + screenSize(3) - hFigure.Position(3) + offset(1);
 
         case 'southeast'
-            uim.utility.layout.place(hFigure, 'bottom', offset(1))
-            uim.utility.layout.place(hFigure, 'right', offset(2))
+            uim.utility.layout.place(hFigure, 'bottom', offset)
+            uim.utility.layout.place(hFigure, 'right', offset)
 
         case 'southwest'
-            uim.utility.layout.place(hFigure, 'bottom', offset(1))
-            uim.utility.layout.place(hFigure, 'left', offset(2))
+            uim.utility.layout.place(hFigure, 'bottom', offset)
+            uim.utility.layout.place(hFigure, 'left', offset)
 
         case 'northeast'
-            uim.utility.layout.place(hFigure, 'top', offset(1))
-            uim.utility.layout.place(hFigure, 'left', offset(2))
+            uim.utility.layout.place(hFigure, 'top', offset)
+            uim.utility.layout.place(hFigure, 'right', offset)
 
         case 'northwest'
-            uim.utility.layout.place(hFigure, 'top', offset(1))
-            uim.utility.layout.place(hFigure, 'left', offset(2))
+            uim.utility.layout.place(hFigure, 'top', offset)
+            uim.utility.layout.place(hFigure, 'left', offset)
     end
 end
