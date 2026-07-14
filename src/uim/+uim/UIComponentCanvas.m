@@ -20,13 +20,16 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
 % a new axes is created on the figure. This is done to make sure the
 % UIComponentCanvas axes is always on top.
 %
-% This canvas will obviously not work in a figure/uifigure which has
-% multiple panels, since panels stack on top of axes.
+% Limitation: The canvas can not overlay panels. Panels always stack on
+% top of axes, so in a figure/uifigure with multiple panels the canvas
+% must be parented inside the panel it should cover, not the figure.
 
 % Todo:
-%   [�] Create a variation of UIComponentCanvas for single components.
-%   [ ] Outsource tooltip manager to a separate class.
-%   [ ] Debug object destruction...
+%   [ ] Create a variation of UIComponentCanvas for single components.
+%   [ ] Throttle SizeChanged notifications during interactive resize
+%       (e.g. skip notify if the previous one fired less than ~30 ms ago)
+%       so that component reposition/redraw does not run for every
+%       intermediate size.
 
     properties (SetAccess = private, Transient)
         Parent = []                 % Parent handle (figure/uifigure)
@@ -42,7 +45,6 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
     end
 
     properties (Access = private, Transient, Hidden)
-        PreviousPixelPosition = [nan, nan, nan, nan]
         PixelPosition = [nan, nan, nan, nan]
         PixelSize = [nan, nan]
         ParentSizeChangedListener event.listener = event.listener.empty
@@ -165,13 +167,7 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
             obj.Axes.PickableParts = 'visible';
             obj.Axes.Tag = 'UI Component Canvas Axes';
 
-            obj.Axes.Color = [0.2,0.2,0.2];
-
             hold(obj.Axes, 'on')
-
-% %             obj.Axes.DataAspectRatio = [1 1 1];
-% %             obj.Axes.DataAspectRatioMode = 'manual';
-% %             axis(obj.Axes, 'equal')
 
             obj.setAxesLimits()
 
@@ -247,33 +243,23 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
 
     methods (Access = protected) % Event callbacks
 
-        function onSizeChanged(obj, ~, evt)
+        function onSizeChanged(obj, ~, ~)
         %onSizeChanged Call an update to the PixelSize property
             newParentPosition = uim.utility.getContentPixelPosition(obj.Parent);
-
-            persistent t0
-            if isempty(t0); t0 = clock; t0 = t0(6); end
 
             oldSize = obj.PixelSize;
             newSize = newParentPosition(3:4);
 
-            obj.PreviousPixelPosition = obj.PixelPosition;
             obj.PixelPosition = newParentPosition;
-
             obj.PixelSize = newSize;
 
-            if nargin < 2 || isempty(evt) % On creation...
-                evt = event.EventData;
-            else
-                evt = uim.event.SizeChangedData(oldSize, newSize);
-            end
-
+            % On creation oldSize is [nan, nan]; listeners can use this to
+            % tell the initial sizing apart from an actual resize.
+            evt = uim.event.SizeChangedData(oldSize, newSize);
             obj.notify('SizeChanged', evt)
         end
 
         function onLocationChanged(obj, ~, ~)
-
-            obj.PreviousPixelPosition = obj.PixelPosition;
             obj.PixelPosition = uim.utility.getContentPixelPosition(obj.Parent);
         end
 
@@ -305,64 +291,18 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
             if isempty(obj.Axes); return; end
 
             if strcmp(obj.Axes.Units, 'pixels')
+                axesSize = max(obj.PixelSize, [1, 1]);
+                axesLimits = [1, max(axesSize(1)+1, 2); ...
+                              1, max(axesSize(2)+1, 2)];
+                newPosition = [1,1, axesSize];
 
-% %                 if ~all(isnan(obj.PreviousPixelPosition))
-% %                     obj.setAxesLimitsRelative()
-% %                 else
-                    axesSize = max(obj.PixelSize, [1, 1]);
-                    axesLimits = [1, max(axesSize(1)+1, 2); ...
-                                  1, max(axesSize(2)+1, 2)];
-                    newPosition = [1,1, axesSize];
-
-                    set(obj.Axes, 'Position', newPosition, ...
-                        'XLim', axesLimits(1, :), 'YLim', axesLimits(2, :))
-% %
-% %                 end
-
+                set(obj.Axes, 'Position', newPosition, ...
+                    'XLim', axesLimits(1, :), 'YLim', axesLimits(2, :))
             else
                 axesSize = max(obj.PixelSize, [1, 1]);
                 obj.Axes.XLim = [1, max(axesSize(1)+1, 2)];
                 obj.Axes.YLim = [1, max(axesSize(2)+1, 2)];
             end
-        end
-
-        function setAxesLimitsRelative(obj)
-        %setAxesLimitsRelative Adjust axes limits relative to current view
-        %
-        %   Alternative to always updating limits while keeping lower left
-        %   corner as a fixed point (1,1)
-
-        %   NB: Currently not in use
-
-            % Calculate position changes
-            deltaX = obj.PixelPosition(1) - obj.PreviousPixelPosition(1);
-            deltaY = obj.PixelPosition(2) - obj.PreviousPixelPosition(2);
-            deltaW = obj.PixelPosition(3) - obj.PreviousPixelPosition(3);
-            deltaH = obj.PixelPosition(4) - obj.PreviousPixelPosition(4);
-
-            if deltaX ~= 0 && deltaW ~= 0
-                newXLim(1) = obj.Axes.XLim(1) + deltaX;
-                newXLim(2) = newXLim(1) + obj.PixelSize(1);
-            elseif deltaX == 0 && deltaW ~= 0
-                newXLim(2) = obj.Axes.XLim(2);
-                newXLim(1) = obj.Axes.XLim(2) - obj.PixelSize(1);
-            else
-                newXLim = obj.Axes.XLim;
-            end
-
-            if deltaY ~= 0 && deltaH ~= 0
-                newYLim(1) = obj.Axes.YLim(1) + deltaY;
-                newYLim(2) = newYLim(1) + obj.PixelSize(2);
-            elseif deltaY == 0 && deltaH ~= 0
-                newYLim(2) = obj.Axes.YLim(2);
-                newYLim(1) = obj.Axes.YLim(2) - obj.PixelSize(2);
-            else
-                newYLim = obj.Axes.YLim;
-            end
-
-            % Update axes position and limits.
-            newPosition = [obj.Axes.Position(1:2), obj.PixelSize];
-            set(obj.Axes, 'Position', newPosition, 'XLim', newXLim, 'YLim', newYLim)
         end
 
         function removeParent(obj)
@@ -423,9 +363,6 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
         function size = get.Size(obj)
             size = obj.PixelSize;
         end
-        function set.Size(obj, newSize)
-            obj.PixelSize = newSize;
-        end
 
         function set.Parent(obj, newValue)
         %set.Parent Validate value and assign to Parent property
@@ -473,11 +410,7 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
 
     methods (Static)
 
-        function hAxes = createComponentAxes(hParent, n)
-
-            if nargin < 2
-                n = 1;% Number of axes to create (Todo)
-            end
+        function hAxes = createComponentAxes(hParent)
 
             args = uim.utility.getAxesToolbarArgs();
 
@@ -498,8 +431,3 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
         end
     end
 end
-
-% % Test SizeChangedListener
-% % f=figure;
-% % uicc = uim.UIComponentCanvas(f);
-% % el = listener(uicc, 'SizeChanged', @(s,e) disp(e));
