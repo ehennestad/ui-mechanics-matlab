@@ -251,6 +251,33 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyClass(oButton, "uim.control.Button");
         end
 
+        function canvasAppliesConstructionOptions(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+
+            canvas = uim.UIComponentCanvas(hFigure, "Tag", "My Canvas");
+
+            testCase.verifyEqual(canvas.Tag, 'My Canvas');
+            testCase.verifyEqual(canvas.Axes.Tag, 'My Canvas Axes');
+        end
+
+        function canvasEnforcesOneCanvasPerParent(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(hFigure);
+
+            testCase.verifyError(@() uim.UIComponentCanvas(hFigure), ...
+                "uim:UIComponentCanvas:DuplicateCanvas");
+
+            testCase.verifySameHandle(...
+                uim.UIComponentCanvas.getOrCreate(hFigure), canvas);
+
+            delete(canvas)
+            newCanvas = uim.UIComponentCanvas.getOrCreate(hFigure);
+            testCase.verifyTrue(isvalid(newCanvas));
+            testCase.verifyNotSameHandle(newCanvas, canvas);
+        end
+
         function canvasRestoresAndPreservesAxesCreationCallbacks(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);

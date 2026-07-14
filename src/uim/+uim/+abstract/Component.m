@@ -247,12 +247,7 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
             elseif isa(obj.Parent, 'uim.UIComponentCanvas')
                 obj.Canvas = obj.Parent;
             else
-                obj.Canvas = getappdata(obj.Parent, 'UIComponentCanvas');
-
-                if isempty(obj.Canvas)
-                    obj.Canvas = uim.UIComponentCanvas(obj.Parent, 'GlassMode', 'off');
-                    setappdata(obj.Parent, 'UIComponentCanvas', obj.Canvas);
-                end
+                obj.Canvas = uim.UIComponentCanvas.getOrCreate(obj.Parent);
             end
 
             if isa(obj.Canvas, 'matlab.graphics.axis.Axes')

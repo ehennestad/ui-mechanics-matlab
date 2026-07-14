@@ -1,5 +1,15 @@
-classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
+classdef UIComponentCanvas < handle
 %UIComponentCanvas A class based canvas for drawing modern ui components
+%
+%   canvas = uim.UIComponentCanvas(hParent) creates a canvas covering the
+%   content area of hParent (a figure, uifigure or panel).
+%
+%   canvas = uim.UIComponentCanvas(hParent, Tag=tagValue) additionally
+%   assigns a custom tag to the canvas and its axes.
+%
+%   canvas = uim.UIComponentCanvas.getOrCreate(hParent) returns the
+%   canvas already attached to hParent, or creates one if none exists.
+%   A parent container holds at most one canvas.
 %
 %   Description
 %       Built around an axes which overlays all other components in a
@@ -7,6 +17,9 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
 %       can be plotted in the axes. This provides a high level of style
 %       customization, because the appearance of a component is only
 %       limited by what its possible to plot.
+%
+%       The canvas always fills its parent's content area and tracks
+%       parent resize; it has no position of its own.
 %
 
 % Note: In general, it is better to parent the canvas in a panel than
@@ -34,8 +47,6 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
     properties (SetAccess = private, Transient)
         Parent = []                 % Parent handle (figure/uifigure)
         Axes = []                   % Handle to the axes which components are plotted in
-        Position (1,4) double = [0,0,1,1] % Position within the parent.
-        Units = 'pixels'            % Units for position property
         Children = []               % List of uicomponents
         Tag = 'UI Component Canvas' % A tag which is also applied to the axes.
     end
@@ -60,14 +71,15 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
     end
 
     methods % Structors
-        function obj = UIComponentCanvas(hParent, varargin)
+        function obj = UIComponentCanvas(hParent, options)
 
-            if nargin < 1; hParent = figure; end
+            arguments
+                hParent (1,1) matlab.graphics.Graphics = figure()
+                options.Tag (1,:) char = 'UI Component Canvas'
+            end
 
+            obj.Tag = options.Tag;
             obj.Parent = hParent;
-
-            obj.parseInputs(varargin{:})
-            %obj.assignPVPairs(varargin{:})
 
             obj.onSizeChanged() % Call update because we set the parent
 
@@ -159,13 +171,12 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
 
             obj.Axes = axes(obj.Parent, args{:});
 
-            obj.Axes.Position = obj.Position;
-            obj.Axes.Units = obj.Units;
+            obj.Axes.Units = 'pixels';
             obj.Axes.Visible = 'off';
             obj.Axes.HandleVisibility = 'off';
             obj.Axes.HitTest = 'on';
             obj.Axes.PickableParts = 'visible';
-            obj.Axes.Tag = 'UI Component Canvas Axes';
+            obj.Axes.Tag = sprintf('%s Axes', obj.Tag);
 
             hold(obj.Axes, 'on')
 
@@ -372,6 +383,16 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
 
             assert( isa(newValue, 'matlab.graphics.Graphics'), errMsg)
 
+            % A parent holds at most one canvas; a second one would fight
+            % over the DefaultAxesCreateFcn hook and the appdata entry.
+            existingCanvas = getappdata(newValue, 'UIComponentCanvas');
+            if ~isempty(existingCanvas) && isvalid(existingCanvas) ...
+                    && existingCanvas ~= obj
+                error('uim:UIComponentCanvas:DuplicateCanvas', ...
+                    ['The parent container already has a UIComponentCanvas. ', ...
+                     'Use uim.UIComponentCanvas.getOrCreate to retrieve it.'])
+            end
+
             hadParent = ~isempty(obj.Parent) && isvalid(obj.Parent);
 
             if hadParent
@@ -409,6 +430,14 @@ classdef UIComponentCanvas < handle & uim.mixin.NameValueAssignable
     end
 
     methods (Static)
+
+        function obj = getOrCreate(hParent)
+        %getOrCreate Return the canvas attached to hParent, creating one if needed
+            obj = getappdata(hParent, 'UIComponentCanvas');
+            if isempty(obj) || ~isvalid(obj)
+                obj = uim.UIComponentCanvas(hParent);
+            end
+        end
 
         function hAxes = createComponentAxes(hParent)
 
