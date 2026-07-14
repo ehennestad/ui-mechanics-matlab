@@ -139,7 +139,7 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
         CanvasDestroyedListener event.listener
         IsConstructed (1,1) logical = false
         IsDrawCompleted (1,1) logical = false
-        CanvasAxes
+        CanvasAxes matlab.graphics.axis.Axes
         Background
         Border
     end
