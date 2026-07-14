@@ -1,4 +1,4 @@
-classdef tableTheme < handle
+classdef TableTheme < handle
 
     properties (Abstract, Constant)
 

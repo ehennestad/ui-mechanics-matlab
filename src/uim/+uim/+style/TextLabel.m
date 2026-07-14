@@ -1,4 +1,4 @@
-classdef textLabel < uim.style.buttonScheme
+classdef TextLabel < uim.style.ButtonScheme
 
     properties (Constant)
 

@@ -36,7 +36,7 @@ classdef Button < uim.abstract.Control
         MechanicalAction = 'Switch when released' % Switch when pressed, Switch until released, Switch when released
         % Switch = togglebutton, Latch = pushbutton
 
-        Style = uim.style.buttonDarkMode
+        Style = uim.style.ButtonDarkMode
 
         UseDefaultIcon = false %Todo: Rename or reconsider...
         AutoWrapText = false % Similar to BarExtensionMode

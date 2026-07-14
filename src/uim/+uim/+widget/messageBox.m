@@ -24,7 +24,7 @@ classdef messageBox < uim.mixin.isResizable
 
         isMouseOver
         Value = 0
-        Style = uim.style.buttonDarkMode
+        Style = uim.style.ButtonDarkMode
 
         MessageTimer
         CornerRadius = 2

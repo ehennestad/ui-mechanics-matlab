@@ -1,4 +1,4 @@
-classdef buttonLetterSelection < uim.style.buttonScheme
+classdef ButtonLetterSelection < uim.style.ButtonScheme
 
     properties (Constant)
 

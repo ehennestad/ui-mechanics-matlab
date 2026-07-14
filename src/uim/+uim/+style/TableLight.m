@@ -1,4 +1,4 @@
-classdef tableLight < uim.style.tableTheme
+classdef TableLight < uim.style.TableTheme
 
     properties (Constant)
 

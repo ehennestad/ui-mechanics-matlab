@@ -1,4 +1,4 @@
-classdef buttonLightMode2 < uim.style.buttonScheme
+classdef ButtonLightMode2 < uim.style.ButtonScheme
 
     properties (Constant)
 

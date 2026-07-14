@@ -1,4 +1,4 @@
-classdef listboxButton < uim.style.buttonScheme
+classdef ListboxButton < uim.style.ButtonScheme
 
     properties (Constant)
 

@@ -1,4 +1,4 @@
-classdef buttonScheme < handle
+classdef ButtonScheme < handle
 
     % Todo: Add disabled on and off
 

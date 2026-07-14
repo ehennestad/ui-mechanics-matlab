@@ -135,7 +135,7 @@ classdef PageIndicator < uim.abstract.Control
                 % Todo: Use a button
 % %                 h = uim.control.Button(obj.Parent, ...
 % %                     'Position', [pos(1:2)+10, 10*R, 10*R], 'Size', [2*R, 2*R], ...
-% %                     'PositionMode', 'manual', 'CornerRadius', 6, 'Style', uim.style.nansenPageButton);
+% %                     'PositionMode', 'manual', 'CornerRadius', 6, 'Style', uim.style.ButtonScheme);
 
                 obj.hPageLabels(i) = text(obj.hAxes, pos(1), pos(2)+3*R, obj.PageNames{i}, 'Color', obj.FontColor);
                 obj.hPageLabels(i).FontUnits = 'pixel';

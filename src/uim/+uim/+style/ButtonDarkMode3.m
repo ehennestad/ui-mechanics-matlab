@@ -1,4 +1,4 @@
-classdef buttonDarkMode3 < uim.style.buttonScheme
+classdef ButtonDarkMode3 < uim.style.ButtonScheme
 
     properties (Constant)
 

@@ -426,9 +426,9 @@ classdef toolbar < uim.abstract.Container
 
             switch obj.DarkMode
                 case 'on'
-                    style = uim.style.buttonDarkMode;
+                    style = uim.style.ButtonDarkMode;
                 case 'off'
-                    style = uim.style.buttonLightMode2;
+                    style = uim.style.ButtonLightMode2;
             end
 
             for i = 1:numel(obj.hButtons)
@@ -466,9 +466,9 @@ classdef toolbar < uim.abstract.Container
         function style = get.Style(obj)
             switch obj.DarkMode
                 case 'on'
-                    style = uim.style.buttonDarkMode;
+                    style = uim.style.ButtonDarkMode;
                 case 'off'
-                    style = uim.style.buttonLightMode;
+                    style = uim.style.ButtonLightMode;
             end
         end
 

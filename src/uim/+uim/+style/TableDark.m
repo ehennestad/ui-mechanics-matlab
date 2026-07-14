@@ -1,4 +1,4 @@
-classdef tableDark < uim.style.tableTheme
+classdef TableDark < uim.style.TableTheme
 
     properties (Constant)
 
