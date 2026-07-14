@@ -32,15 +32,15 @@ classdef ImageVector < handle
     end
 
     properties (SetAccess = private)
-        boundingBox
+        BoundingBox
     end
 
     properties (Access = private)
-        numShapes
-        hPolygon
+        NumShapes
+        Polygons
 
-        currentAngle = 0
-        currentPosition = [0, 0]
+        CurrentAngle = 0
+        CurrentPosition = [0, 0]
     end
 
     methods
@@ -71,8 +71,8 @@ classdef ImageVector < handle
                 hP(i) = plot(V(i).Shape, 'FaceColor', V(i).Color, 'FaceAlpha', 1, 'EdgeColor', 'none', 'Parent', hParent);
             end
 
-            obj.numShapes = numShapes;
-            obj.hPolygon = hP;
+            obj.NumShapes = numShapes;
+            obj.Polygons = hP;
 
             % Find out how to prevent sticking the object to the userdata
             % to avoid it being deleted when object goes out of scope...
@@ -89,16 +89,16 @@ classdef ImageVector < handle
 
         function delete(obj)
 
-            for i = 1:obj.numShapes
-                delete(obj.hPolygon(i))
+            for i = 1:obj.NumShapes
+                delete(obj.Polygons(i))
             end
 
             delete(obj)
         end
 
         function V = getVectorStruct(obj)
-            polyShape = arrayfun(@(h) h.Shape, obj.hPolygon, 'uni', 0);
-            colors = arrayfun(@(h) h.FaceColor, obj.hPolygon, 'uni', 0);
+            polyShape = arrayfun(@(h) h.Shape, obj.Polygons, 'uni', 0);
+            colors = arrayfun(@(h) h.FaceColor, obj.Polygons, 'uni', 0);
 
             for i = 1:numel(polyShape)
                 p1 = polyShape{i};
@@ -111,17 +111,17 @@ classdef ImageVector < handle
 
         function rotate(obj, angle)
 
-            origBBox = obj.boundingBox;
-            %currentPosition = obj.currentPosition;
+            origBBox = obj.BoundingBox;
+            %currentPosition = obj.CurrentPosition;
 
             offset = origBBox(1:2) + origBBox(3:4)/2;
             obj.translate(-offset);
 
-            for i = 1:obj.numShapes
-                obj.hPolygon(i).Shape = rotate(obj.hPolygon(i).Shape, angle);
+            for i = 1:obj.NumShapes
+                obj.Polygons(i).Shape = rotate(obj.Polygons(i).Shape, angle);
             end
 
-            obj.currentAngle = obj.currentAngle + angle;
+            obj.CurrentAngle = obj.CurrentAngle + angle;
             obj.translate(offset);
         end
 
@@ -129,16 +129,16 @@ classdef ImageVector < handle
 
             warning('off', 'MATLAB:polyshape:repairedBySimplify')
 
-            origBBox = obj.boundingBox;
+            origBBox = obj.BoundingBox;
 
             dx = -origBBox(1);
             obj.translate([-dx, 0]);
 
-            for i = 1:obj.numShapes
-                obj.hPolygon(i).Shape.Vertices = [-1, 1] .* obj.hPolygon(i).Shape.Vertices;
+            for i = 1:obj.NumShapes
+                obj.Polygons(i).Shape.Vertices = [-1, 1] .* obj.Polygons(i).Shape.Vertices;
             end
 
-            newBBox = obj.boundingBox;
+            newBBox = obj.BoundingBox;
             dx = origBBox(1) - newBBox(1);
 
             obj.translate([dx, 0]);
@@ -150,41 +150,41 @@ classdef ImageVector < handle
 
             warning('off', 'MATLAB:polyshape:repairedBySimplify')
 
-            currentPositionKeep = obj.currentPosition;
+            currentPositionKeep = obj.CurrentPosition;
 
-            origBBox = obj.boundingBox;
+            origBBox = obj.BoundingBox;
 
             dy = -origBBox(2);
 
             obj.translate([0, -dy]);
 
-            for i = 1:obj.numShapes
-                obj.hPolygon(i).Shape.Vertices = [1, -1] .* obj.hPolygon(i).Shape.Vertices;
+            for i = 1:obj.NumShapes
+                obj.Polygons(i).Shape.Vertices = [1, -1] .* obj.Polygons(i).Shape.Vertices;
             end
 
-            newBBox = obj.boundingBox;
+            newBBox = obj.BoundingBox;
             dy = origBBox(2) - newBBox(2);
 
             obj.translate([0, dy]);
 
             warning('on', 'MATLAB:polyshape:repairedBySimplify')
 
-            obj.currentPosition = currentPositionKeep;
+            obj.CurrentPosition = currentPositionKeep;
         end
 
         function translate(obj, shift)
 
             % if strcmp(mVer(1:5), '9.4.0')
-                for i = 1:obj.numShapes
-                    obj.hPolygon(i).Shape.Vertices = obj.hPolygon(i).Shape.Vertices + shift;
+                for i = 1:obj.NumShapes
+                    obj.Polygons(i).Shape.Vertices = obj.Polygons(i).Shape.Vertices + shift;
                 end
 %             else
-%                 for i = 1:obj.numShapes
-%                     obj.hPolygon(i).Shape = translate(obj.hPolygon(i).Shape, shift);
+%                 for i = 1:obj.NumShapes
+%                     obj.Polygons(i).Shape = translate(obj.Polygons(i).Shape, shift);
 %                 end
 %             end
 
-            obj.currentPosition =  obj.currentPosition + shift;
+            obj.CurrentPosition =  obj.CurrentPosition + shift;
         end
 
         function scale(obj, scaleFactor)
@@ -193,30 +193,30 @@ classdef ImageVector < handle
                 scaleFactor = repmat(scaleFactor, 1, 2);
             end
 
-            for i = 1:obj.numShapes
-                obj.hPolygon(i).Shape = scale(obj.hPolygon(i).Shape, scaleFactor);
+            for i = 1:obj.NumShapes
+                obj.Polygons(i).Shape = scale(obj.Polygons(i).Shape, scaleFactor);
             end
         end
 
         function reposition(obj, newAlignment)
 
-            bbox = obj.boundingBox;
+            bbox = obj.BoundingBox;
             [dx,dy] = deal(0);
 
             switch newAlignment
 
                 case 'left'
-                    dx = obj.currentPosition(1) - bbox(1);
+                    dx = obj.CurrentPosition(1) - bbox(1);
                 case 'right'
-                    dx = obj.currentPosition(1) - bbox(1)+bbox(3);
+                    dx = obj.CurrentPosition(1) - bbox(1)+bbox(3);
                 case 'center'
-                    dx = obj.currentPosition(1) - bbox(1)+bbox(3)/2;
+                    dx = obj.CurrentPosition(1) - bbox(1)+bbox(3)/2;
                 case 'top'
-                    dy = obj.currentPosition(2) - bbox(2)+bbox(4);
+                    dy = obj.CurrentPosition(2) - bbox(2)+bbox(4);
                 case 'bottom'
-                    dy = obj.currentPosition(2) - bbox(2);
+                    dy = obj.CurrentPosition(2) - bbox(2);
                 case 'middle'
-                    dy = obj.currentPosition(2) - bbox(2)+bbox(4)/2;
+                    dy = obj.CurrentPosition(2) - bbox(2)+bbox(4)/2;
             end
 
             obj.translate([dx, dy]);
@@ -226,14 +226,14 @@ classdef ImageVector < handle
     methods (Access = private) % Callbacks for property changes
 
         function onColorChanged(obj, color)
-            for i = 1:numel(obj.hPolygon)
-                obj.hPolygon(i).FaceColor = color;
+            for i = 1:numel(obj.Polygons)
+                obj.Polygons(i).FaceColor = color;
             end
         end
 
         function onAlphaChanged(obj, value)
-            for i = 1:numel(obj.hPolygon)
-                obj.hPolygon(i).FaceAlpha = value;
+            for i = 1:numel(obj.Polygons)
+                obj.Polygons(i).FaceAlpha = value;
             end
         end
     end
@@ -242,24 +242,24 @@ classdef ImageVector < handle
 
         function set.Clipping(obj, newValue)
 
-            for i = 1:numel(obj.hPolygon)
-                obj.hPolygon(i).Clipping = newValue;
+            for i = 1:numel(obj.Polygons)
+                obj.Polygons(i).Clipping = newValue;
             end
         end
 
         function newValue = get.Clipping(obj)
-            newValue = obj.hPolygon(1).Clipping;
+            newValue = obj.Polygons(1).Clipping;
         end
 
         function set.Visible(obj, newValue)
 
-            for i = 1:numel(obj.hPolygon)
-                obj.hPolygon(i).Visible = newValue;
+            for i = 1:numel(obj.Polygons)
+                obj.Polygons(i).Visible = newValue;
             end
         end
 
         function newValue = get.Visible(obj)
-            newValue = obj.hPolygon(1).Visible;
+            newValue = obj.Polygons(1).Visible;
         end
 
         function set.HorizontalAlignment(obj, value)
@@ -302,10 +302,10 @@ classdef ImageVector < handle
         end
 
         function width = get.Width(obj)
-            bbox = obj.boundingBox;
+            bbox = obj.BoundingBox;
             width = bbox(3);
 
-%             shapes = cat(1, [obj.hPolygon.Shape] );
+%             shapes = cat(1, [obj.Polygons.Shape] );
 %             coords = cat(1, shapes.Vertices);
 %             width = uim.utility.range(coords(:, 1));
         end
@@ -326,17 +326,17 @@ classdef ImageVector < handle
         end
 
         function height = get.Height(obj)
-            bbox = obj.boundingBox;
+            bbox = obj.BoundingBox;
             height = bbox(4);
 
-%             shapes = cat(1, [obj.hPolygon.Shape] );
+%             shapes = cat(1, [obj.Polygons.Shape] );
 %             coords = cat(1, shapes.Vertices);
 %             height = uim.utility.range(coords(:, 2));
         end
 
         function set.Position(obj, value)
 
-            bbox = obj.boundingBox;
+            bbox = obj.BoundingBox;
             anchorPosition = [0,0];
 
             switch obj.VerticalAlignment
@@ -361,11 +361,11 @@ classdef ImageVector < handle
             shift = value - anchorPosition;
             obj.translate(shift);
 
-            obj.currentPosition = obj.boundingBox(1:2) + obj.boundingBox(3:4)/2;
+            obj.CurrentPosition = obj.BoundingBox(1:2) + obj.BoundingBox(3:4)/2;
         end
 
         function position = get.Position(obj)
-            position = obj.currentPosition;
+            position = obj.CurrentPosition;
         end
 
         function set.Color(obj, newValue)
@@ -375,12 +375,12 @@ classdef ImageVector < handle
 
         function set.Angle(obj, value)
 
-            deltaAngle = value - obj.currentAngle;
+            deltaAngle = value - obj.CurrentAngle;
             obj.rotate(deltaAngle)
         end
 
         function angle = get.Angle(obj)
-            angle = obj.currentAngle;
+            angle = obj.CurrentAngle;
         end
 
         function set.Alpha(obj, newValue)
@@ -389,18 +389,18 @@ classdef ImageVector < handle
         end
 
         function set.PickableParts(obj, newValue)
-            set(obj.hPolygon, 'PickableParts', newValue)
+            set(obj.Polygons, 'PickableParts', newValue)
             obj.PickableParts = newValue;
         end
 
         function set.HitTest(obj, newValue)
-            set(obj.hPolygon, 'HitTest', newValue)
+            set(obj.Polygons, 'HitTest', newValue)
             obj.HitTest = newValue;
         end
 
-        function bbox = get.boundingBox(obj)
+        function bbox = get.BoundingBox(obj)
 
-            shapes = cat(1, [obj.hPolygon.Shape] );
+            shapes = cat(1, [obj.Polygons.Shape] );
             coords = cat(1, shapes.Vertices);
 
             coordinateRange = max(coords) - min(coords);

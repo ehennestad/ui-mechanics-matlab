@@ -182,8 +182,8 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             hPanel = uipanel(hFigure);
 
             tileAxes = uim.graphics.TiledImageAxes(hPanel, ...
-                "gridSize", [2, 2], "imageSize", [16, 16]);
-            testCase.verifyEqual(tileAxes.nTiles, 4);
+                "GridSize", [2, 2], "ImageSize", [16, 16]);
+            testCase.verifyEqual(tileAxes.NumTiles, 4);
 
             hAxes = axes(hPanel);
             imageData = uint8(255 * ones(40, 40, 3));
