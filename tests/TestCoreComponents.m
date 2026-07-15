@@ -876,6 +876,30 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 "String", "gray"));
         end
 
+        function dropDownAppliesListColors(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            dropdown = uim.widget.DropDown(canvas, ...
+                'Items', ["a", "b"], 'Value', "b", ...
+                'ListBackgroundColor', [0.1, 0.2, 0.3], ...
+                'ListBorderColor', [1, 0, 0], ...
+                'SelectionColor', [0, 0, 1]);
+
+            dropdown.open()
+
+            listBackground = findall(canvas.Axes, "Type", "patch", ...
+                "FaceColor", [0.1, 0.2, 0.3]);
+            testCase.verifyNumElements(listBackground, 1);
+            testCase.verifyEqual(listBackground.EdgeColor, [1, 0, 0]);
+
+            rows = findall(canvas.Axes, "Tag", "DropDownItem");
+            selectedRow = rows([rows.UserData] == dropdown.ValueIndex);
+            testCase.verifyEqual(selectedRow.FaceColor, [0, 0, 1]);
+            testCase.verifyEqual(selectedRow.FaceAlpha, 0.15);
+        end
+
         function explicitSizeSurvivesParentResize(testCase)
             hFigure = figure("Visible", "off", "Position", [200, 200, 500, 400]);
             testCase.addTeardown(@deleteValid, hFigure);

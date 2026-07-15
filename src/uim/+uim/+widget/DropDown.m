@@ -20,6 +20,13 @@ classdef DropDown < uim.abstract.Control
 %   it may extend below the canvas bounds (e.g. outside an overlay
 %   canvas covering a data axes).
 %
+%   Styling: the closed chip uses the inherited BackgroundColor,
+%   BackgroundAlpha, BorderColor, BorderWidth and CornerRadius; the
+%   open list uses ListBackgroundColor/ListBackgroundAlpha/
+%   ListBorderColor, and the row fills use HighlightColor (hover) and
+%   SelectionColor (selected item). Text and the arrow follow
+%   ForegroundColor.
+%
 %   Todo:
 %       [ ] Open upward when there is no room below the control.
 
@@ -37,6 +44,19 @@ classdef DropDown < uim.abstract.Control
 
         FontName = 'helvetica'
         FontSize = 12
+    end
+
+    properties % List appearance
+        % The closed chip is styled with the inherited BackgroundColor,
+        % BackgroundAlpha, BorderColor, BorderWidth and CornerRadius.
+        % List colors take effect the next time the list opens.
+
+        ListBackgroundColor = []        % Background of the open list. Empty: follow BackgroundColor
+        ListBackgroundAlpha (1,1) double {mustBeGreaterThanOrEqual(ListBackgroundAlpha, 0), mustBeLessThanOrEqual(ListBackgroundAlpha, 1)} = 0.9
+        ListBorderColor = []            % Edge color of the open list. Empty: follow ForegroundColor
+
+        HighlightColor = 'w'            % Fill of the row under the cursor
+        SelectionColor = 'w'            % Fill marking the selected item's row
     end
 
     properties (Dependent, Transient)
@@ -199,14 +219,18 @@ classdef DropDown < uim.abstract.Control
             listTop = obj.Position(2);
             listHeight = numel(obj.Items) * obj.ItemHeight;
 
-            faceColor = obj.BackgroundColor;
+            faceColor = obj.ListBackgroundColor;
+            if isempty(faceColor); faceColor = obj.BackgroundColor; end
             if strcmp(faceColor, 'none'); faceColor = [0.2, 0.2, 0.2]; end
+
+            edgeColor = obj.ListBorderColor;
+            if isempty(edgeColor); edgeColor = obj.ForegroundColor; end
 
             obj.ListBackground = patch(obj.CanvasAxes, ...
                 x0 + [0, width, width, 0], ...
                 listTop - [listHeight, listHeight, 0, 0], faceColor);
-            obj.ListBackground.FaceAlpha = 0.9;
-            obj.ListBackground.EdgeColor = obj.ForegroundColor;
+            obj.ListBackground.FaceAlpha = obj.ListBackgroundAlpha;
+            obj.ListBackground.EdgeColor = edgeColor;
             obj.ListBackground.LineWidth = 0.5;
             obj.ListBackground.Clipping = 'off';
             obj.ListBackground.HitTest = 'on';
@@ -221,7 +245,8 @@ classdef DropDown < uim.abstract.Control
 
                 hRow = patch(obj.CanvasAxes, ...
                     x0 + [0, width, width, 0], ...
-                    rowTop - [obj.ItemHeight, obj.ItemHeight, 0, 0], 'w');
+                    rowTop - [obj.ItemHeight, obj.ItemHeight, 0, 0], ...
+                    obj.SelectionColor);
                 hRow.EdgeColor = 'none';
                 hRow.FaceAlpha = 0.15 * (i == obj.ValueIndex);
                 hRow.Clipping = 'off';
@@ -257,9 +282,10 @@ classdef DropDown < uim.abstract.Control
             % Validity guards: the pointer manager can fire an exit
             % callback for the row the cursor was on while that row is
             % being deleted (e.g. clicking an item closes the list).
-            pointerBehavior.enterFcn = @(~, ~) setRowFaceAlpha(hRow, 0.35);
-            pointerBehavior.exitFcn = @(~, ~) setRowFaceAlpha(hRow, ...
-                0.15 * (itemIndex == obj.ValueIndex));
+            pointerBehavior.enterFcn = @(~, ~) setRowHighlight(hRow, ...
+                obj.HighlightColor, 0.35);
+            pointerBehavior.exitFcn = @(~, ~) setRowHighlight(hRow, ...
+                obj.SelectionColor, 0.15 * (itemIndex == obj.ValueIndex));
             pointerBehavior.traverseFcn = [];
 
             uim.utility.setPointerBehavior(hRow, pointerBehavior)
@@ -373,8 +399,9 @@ classdef DropDown < uim.abstract.Control
     end
 end
 
-function setRowFaceAlpha(hRow, faceAlpha)
+function setRowHighlight(hRow, faceColor, faceAlpha)
     if isvalid(hRow)
+        hRow.FaceColor = faceColor;
         hRow.FaceAlpha = faceAlpha;
     end
 end
