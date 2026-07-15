@@ -991,6 +991,51 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 "AbsTol", 1e-10);
         end
 
+        function contrastSliderPushesAndNotifies(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            slider = uim.widget.ContrastSlider(canvas, ...
+                'DataLimits', [0, 255], 'Limits', [10, 200], ...
+                'LimitsChangedFcn', ...
+                @(~, evt) setappdata(hFigure, 'LimitsEvent', evt), ...
+                'AutoRequestedFcn', ...
+                @(~, evt) setappdata(hFigure, 'AutoEvent', evt));
+
+            % Contrast-semantics properties map onto the range slider.
+            testCase.verifyEqual(slider.DataLimits, [0, 255]);
+            testCase.verifyEqual(slider.Limits, [10, 200]);
+            testCase.verifyEqual([slider.Min, slider.Max], [0, 255]);
+            testCase.verifyEqual([slider.Low, slider.High], [10, 200]);
+
+            % Programmatic push updates silently.
+            slider.Limits = [0, 128];
+            testCase.verifyEmpty(getappdata(hFigure, 'LimitsEvent'));
+
+            % A user interaction (the internal RangeSlider callback
+            % channel) notifies with old/new limit pairs.
+            slider.Callback(slider, struct('Low', 20, 'High', 220))
+            evt = getappdata(hFigure, 'LimitsEvent');
+            testCase.verifyEqual(evt.OldValue, [0, 128]);
+            testCase.verifyEqual(evt.NewValue, [20, 220]);
+
+            % A collapsed range is clamped to strictly increasing limits
+            % before notification, so hosts can assign NewValue to CLim.
+            slider.Callback(slider, struct('Low', 50, 'High', 40))
+            evt = getappdata(hFigure, 'LimitsEvent');
+            testCase.verifyGreaterThan(evt.NewValue(2), evt.NewValue(1));
+            testCase.verifyEqual(evt.NewValue(1), 50);
+
+            % The auto button requests auto levels from the host.
+            autoButton = findall(canvas.Axes, ...
+                "Tag", "ContrastSliderAutoButton");
+            testCase.verifyNumElements(autoButton, 1);
+            autoButton.ButtonDownFcn([], [])
+            testCase.verifyClass(getappdata(hFigure, 'AutoEvent'), ...
+                "uim.event.EventData");
+        end
+
         function explicitSizeSurvivesParentResize(testCase)
             hFigure = figure("Visible", "off", "Position", [200, 200, 500, 400]);
             testCase.addTeardown(@deleteValid, hFigure);
