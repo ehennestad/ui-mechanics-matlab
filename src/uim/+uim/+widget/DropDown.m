@@ -368,6 +368,7 @@ classdef DropDown < uim.abstract.Control
             S.BackgroundColor = 'k';
             S.BackgroundAlpha = 0.6;
             S.CornerRadius = 3;
+            S.Padding = [8, 3, 8, 3]; % Text/arrow inset from the chip edges
         end
     end
 end
