@@ -275,8 +275,7 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
             pointerBehavior.exitFcn     = @(s,e,hObj)obj.onMouseExited(h);
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            iptSetPointerBehavior(h, pointerBehavior);
-            iptPointerManager(ancestor(h, 'figure'));
+            uim.utility.setPointerBehavior(h, pointerBehavior)
         end
 
         function onMouseEntered(obj, h, varargin)

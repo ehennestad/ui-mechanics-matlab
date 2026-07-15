@@ -208,8 +208,7 @@ classdef ScrollBar < uim.Handle
             pointerBehavior.exitFcn     = @(s,e)obj.lowlightBar;
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            iptSetPointerBehavior(obj.Bar(2), pointerBehavior);
-            iptPointerManager(ancestor(obj.Bar(2), 'figure'));
+            uim.utility.setPointerBehavior(obj.Bar(2), pointerBehavior)
         end
 
         function highlightBar(obj)

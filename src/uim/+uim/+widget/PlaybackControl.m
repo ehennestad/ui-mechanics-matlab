@@ -736,8 +736,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             pointerBehavior.exitFcn     = @(s,e,hObj)obj.onMouseExited(h);
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            iptSetPointerBehavior(h, pointerBehavior);
-            iptPointerManager(ancestor(h, 'figure'));
+            uim.utility.setPointerBehavior(h, pointerBehavior)
         end
 
         function onMouseEntered(obj, h, varargin)
@@ -779,8 +778,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             pointerBehavior.exitFcn     = @(s,e,hObj)obj.onMouseExitedRangeButton(h);
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            iptSetPointerBehavior(h, pointerBehavior);
-            iptPointerManager(ancestor(h, 'figure'));
+            uim.utility.setPointerBehavior(h, pointerBehavior)
         end
 
         function onMouseEnteredRangeButton(obj, ~, varargin)

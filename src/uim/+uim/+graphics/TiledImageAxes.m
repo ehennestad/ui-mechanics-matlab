@@ -307,16 +307,14 @@ methods (Access = private) % Methods for setting up gui
                 pointerBehavior.enterFcn    = @(s,e,num)obj.onMouseEnteredTile(i);
                 pointerBehavior.exitFcn     = @(s,e,num)obj.onMouseExitedTile(i);
 
-                iptSetPointerBehavior(obj.TileOutline(i), pointerBehavior);
+                uim.utility.setPointerBehavior(obj.TileOutline(i), pointerBehavior)
             end
 
         else % Reset
             for i = 1:numel(obj.TileOutline)
-                iptSetPointerBehavior(obj.TileOutline(i), []);
+                uim.utility.setPointerBehavior(obj.TileOutline(i), [])
             end
         end
-
-        iptPointerManager(obj.Figure_);
     end
 
     function updateGraphicsObjects(obj)

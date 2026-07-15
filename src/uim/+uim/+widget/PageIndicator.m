@@ -309,8 +309,7 @@ classdef PageIndicator < uim.abstract.Control
             pointerBehavior.exitFcn     = @(s,e) obj.onMouseExited(s, h);
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            iptSetPointerBehavior(h, pointerBehavior);
-            iptPointerManager(ancestor(h, 'figure'));
+            uim.utility.setPointerBehavior(h, pointerBehavior)
         end
 
         function onPageButtonPressed(obj, src, ~)

@@ -420,8 +420,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             pointerBehavior.exitFcn     = @(s,e,hObj)obj.onMouseExitKnob(h);
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            iptSetPointerBehavior(h, pointerBehavior);
-            iptPointerManager(ancestor(h, 'figure'));
+            uim.utility.setPointerBehavior(h, pointerBehavior)
         end
     end
 

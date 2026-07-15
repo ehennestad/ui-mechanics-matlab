@@ -38,7 +38,7 @@ classdef Control < uim.abstract.Component
 
             % Reset pointerbehavior
             if ~isempty(obj.Background) && isvalid(obj.Background)
-                iptSetPointerBehavior(obj.Background, [])
+                uim.utility.setPointerBehavior(obj.Background, [])
             end
 
             if ~isempty(obj.MouseReleasedListener)
@@ -71,12 +71,7 @@ classdef Control < uim.abstract.Component
             pointerBehavior.exitFcn     = @obj.onMouseExited;
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            try % Use try/catch because this requires image processing toolbox.
-                iptPointerManager(ancestor(obj.Background, 'figure'));
-                iptSetPointerBehavior(obj.Background, pointerBehavior);
-            catch
-                disp('failed to set pointerbehavior')
-            end
+            uim.utility.setPointerBehavior(obj.Background, pointerBehavior)
         end
 
         function showTooltip(obj)

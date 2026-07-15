@@ -229,8 +229,7 @@ classdef MessageBox < uim.mixin.Resizable
             pointerBehavior.exitFcn     = @obj.onMouseExitedButton;
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            iptSetPointerBehavior(obj.CloseButton, pointerBehavior);
-            iptPointerManager(ancestor(obj.CloseButton, 'figure'));
+            uim.utility.setPointerBehavior(obj.CloseButton, pointerBehavior)
             uistack(obj.CloseButton, 'top')
 
         end % \createTextbox

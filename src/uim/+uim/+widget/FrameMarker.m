@@ -96,8 +96,7 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
             pointerBehavior.exitFcn     = @(s,e,hObj)obj.onMouseExitSlider(h);
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            iptSetPointerBehavior(h, pointerBehavior);
-            iptPointerManager(ancestor(h, 'figure'));
+            uim.utility.setPointerBehavior(h, pointerBehavior)
         end
 
         function updateFrameMarker(obj, ~)
