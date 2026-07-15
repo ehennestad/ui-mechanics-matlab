@@ -236,6 +236,15 @@ classdef Toolbar < uim.abstract.Container
             end
 
             obj.Position_(3:4) = extent;
+
+            % Re-anchor after the size change: writing Position_ directly
+            % bypasses set.Size, so a location-anchored toolbar (e.g.
+            % 'northeast') would otherwise grow away from its anchor.
+            % (updateLocation is a no-op when PositionMode is 'manual'.)
+            % The buttons then need an absolute reposition from the new
+            % bar origin — moving the bar does not move its buttons.
+            obj.updateLocation()
+            obj.repositionButtons()
         end
 
         function [minPositionL, extent] = getButtonExtentAlongLength(obj)
