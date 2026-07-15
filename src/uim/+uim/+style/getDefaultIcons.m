@@ -14,14 +14,20 @@ function icons = getDefaultIcons()
 %   The icons were drawn by the toolbox author and are stored as
 %   patch-ready vector data in resources/icons/icon_library.mat.
 
-    persistent cachedIcons
+    persistent cachedIcons cachedFileDate
 
-    if isempty(cachedIcons)
-        toolboxSourceDir = fileparts(fileparts(fileparts(...
-            mfilename('fullpath'))));
-        iconFile = fullfile(toolboxSourceDir, 'resources', 'icons', ...
-            'icon_library.mat');
+    toolboxSourceDir = fileparts(fileparts(fileparts(...
+        mfilename('fullpath'))));
+    iconFile = fullfile(toolboxSourceDir, 'resources', 'icons', ...
+        'icon_library.mat');
+
+    % Key the cache on the file timestamp, so an updated icon library
+    % (e.g. after pulling a new toolbox version into a running session)
+    % is picked up without requiring clear functions.
+    fileInfo = dir(iconFile);
+    if isempty(cachedIcons) || ~isequal(cachedFileDate, fileInfo.datenum)
         cachedIcons = load(iconFile);
+        cachedFileDate = fileInfo.datenum;
     end
 
     icons = cachedIcons;
