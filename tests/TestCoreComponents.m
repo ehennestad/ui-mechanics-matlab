@@ -945,6 +945,43 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyFalse(isvalid(panButton));
         end
 
+        function overviewIndicatorMapsAndNotifies(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            indicator = uim.widget.OverviewIndicator(canvas, ...
+                'DataLimits', [0, 200; 0, 100], ...
+                'ViewLimits', [50, 100; 25, 50], ...
+                'YDir', 'reverse', ...
+                'ViewChangedFcn', ...
+                @(~, evt) setappdata(hFigure, 'LastEvent', evt));
+
+            % The frame preserves the data aspect ratio (2:1) and the
+            % view rect spans a quarter of the frame width.
+            frame = findall(canvas.Axes, "Tag", "OverviewFrame");
+            viewRect = findall(canvas.Axes, "Tag", "OverviewViewRect");
+            frameWidth = max(frame.XData) - min(frame.XData);
+            frameHeight = max(frame.YData) - min(frame.YData);
+            testCase.verifyEqual(frameWidth/frameHeight, 2, "AbsTol", 1e-10);
+            viewWidth = max(viewRect.XData) - min(viewRect.XData);
+            testCase.verifyEqual(viewWidth, frameWidth/4, "AbsTol", 1e-10);
+
+            % Programmatic push updates silently.
+            setappdata(hFigure, 'LastEvent', [])
+            indicator.ViewLimits = [0, 100; 0, 50];
+            testCase.verifyEmpty(getappdata(hFigure, 'LastEvent'));
+
+            % centerViewOn keeps the view size, clamps to the data
+            % extent and notifies with the applied limits.
+            indicator.centerViewOn(190, 90) % Near the corner -> clamped
+            evt = getappdata(hFigure, 'LastEvent');
+            testCase.verifyEqual(evt.XLim, [100, 200], "AbsTol", 1e-10);
+            testCase.verifyEqual(evt.YLim, [50, 100], "AbsTol", 1e-10);
+            testCase.verifyEqual(indicator.ViewLimits, [100, 200; 50, 100], ...
+                "AbsTol", 1e-10);
+        end
+
         function explicitSizeSurvivesParentResize(testCase)
             hFigure = figure("Visible", "off", "Position", [200, 200, 500, 400]);
             testCase.addTeardown(@deleteValid, hFigure);
