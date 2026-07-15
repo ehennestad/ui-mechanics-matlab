@@ -46,6 +46,7 @@ classdef Spinner < uim.abstract.Control
         DecrementButton = gobjects(0,1)
         IncrementButton = gobjects(0,1)
         EditBox = gobjects(0,1)
+        WindowMousePressListener
     end
 
     methods % Structors
@@ -65,6 +66,10 @@ classdef Spinner < uim.abstract.Control
         function delete(obj)
             deleteValidHandles([obj.ValueText, ...
                 obj.DecrementButton, obj.IncrementButton])
+
+            if ~isempty(obj.WindowMousePressListener)
+                delete(obj.WindowMousePressListener)
+            end
 
             if ~isempty(obj.EditBox) && isvalid(obj.EditBox)
                 delete(obj.EditBox)
@@ -184,11 +189,35 @@ classdef Spinner < uim.abstract.Control
                 'Units', 'pixels', 'Position', obj.getpixelposition(), ...
                 'Callback', @obj.finishEdit);
 
+            % Also commit when the user clicks anywhere outside the edit
+            % box: the uicontrol callback only fires on Enter, or on
+            % focus loss when the text changed, so an untouched box
+            % would otherwise linger.
+            obj.WindowMousePressListener = addlistener(...
+                ancestor(obj.EditBox, 'figure'), ...
+                'WindowMousePress', @obj.onMousePressedDuringEdit);
+
             uicontrol(obj.EditBox) % Give the edit box keyboard focus
+        end
+
+        function onMousePressedDuringEdit(obj, ~, evt)
+            if isequal(evt.HitObject, obj.EditBox); return; end
+            obj.finishEdit(obj.EditBox, [])
         end
 
         function finishEdit(obj, src, ~)
         %finishEdit Apply the typed value and remove the edit box
+        %
+        %   Reachable from both the edit box callback and the
+        %   window-press listener; the isvalid guard makes a second
+        %   invocation for the same edit a no-op.
+
+            if ~isempty(obj.WindowMousePressListener)
+                delete(obj.WindowMousePressListener)
+                obj.WindowMousePressListener = [];
+            end
+
+            if ~isvalid(src); return; end
 
             newValue = str2double(src.String);
 
