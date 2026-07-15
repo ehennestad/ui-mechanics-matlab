@@ -900,6 +900,51 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyEqual(selectedRow.FaceAlpha, 0.15);
         end
 
+        function pointerToolbarBindingSyncsButtonsAndTools(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "Units", "pixels", ...
+                "Position", [50, 50, 300, 220]);
+            imagesc(hAxes, magic(50))
+
+            manager = uim.interface.PointerManager(hFigure, hAxes, ...
+                {'zoomIn', 'pan'});
+            testCase.addTeardown(@deleteValid, manager);
+
+            toolbar = uim.widget.Toolbar(hAxes, "Location", "northeast");
+            binding = uim.interface.PointerToolBinding(toolbar, manager, ...
+                ["zoomIn", "pan"]);
+
+            testCase.verifyNumElements(binding.Buttons, 2);
+            zoomButton = binding.Buttons(1);
+            panButton = binding.Buttons(2);
+
+            % Button -> tool: clicking the button activates the tool,
+            % and the tool's toggle event flips the button state.
+            zoomButton.Callback([], [])
+            testCase.verifySameHandle(...
+                manager.CurrentPointerTool, manager.Pointers.zoomIn);
+            testCase.verifyTrue(logical(zoomButton.Value));
+
+            % Tool -> buttons: switching mode by other means updates
+            % both button states.
+            manager.togglePointerMode('pan')
+            testCase.verifySameHandle(...
+                manager.CurrentPointerTool, manager.Pointers.pan);
+            testCase.verifyFalse(logical(zoomButton.Value));
+            testCase.verifyTrue(logical(panButton.Value));
+
+            % Modes the manager does not know are rejected clearly.
+            testCase.verifyError(@() uim.interface.PointerToolBinding(...
+                toolbar, manager, "crop"), ...
+                "uim:PointerToolBinding:UnknownMode");
+
+            % Deleting the binding removes the buttons it created.
+            delete(binding)
+            testCase.verifyFalse(isvalid(zoomButton));
+            testCase.verifyFalse(isvalid(panButton));
+        end
+
         function explicitSizeSurvivesParentResize(testCase)
             hFigure = figure("Visible", "off", "Position", [200, 200, 500, 400]);
             testCase.addTeardown(@deleteValid, hFigure);
