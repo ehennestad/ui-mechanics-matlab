@@ -64,9 +64,7 @@ classdef Container < uim.abstract.Component
                 obj.CanvasAxes.XLim = [1, obj.Position(3)];
             end
 
-            if ~isempty(args)
-                disableDefaultInteractivity(obj.CanvasAxes)
-            end
+            uim.utility.disableAxesInteractivity(obj.CanvasAxes)
 
             obj.Canvas = obj.CanvasAxes;
         end

@@ -327,26 +327,19 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         function createAxes(obj, parentHandle)
 
             if isa(parentHandle, 'matlab.graphics.axis.Axes')
+                % Caller-supplied slider axes: leave its interactivity
+                % policy to the caller, but the button axes is ours.
                 obj.SliderAxes = parentHandle;
                 obj.ButtonAxes = axes('Parent', parentHandle.Parent);
+                uim.utility.disableAxesInteractivity(obj.ButtonAxes)
             else
-                matlabVersion = version('-release');
-                doDisableToolbar = str2double(matlabVersion(1:4))>2018 || ...
-                                       strcmp(matlabVersion, '2018b');
-
-                if doDisableToolbar
-                    args = {'Toolbar', []};
-                else
-                    args = {};
-                end
+                args = uim.utility.getAxesToolbarArgs();
 
                 hAxes = gobjects(1,2);
 
                 for i = 1:2
                     hAxes(i) = axes('Parent', parentHandle, args{:});
-                    if doDisableToolbar
-                        disableDefaultInteractivity(hAxes(i))
-                    end
+                    uim.utility.disableAxesInteractivity(hAxes(i))
                 end
 
                 obj.ButtonAxes = hAxes(1);

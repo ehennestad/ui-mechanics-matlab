@@ -72,13 +72,20 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
             wasHoldOn = ishold(obj.Axes);
             hold(obj.Axes, 'on')
 
-            obj.LineHandle = plot(obj.Axes, [1, 1], [0, 1], '-', 'HitTest', 'off');
+            % Use primitive line objects (not plot/chart lines): the marker
+            % lives in the caller's axes, and primitive lines carry no
+            % DataTipTemplate, so clicking the draggable knobs can not pin
+            % a data tip there.
+            obj.LineHandle = line(obj.Axes, [1, 1], [0, 1], ...
+                'LineStyle', '-', 'HitTest', 'off');
 
-            obj.TopButtonHandle = plot(obj.Axes, 1, 1, 'v', ...
+            obj.TopButtonHandle = line(obj.Axes, 1, 1, ...
+                'Marker', 'v', 'LineStyle', 'none', ...
                 'HitTest', 'on', 'MarkerSize', 10);
             obj.TopButtonHandle.ButtonDownFcn = @obj.knobPressed;
 
-            obj.BottomButtonHandle = plot(obj.Axes, 1, 0, '^', ...
+            obj.BottomButtonHandle = line(obj.Axes, 1, 0, ...
+                'Marker', '^', 'LineStyle', 'none', ...
                 'HitTest', 'on', 'MarkerSize', 10);
             obj.BottomButtonHandle.ButtonDownFcn = @obj.knobPressed;
 

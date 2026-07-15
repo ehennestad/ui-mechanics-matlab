@@ -225,6 +225,8 @@ methods (Access = private) % Methods for setting up gui
         % Since axes will hold image data, the yaxis is reversed.
         obj.Axes_.YDir = 'reverse';
 
+        uim.utility.disableAxesInteractivity(obj.Axes_)
+
         % Set colormap
         colormap(obj.Axes_, obj.TileConfiguration.DefaultColorMap)
 

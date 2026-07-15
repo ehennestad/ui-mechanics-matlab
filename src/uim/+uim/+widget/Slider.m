@@ -208,6 +208,8 @@ classdef Slider < handle
             obj.Axes.YLim = [0,1];
             obj.Axes.XLim = [obj.Min, obj.Max];
             obj.OwnsAxes = true;
+
+            uim.utility.disableAxesInteractivity(obj.Axes)
         end
 
         function plotTicks(obj)

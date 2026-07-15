@@ -230,9 +230,7 @@ classdef UIComponentCanvas < handle
 
             obj.setAxesLimits()
 
-            if ~isempty(args)
-                disableDefaultInteractivity(obj.Axes)
-            end
+            uim.utility.disableAxesInteractivity(obj.Axes)
         end
 
         function configureParentPositionChangedListener(obj)
@@ -629,9 +627,7 @@ classdef UIComponentCanvas < handle
             axis(hAxes, 'equal')
             hold(hAxes, 'on')
 
-            if ~isempty(args)
-                disableDefaultInteractivity(hAxes)
-            end
+            uim.utility.disableAxesInteractivity(hAxes)
         end
     end
 end

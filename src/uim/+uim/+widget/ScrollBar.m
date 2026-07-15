@@ -470,6 +470,8 @@ classdef ScrollBar < uim.Handle
             obj.Axes.XLim = [0,1];
             obj.Axes.YLim = [0,1];
 
+            uim.utility.disableAxesInteractivity(obj.Axes)
+
             switch obj.Direction
                 case 'normal'
                     obj.Axes.YDir = 'reverse'; % Scroll from top to bottom

@@ -119,6 +119,8 @@ classdef MessageBox < uim.mixin.Resizable
             obj.Axes.HandleVisibility = 'off';
             obj.Axes.Tag = 'Message Box';
 
+            uim.utility.disableAxesInteractivity(obj.Axes)
+
             % Get parent position
             origParentUnits = obj.ReferenceAxes.Units;
             obj.ReferenceAxes.Units = obj.Units;
