@@ -62,8 +62,6 @@ classdef UIComponentCanvas < handle
         ParentLocationChangedListener event.listener = event.listener.empty
         Tooltip uim.interface.ToolTip
         ParentDestroyedListener
-        PreviousDefaultAxesCreateFcn = []
-        SiblingCreatedFcn = []
     end
 
     events
@@ -226,16 +224,14 @@ classdef UIComponentCanvas < handle
         function configureSiblingCreatedListener(obj)
         %configureSiblingCreatedListener Need to know when a sibling is born
 
-            % Use the undocumented DefaultAxesCreationFcn property of
-            % figure to run a callback whenever new axes are added to the
-            % figure. This is done because our axes always need to stay on
-            % top of the uistack.
+            % Use the undocumented DefaultAxesCreateFcn property of the
+            % parent container to run a callback whenever new axes are
+            % added. This is done because our axes always needs to stay
+            % on top of the uistack. The hook is shared between all
+            % canvases attached to the container via a registry (see
+            % installSiblingCreatedHook).
 
-            % Note, this is more like a dummy listener...
-
-            obj.PreviousDefaultAxesCreateFcn = get(obj.Parent, 'DefaultAxesCreateFcn');
-            obj.SiblingCreatedFcn = @obj.onSiblingCreated;
-            set(obj.Parent, 'DefaultAxesCreateFcn', obj.SiblingCreatedFcn)
+            uim.UIComponentCanvas.installSiblingCreatedHook(obj.Parent, obj)
         end
 
     end
@@ -262,10 +258,8 @@ classdef UIComponentCanvas < handle
             obj.PixelPosition = uim.utility.getContentPixelPosition(obj.Parent);
         end
 
-        function onSiblingCreated(obj, src, evt)
+        function onSiblingCreated(obj, ~, ~)
         %onSiblingCreated Keep our axes on top of the uistack
-            obj.invokePreviousDefaultAxesCreateFcn(src, evt)
-
             try
                 uistack(obj.Axes, 'top')
             catch ME
@@ -317,9 +311,8 @@ classdef UIComponentCanvas < handle
 
         function removeParent(obj)
 
-            if ~isempty(obj.Parent) && isvalid(obj.Parent) && ...
-                    isequal(get(obj.Parent, 'DefaultAxesCreateFcn'), obj.SiblingCreatedFcn)
-                set(obj.Parent, 'DefaultAxesCreateFcn', obj.PreviousDefaultAxesCreateFcn)
+            if ~isempty(obj.Parent) && isvalid(obj.Parent)
+                uim.UIComponentCanvas.uninstallSiblingCreatedHook(obj.Parent, obj)
             end
 
             if ~isempty(obj.Parent) && isvalid(obj.Parent) && ...
@@ -353,18 +346,6 @@ classdef UIComponentCanvas < handle
             obj.configureParentPositionChangedListener()
             obj.configureSiblingCreatedListener()
             obj.configureParentDestroyedListener()
-        end
-
-        function invokePreviousDefaultAxesCreateFcn(obj, src, evt)
-
-            callback = obj.PreviousDefaultAxesCreateFcn;
-            if isempty(callback); return; end
-
-            if isa(callback, 'function_handle')
-                callback(src, evt)
-            elseif iscell(callback)
-                callback{1}(src, evt, callback{2:end})
-            end
         end
     end
 
@@ -416,6 +397,85 @@ classdef UIComponentCanvas < handle
 
         function locationPoint = getLocationPoint(obj, locationKey)
             locationPoint = uim.abstract.Component.location2point(obj.PixelSize, locationKey);
+        end
+    end
+
+    methods (Static, Access = private) % Sibling-created hook registry
+
+        function installSiblingCreatedHook(hContainer, canvasObj)
+        %installSiblingCreatedHook Register a canvas with the container's shared hook
+        %
+        %   All canvases attached to the same container share a single
+        %   DefaultAxesCreateFcn. A registry in the container's appdata
+        %   dispatches to each canvas in registration order, so canvases
+        %   can be created and deleted in any order without corrupting
+        %   the hook chain.
+
+            hookData = getappdata(hContainer, 'UIComponentCanvasSiblingHook');
+
+            if isempty(hookData)
+                hookData = struct();
+                hookData.PreviousFcn = get(hContainer, 'DefaultAxesCreateFcn');
+                hookData.InstalledFcn = @(src, evt) ...
+                    uim.UIComponentCanvas.dispatchSiblingCreated(hContainer, src, evt);
+                hookData.Canvases = canvasObj;
+                set(hContainer, 'DefaultAxesCreateFcn', hookData.InstalledFcn)
+            elseif ~any(hookData.Canvases == canvasObj)
+                hookData.Canvases = [hookData.Canvases, canvasObj];
+            end
+
+            setappdata(hContainer, 'UIComponentCanvasSiblingHook', hookData)
+        end
+
+        function uninstallSiblingCreatedHook(hContainer, canvasObj)
+        %uninstallSiblingCreatedHook Remove a canvas from the container's shared hook
+        %
+        %   When the last registered canvas is removed, the container's
+        %   DefaultAxesCreateFcn is restored to its pre-install value —
+        %   unless a third party has replaced the hook in the meantime,
+        %   in which case their hook is left untouched.
+
+            hookData = getappdata(hContainer, 'UIComponentCanvasSiblingHook');
+            if isempty(hookData); return; end
+
+            keep = isvalid(hookData.Canvases) & hookData.Canvases ~= canvasObj;
+            hookData.Canvases = hookData.Canvases(keep);
+
+            if isempty(hookData.Canvases)
+                if isequal(get(hContainer, 'DefaultAxesCreateFcn'), hookData.InstalledFcn)
+                    set(hContainer, 'DefaultAxesCreateFcn', hookData.PreviousFcn)
+                end
+                rmappdata(hContainer, 'UIComponentCanvasSiblingHook')
+            else
+                setappdata(hContainer, 'UIComponentCanvasSiblingHook', hookData)
+            end
+        end
+
+        function dispatchSiblingCreated(hContainer, src, evt)
+        %dispatchSiblingCreated Shared DefaultAxesCreateFcn for a container's canvases
+
+            if ~isvalid(hContainer); return; end
+
+            hookData = getappdata(hContainer, 'UIComponentCanvasSiblingHook');
+            if isempty(hookData); return; end
+
+            % Prune canvases that were deleted without a proper uninstall.
+            hookData.Canvases = hookData.Canvases(isvalid(hookData.Canvases));
+            setappdata(hContainer, 'UIComponentCanvasSiblingHook', hookData)
+
+            % Invoke the hook that was present before the first canvas
+            % installed the shared one.
+            callback = hookData.PreviousFcn;
+            if isa(callback, 'function_handle')
+                callback(src, evt)
+            elseif iscell(callback) && ~isempty(callback)
+                callback{1}(src, evt, callback{2:end})
+            end
+
+            % Registration order: canvases created later end up on top.
+            for canvas = hookData.Canvases
+                canvas.onSiblingCreated(src, evt)
+            end
         end
     end
 
