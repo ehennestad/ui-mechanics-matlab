@@ -255,6 +255,18 @@ sites (verified by a full-repository search, not assumption):
 
 ### Fixed
 
+- Pointer tools now receive mouse presses over data objects.
+  `uim.interface.PointerManager` previously took over the managed
+  axes' `ButtonDownFcn` to detect presses — but data objects such as
+  images have `HitTest` on by default and swallow every click before
+  it reaches that callback, so zoom/pan tools were dead over an
+  `imagesc` display unless the app made its image click-transparent
+  (as imviewer does with `HitTest = 'off'`). Presses are now captured
+  by a window-level `WindowMousePress` listener, gated so that presses
+  on interactive objects (anything with its own `ButtonDownFcn`) or
+  outside the managed axes are ignored. The axes' own `ButtonDownFcn`
+  is no longer touched; existing `HitTest = 'off'` workarounds remain
+  harmless.
 - `PageIndicator.m` had a dead comment referencing
   `uim.style.nansenPageButton`, a class that never existed in this repo
   (leftover from the original extraction); it now references the real

@@ -23,7 +23,6 @@ classdef PointerManager < handle
 
         CurrentPointerTool
 
-        OriginalAxesButtonDownFcn = [] % Store axes function
     end
 
     properties (Access = private)
@@ -35,6 +34,7 @@ classdef PointerManager < handle
         OwnsWindowButtonMotionFcn (1,1) logical = false
 
         AxesButtonPressListener event.listener
+        WindowMousePressListener event.listener
         WindowButtonMotionListener event.listener
         WindowButtonUpListener event.listener
         WindowScrollWheelListener event.listener % todo
@@ -64,17 +64,12 @@ classdef PointerManager < handle
                 obj.OwnsWindowButtonMotionFcn = true;
             end
 
-            % Create listeners for mouse event in figure
+            % Create listeners for mouse event in figure. Button presses
+            % are captured at the window level (not via the axes
+            % ButtonDownFcn): data objects such as images have HitTest on
+            % by default and would swallow every click before it reached
+            % the axes callback.
             obj.createFigureMouseListeners()
-
-            % Store current axes button down function
-            if ~isempty(hAxes.ButtonDownFcn)
-                obj.OriginalAxesButtonDownFcn = hAxes.ButtonDownFcn;
-            end
-
-            % Assign PointerManager callbacks to figure
-            hAxes.ButtonDownFcn = @obj.onButtonDown; % Use button down callback of axes..
-            hAxes.Interruptible = 'off'; % Todo: are there cases where its better if this is on?
 
             hold(obj.Axes, 'on')
 
@@ -92,16 +87,6 @@ classdef PointerManager < handle
 
             obj.deleteFigureMouseListeners()
 
-            if isvalid(obj.Axes)
-                if isequal( obj.Axes.ButtonDownFcn, @obj.onButtonDown)
-                    obj.Axes.ButtonDownFcn = [];
-                end
-
-                if ~isempty(obj.OriginalAxesButtonDownFcn)
-                    obj.Axes.ButtonDownFcn = obj.OriginalAxesButtonDownFcn;
-                end
-            end
-
             if obj.OwnsWindowButtonMotionFcn && isvalid(obj.Figure) && ...
                     isequal(obj.Figure.WindowButtonMotionFcn, obj.DummyWindowButtonMotionFcn)
                 obj.Figure.WindowButtonMotionFcn = obj.OriginalWindowButtonMotionFcn;
@@ -113,8 +98,8 @@ classdef PointerManager < handle
 
         function createFigureMouseListeners(obj)
 
-            %obj.WindowMousePressListener = addlistener(obj.Figure, ...
-            %    'WindowMousePress', @obj.onMousePressed);
+            obj.WindowMousePressListener = addlistener(obj.Figure, ...
+                'WindowMousePress', @obj.onWindowMousePress);
 
             obj.WindowButtonMotionListener = addlistener(obj.Figure, ...
                  'WindowMouseMotion', @obj.onButtonMotion);
@@ -133,6 +118,10 @@ classdef PointerManager < handle
         function deleteFigureMouseListeners(obj)
 
             isdeletable = @(x) ~isempty(x) && isvalid(x);
+
+            if isdeletable(obj.WindowMousePressListener)
+                delete(obj.WindowMousePressListener)
+            end
 
             if isdeletable(obj.WindowButtonMotionListener)
                 delete(obj.WindowButtonMotionListener)
@@ -310,16 +299,43 @@ classdef PointerManager < handle
 
     methods (Access = private)
 
+        function onWindowMousePress(obj, src, event)
+        %onWindowMousePress Route presses that belong to the managed axes
+        %
+        %   Only act on presses that would have reached the axes: ignore
+        %   presses captured by interactive objects (widget buttons,
+        %   draggable markers — anything with its own ButtonDownFcn) and
+        %   presses on objects outside the managed axes.
+
+            hitObject = event.HitObject;
+
+            isInManagedAxes = isequal(hitObject, obj.Axes) || ...
+                isequal(ancestor(hitObject, 'axes'), obj.Axes);
+            if ~isInManagedAxes; return; end
+
+            if ~isequal(hitObject, obj.Axes) && ...
+                    ~isempty(hitObject.ButtonDownFcn)
+                return
+            end
+
+            % The window-level event data carries no Button; translate
+            % the figure SelectionType for tools that check evt.Button.
+            switch obj.Figure.SelectionType
+                case 'alt';    buttonNumber = 3;
+                case 'extend'; buttonNumber = 2;
+                otherwise;     buttonNumber = 1;
+            end
+            eventData = struct('Button', buttonNumber, ...
+                'HitObject', hitObject, 'Point', event.Point);
+
+            obj.onButtonDown(src, eventData)
+        end
+
         function onButtonDown(obj, src, event)
 
             % Todo: rename onButtonDownInAxes
 
-            % 1) Call default axes button down callback
-%             if ~isempty(obj.OriginalAxesButtonDownFcn)
-%                 obj.OriginalAxesButtonDownFcn(src, event)
-%             end
-
-            % 2) Call active pointer tool
+            % Call active pointer tool
             if obj.isCursorInsideAxes(obj.Axes)
                 if ~isempty(obj.CurrentPointerTool)
                     obj.MouseDownPointerTool = obj.CurrentPointerTool;

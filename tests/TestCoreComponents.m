@@ -443,6 +443,11 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyEqual(fieldnames(manager.Pointers), ...
                 {'zoomIn'; 'pan'});
 
+            % The manager captures presses at the window level; it must
+            % not hijack the axes ButtonDownFcn (clicks on data objects
+            % such as images never reach that callback anyway).
+            testCase.verifyEmpty(hAxes.ButtonDownFcn);
+
             manager.togglePointerMode('zoomIn');
             testCase.verifySameHandle(manager.CurrentPointerTool, ...
                 manager.Pointers.zoomIn);
