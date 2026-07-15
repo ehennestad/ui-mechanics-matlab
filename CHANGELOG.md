@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added — New widgets: DropDown, Spinner, Readout
+
+Three new Component-family controls, usable on any supported parent
+(figure, panel, canvas, or — via the overlay canvas — a data axes):
+
+- `uim.widget.DropDown` — popup selector. `Items` (string array) /
+  `Value`, click-to-open list below the control (drawn with clipping
+  off, so it may extend past the canvas bounds), item hover highlight
+  (needs Image Processing Toolbox; degrades gracefully), outside-click
+  closes, programmatic `open()`/`close()`. User selections fire
+  `ValueChangedFcn` with `uim.event.ValueChangedEventData`;
+  programmatic `Value` assignment is silent and validated against
+  `Items` (`uim:DropDown:InvalidValue`).
+- `uim.widget.Spinner` — numeric value with -/+ step buttons and
+  click-to-type editing via a temporary edit box (classic uicontrol;
+  the buttons work everywhere). User interactions are clamped to
+  `[Minimum, Maximum]` and fire `ValueChangedFcn`; programmatic
+  `Value` assignment is silent.
+- `uim.widget.Readout` — display-only label + formatted-value chip
+  (`Label`, `Value`, sprintf-style `Format`), for live readouts such
+  as cursor position or current frame.
+
 ### Added — Overlay canvas: components anchor inside a data axes
 
 Component-family widgets (`uim.widget.Toolbar`, `uim.widget.RangeSlider`,

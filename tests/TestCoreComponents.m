@@ -750,6 +750,132 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 "uim:UIComponentCanvas:UnsupportedAxesParent");
         end
 
+        function readoutDisplaysFormattedValue(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            readout = uim.widget.Readout(canvas, ...
+                'Label', 'Frame', 'Format', '%d');
+            readout.Value = 42;
+            testCase.verifyEqual(readout.String, 'Frame: 42');
+            testCase.verifyNumElements(findall(canvas.Axes, ...
+                "Type", "text", "String", "Frame: 42"), 1);
+
+            % Without a label, only the formatted value is shown.
+            plain = uim.widget.Readout(canvas, ...
+                'Format', '%.2f', 'Location', 'northeast');
+            plain.Value = pi;
+            testCase.verifyEqual(plain.String, '3.14');
+
+            delete(readout)
+            testCase.verifyEmpty(findall(canvas.Axes, ...
+                "Type", "text", "String", "Frame: 42"));
+        end
+
+        function spinnerStepsClampsAndEdits(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure);
+            canvas = uim.UIComponentCanvas(hPanel);
+
+            spinner = uim.widget.Spinner(canvas, ...
+                'Value', 5, 'Minimum', 0, 'Maximum', 6, 'Step', 2, ...
+                'ValueChangedFcn', ...
+                @(~, evt) setappdata(hFigure, 'LastEvent', evt));
+
+            incrementFcn = get(findall(canvas.Axes, ...
+                "Tag", "SpinnerIncrement"), 'ButtonDownFcn');
+            decrementFcn = get(findall(canvas.Axes, ...
+                "Tag", "SpinnerDecrement"), 'ButtonDownFcn');
+
+            % Stepping clamps to Maximum and notifies with old/new values.
+            incrementFcn([], [])
+            testCase.verifyEqual(spinner.Value, 6);
+            evt = getappdata(hFigure, 'LastEvent');
+            testCase.verifyEqual(evt.OldValue, 5);
+            testCase.verifyEqual(evt.NewValue, 6);
+
+            % A step that does not change the value fires no callback.
+            setappdata(hFigure, 'LastEvent', [])
+            incrementFcn([], [])
+            testCase.verifyEmpty(getappdata(hFigure, 'LastEvent'));
+
+            decrementFcn([], [])
+            testCase.verifyEqual(spinner.Value, 4);
+
+            % Programmatic assignment updates silently (push model).
+            setappdata(hFigure, 'LastEvent', [])
+            spinner.Value = 1;
+            testCase.verifyEmpty(getappdata(hFigure, 'LastEvent'));
+
+            % Clicking the value opens an edit box; committing applies
+            % the typed value through the user pathway.
+            editFcn = get(findall(canvas.Axes, ...
+                "Tag", "SpinnerValue"), 'ButtonDownFcn');
+            editFcn([], [])
+            editBox = findall(hFigure, "Type", "uicontrol", "Style", "edit");
+            testCase.verifyNumElements(editBox, 1);
+
+            editBox.String = '3';
+            editBox.Callback(editBox, [])
+            testCase.verifyEqual(spinner.Value, 3);
+            testCase.verifyFalse(isvalid(editBox));
+            evt = getappdata(hFigure, 'LastEvent');
+            testCase.verifyEqual(evt.NewValue, 3);
+        end
+
+        function dropDownSelectsItemAndNotifies(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            dropdown = uim.widget.DropDown(canvas, ...
+                'Items', ["gray", "jet", "parula"], 'Value', "jet", ...
+                'ValueChangedFcn', ...
+                @(~, evt) setappdata(hFigure, 'LastEvent', evt));
+
+            testCase.verifyEqual(dropdown.Value, "jet");
+            testCase.verifyEqual(dropdown.ValueIndex, 2);
+            testCase.verifyFalse(dropdown.IsOpen);
+
+            dropdown.open()
+            testCase.verifyTrue(dropdown.IsOpen);
+            rows = findall(canvas.Axes, "Tag", "DropDownItem");
+            testCase.verifyNumElements(rows, 3);
+
+            % Clicking an item selects it, closes the list and notifies.
+            thirdRow = rows([rows.UserData] == 3);
+            thirdRow.ButtonDownFcn([], [])
+            testCase.verifyEqual(dropdown.Value, "parula");
+            testCase.verifyFalse(dropdown.IsOpen);
+            testCase.verifyEmpty(findall(canvas.Axes, "Tag", "DropDownItem"));
+            evt = getappdata(hFigure, 'LastEvent');
+            testCase.verifyEqual(evt.OldValue, "jet");
+            testCase.verifyEqual(evt.NewValue, "parula");
+
+            % Selecting the current item closes without notifying.
+            setappdata(hFigure, 'LastEvent', [])
+            dropdown.open()
+            rows = findall(canvas.Axes, "Tag", "DropDownItem");
+            currentRow = rows([rows.UserData] == dropdown.ValueIndex);
+            currentRow.ButtonDownFcn([], [])
+            testCase.verifyFalse(dropdown.IsOpen);
+            testCase.verifyEmpty(getappdata(hFigure, 'LastEvent'));
+
+            % Programmatic assignment updates silently; invalid values
+            % are rejected.
+            dropdown.Value = "gray";
+            testCase.verifyEmpty(getappdata(hFigure, 'LastEvent'));
+            testCase.verifyError(...
+                @() assignProperty(dropdown, 'Value', "bogus"), ...
+                "uim:DropDown:InvalidValue");
+
+            delete(dropdown)
+            testCase.verifyEmpty(findall(canvas.Axes, "Type", "text", ...
+                "String", "gray"));
+        end
+
         function explicitSizeSurvivesParentResize(testCase)
             hFigure = figure("Visible", "off", "Position", [200, 200, 500, 400]);
             testCase.addTeardown(@deleteValid, hFigure);
@@ -777,4 +903,10 @@ function deleteValid(object)
     if ~isempty(object) && all(isvalid(object))
         delete(object)
     end
+end
+
+function assignProperty(object, propertyName, value)
+%assignProperty Assign a property inside a function call, so property-set
+%errors can be verified with verifyError.
+    object.(propertyName) = value;
 end
