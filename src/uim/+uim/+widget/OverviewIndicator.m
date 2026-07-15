@@ -25,6 +25,10 @@ classdef OverviewIndicator < uim.abstract.Control
 %   Use YDir = 'reverse' when the target axes displays images, so the
 %   outline is oriented like the image.
 %
+%   The widget box hugs the data-extent frame: Size acts as a maximum,
+%   and the box shrinks along one dimension when the data aspect ratio
+%   differs from the box aspect ratio.
+%
 %   Example:
 %       imagesc(hAxes, imageData)
 %       indicator = uim.widget.OverviewIndicator(hAxes, ...
@@ -158,6 +162,16 @@ classdef OverviewIndicator < uim.abstract.Control
             obj.LocalScale = min(innerSize(:)./dataSize);
             frameSize = (dataSize*obj.LocalScale)';
             obj.FrameOrigin = innerOrigin + (innerSize - frameSize)/2;
+
+            % Shrink the widget box to hug the letterboxed frame, so the
+            % chip background does not extend past the outline. Size acts
+            % as a maximum; the box re-anchors through set.Size and this
+            % method runs again with the fitted size.
+            targetSize = frameSize + obj.Padding(1:2) + obj.Padding(3:4);
+            if any(abs(targetSize - obj.Position(3:4)) > 0.5)
+                obj.Size = targetSize;
+                return
+            end
 
             [frameX, frameY] = obj.dataToLocal(...
                 obj.DataLimits(1, [1, 2, 2, 1]), obj.DataLimits(2, [1, 1, 2, 2]));
