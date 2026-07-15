@@ -105,6 +105,16 @@ classdef DropDown < uim.abstract.Control
                 obj.WindowMousePressListener = [];
             end
 
+            % Deregister hover behavior before deleting the rows: the
+            % pointer manager holds on to the registered callbacks, and
+            % would keep invoking them on the deleted patches with every
+            % mouse move otherwise.
+            for i = 1:numel(obj.ItemPatches)
+                if isvalid(obj.ItemPatches(i))
+                    uim.utility.setPointerBehavior(obj.ItemPatches(i), [])
+                end
+            end
+
             handles = [obj.ListBackground, obj.ItemPatches, obj.ItemTexts];
             delete(handles(isvalid(handles)))
 
@@ -244,8 +254,11 @@ classdef DropDown < uim.abstract.Control
         function setItemHoverBehavior(obj, hRow, itemIndex)
         %setItemHoverBehavior Highlight rows on hover (needs IPT; optional)
 
-            pointerBehavior.enterFcn = @(~, ~) set(hRow, 'FaceAlpha', 0.35);
-            pointerBehavior.exitFcn = @(~, ~) set(hRow, 'FaceAlpha', ...
+            % Validity guards: the pointer manager can fire an exit
+            % callback for the row the cursor was on while that row is
+            % being deleted (e.g. clicking an item closes the list).
+            pointerBehavior.enterFcn = @(~, ~) setRowFaceAlpha(hRow, 0.35);
+            pointerBehavior.exitFcn = @(~, ~) setRowFaceAlpha(hRow, ...
                 0.15 * (itemIndex == obj.ValueIndex));
             pointerBehavior.traverseFcn = [];
 
@@ -356,5 +369,11 @@ classdef DropDown < uim.abstract.Control
             S.BackgroundAlpha = 0.6;
             S.CornerRadius = 3;
         end
+    end
+end
+
+function setRowFaceAlpha(hRow, faceAlpha)
+    if isvalid(hRow)
+        hRow.FaceAlpha = faceAlpha;
     end
 end
