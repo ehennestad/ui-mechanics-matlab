@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed — Breaking: app-coupled widgets decoupled from ParentApp
+
+`ChannelIndicator`, `PlaneSwitcher` and `PlaybackControl` previously
+required a `parentGui` object as their first constructor argument and
+reached into it (`ParentApp.Figure`, `ParentApp.Axes`, and — for
+`PlaybackControl` — a `PostSet` listener on `ParentApp.currentFrameNo`
+plus direct calls to `changeFrame`/`playVideo`/`changeChannel`/
+`changePlane`/`changeChannelColor` and writes to `isPlaying`/
+`playbackspeed`). They are now standalone widgets: the constructor takes
+only a graphics parent, the host application *pushes* state in through
+properties, and user interactions come *out* through callback
+properties. Migration notes per widget:
+
+#### `uim.widget.ChannelIndicator`
+
+- Constructor: `ChannelIndicator(parentGui, hParent, ...)` →
+  `ChannelIndicator(hParent, ...)`. The figure is resolved via
+  `ancestor(hParent, 'figure')`; nothing else was ever read from
+  `parentGui`.
+- The `ParentApp` property is removed.
+- Callbacks are unchanged (`Callback`, `ChannelColorCallback`,
+  `ChangeDefaultsCallback`).
+
 ### Changed — Breaking: full API rename to PascalCase
 
 Every class, property, and several methods across the toolbox have been

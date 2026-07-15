@@ -1047,7 +1047,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                 end
 
                 obj.ChannelIndicator = uim.widget.ChannelIndicator( ...
-                    obj.ParentApp, obj.ButtonAxes, params{:});
+                    obj.ButtonAxes, params{:});
             else
                 obj.ChannelIndicator.NumChannels = obj.NumChannels;
             end

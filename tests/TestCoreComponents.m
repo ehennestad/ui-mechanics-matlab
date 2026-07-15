@@ -411,10 +411,9 @@ classdef TestCoreComponents < matlab.unittest.TestCase
         function channelIndicatorSupportsInternalAxesAndFourChannels(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
-            parentApp = struct("Figure", hFigure);
             hPanel = uipanel(hFigure);
 
-            indicator = uim.widget.ChannelIndicator(parentApp, hPanel, "NumChannels", 4);
+            indicator = uim.widget.ChannelIndicator(hPanel, "NumChannels", 4);
 
             testCase.verifyEqual(indicator.NumChannels, 4);
             testCase.verifyEqual(numel(findall(hPanel, "Tag", "ChannelIndicator")), 4);

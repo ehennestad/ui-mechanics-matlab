@@ -44,7 +44,6 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
     properties (Access = protected)
 
-        ParentApp
         Figure % Window which figure is located in. % Make dependent...
         Axes
 
@@ -74,10 +73,9 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
     methods % Structor
 
-        function obj = ChannelIndicator(parentGui, hParent, varargin)
+        function obj = ChannelIndicator(hParent, varargin)
 
-            obj.ParentApp = parentGui;
-            obj.Figure = obj.ParentApp.Figure;
+            obj.Figure = ancestor(hParent, 'figure');
 
             obj.resolveParent(hParent)
 
