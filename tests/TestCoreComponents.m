@@ -919,6 +919,10 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             zoomButton = binding.Buttons(1);
             panButton = binding.Buttons(2);
 
+            % Modes with a shipped default icon render it (not a text label).
+            testCase.verifyClass(zoomButton.Icon, "struct");
+            testCase.verifyEmpty(zoomButton.Text);
+
             % Button -> tool: clicking the button activates the tool,
             % and the tool's toggle event flips the button state.
             zoomButton.Callback([], [])

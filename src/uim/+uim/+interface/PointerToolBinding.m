@@ -14,8 +14,10 @@ classdef PointerToolBinding < handle
 %   binding = uim.interface.PointerToolBinding(..., Name, Value) also
 %   accepts:
 %     Icons      - struct mapping a mode key to an icon (any value the
-%                  Button Icon property accepts). Modes without an icon
-%                  show the mode key as text.
+%                  Button Icon property accepts). Modes without an entry
+%                  use the toolbox's shipped icon for that mode
+%                  (uim.style.getDefaultIcons) when one exists, and the
+%                  mode key as text otherwise.
 %     Tooltips   - struct mapping a mode key to a tooltip string.
 %                  Defaults to the mode key.
 %     ButtonProps - cell array of additional Name-Value pairs forwarded
@@ -80,6 +82,12 @@ classdef PointerToolBinding < handle
 
         function createButtons(obj, options)
 
+            try
+                defaultIcons = uim.style.getDefaultIcons();
+            catch
+                defaultIcons = struct(); % Fall back to text labels
+            end
+
             for mode = obj.Modes
 
                 buttonArgs = {'Mode', 'togglebutton', ...
@@ -89,6 +97,9 @@ classdef PointerToolBinding < handle
                 if isfield(options.Icons, mode)
                     buttonArgs = [buttonArgs, ...
                         {'Icon', options.Icons.(mode)}]; %#ok<AGROW>
+                elseif isfield(defaultIcons, mode)
+                    buttonArgs = [buttonArgs, ...
+                        {'Icon', defaultIcons.(mode)}]; %#ok<AGROW>
                 else
                     buttonArgs = [buttonArgs, {'Text', char(mode)}]; %#ok<AGROW>
                 end
