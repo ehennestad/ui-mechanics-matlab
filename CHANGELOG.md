@@ -41,6 +41,43 @@ properties. Migration notes per widget:
 - `Callback` is unchanged, and is now optional: dragging the plane
   slider with no callback set no longer errors.
 
+#### `uim.widget.PlaybackControl`
+
+- Constructor: `PlaybackControl(parentGui, parentHandle, ...)` →
+  `PlaybackControl(parentHandle, ...)`. The figure is resolved via
+  `ancestor(parentHandle, 'figure')`.
+- The `ParentApp` property is removed, along with every implicit
+  contract on the app object. The widget no longer listens to
+  `parentGui.currentFrameNo` via `PostSet` (and the public
+  `changeValue` method that serviced that listener is removed) — the
+  host now pushes the current value by assigning `Value` directly.
+- The widget owns playback speed state: a new public `PlaybackSpeed`
+  property replaces reads/writes of `parentGui.playbackspeed`
+  (doubling/halving on the speed buttons and the speed label are
+  handled internally).
+- User interactions notify the host through new callback properties
+  instead of calling app methods:
+  - `ValueChangedFcn(src, evt)` — knob drag or slider-bar click;
+    replaces `parentGui.changeFrame(...)`. `evt` is a
+    `uim.event.ValueChangedEventData` (`OldValue`/`NewValue`).
+  - `PlaybackStartedFcn(src, evt)` / `PlaybackStoppedFcn(src, evt)` —
+    play/pause button; replace `parentGui.playVideo(...)` and the
+    write to `parentGui.isPlaying`. `evt` is a `uim.event.ToggleEvent`.
+  - `PlaybackSpeedChangedFcn(src, evt)` — speed buttons;
+    `uim.event.ValueChangedEventData`.
+  - `CurrentChannelsChangedFcn(src, evt)` — replaces
+    `parentGui.changeChannel(...)`; `evt` is a `uim.event.EventData`
+    with a `CurrentChannels` property.
+  - `CurrentPlaneChangedFcn(src, evt)` — replaces
+    `parentGui.changePlane(...)`; `evt` has a `CurrentPlane` property.
+  - `ChannelColorChangedFcn(src, evt)` — replaces
+    `parentGui.changeChannelColor(...)`; `evt` has `ChannelNumber` and
+    `RgbColor` properties. (The old wiring passed the wrong arguments
+    to `changeChannelColor` — it forwarded the sub-widget handle and
+    event object as if they were an index and a color — so hosts that
+    relied on channel-color changes were receiving garbage arguments
+    already.)
+
 ### Changed — Breaking: full API rename to PascalCase
 
 Every class, property, and several methods across the toolbox have been

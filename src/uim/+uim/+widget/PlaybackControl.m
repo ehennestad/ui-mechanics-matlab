@@ -37,11 +37,24 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         Minimum = 1
         Maximum = 2;
 
+        PlaybackSpeed (1,1) double {mustBePositive} = 1
+
         NumChannels = 1;
         NumPlanes = 1
 
         RangeSelectorEnabled matlab.lang.OnOffSwitchState = 'off'
         ActiveRange = [1, 1]            % For virtual vs memory stacks.
+
+        % Callbacks notifying the host application of user interactions.
+        % The host pushes state the other way by assigning the
+        % corresponding properties (Value, PlaybackSpeed, ...).
+        ValueChangedFcn = []            % User dragged the knob or clicked the slider bar. (src, uim.event.ValueChangedEventData)
+        PlaybackStartedFcn = []         % User pressed play. (src, uim.event.ToggleEvent)
+        PlaybackStoppedFcn = []         % User pressed pause. (src, uim.event.ToggleEvent)
+        PlaybackSpeedChangedFcn = []    % User pressed the speed buttons. (src, uim.event.ValueChangedEventData)
+        CurrentChannelsChangedFcn = []  % User changed channel selection. (src, uim.event.EventData with CurrentChannels)
+        CurrentPlaneChangedFcn = []     % User changed plane. (src, uim.event.EventData with CurrentPlane)
+        ChannelColorChangedFcn = []     % User changed a channel color. (src, uim.event.EventData with ChannelNumber/RgbColor)
         ActiveRangeChangedFcn = []      % Callback for when active range changes.
     end
 
@@ -68,7 +81,6 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
         Figure % Window which figure is located in. % Make dependent...
 
-        ParentApp
         SliderAxes  %SliderAxes
         ButtonAxes %ButtonAxes
 
@@ -103,20 +115,15 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
         WindowMouseMotionListener
         WindowMouseReleaseListener
-        FrameChangedListener
     end
 
 % - - - - - - - - - - - METHODS - - - - - - - - - -
 
     methods % Structors
 
-        function obj = PlaybackControl(parentGui, parentHandle, varargin)
+        function obj = PlaybackControl(parentHandle, varargin)
 
-            obj.ParentApp = parentGui;
-            obj.Figure = obj.ParentApp.Figure;
-
-            el = addlistener(obj.ParentApp, 'currentFrameNo', 'PostSet', @obj.changeValue);
-            obj.FrameChangedListener = el;
+            obj.Figure = ancestor(parentHandle, 'figure');
 
             obj.parseInputs(varargin{:})
 
@@ -136,7 +143,6 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
             obj.resetWindowMouseListeners()
 
-            delete(obj.FrameChangedListener)
             delete(obj.SliderAxes)
             delete(obj.ButtonAxes)
         end
@@ -163,11 +169,6 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                     obj.PlayButton.XData = [0, 5;  2.5, 7.5; 2.5, 7.5;  0, 5] + buttonPosition;
                     obj.PlayButton.YData = [1,1; 1,1; -1,-1; -1,-1] .* buttonHeight/2;
             end
-        end
-
-        function changeValue(obj, ~, ~)
-            newFrame = obj.ParentApp.currentFrameNo;
-            obj.Value = newFrame;
         end
 
         function resetRangeSelector(obj)
@@ -249,6 +250,11 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             obj.Value = newValue;
             obj.drawSliderButton()
             obj.drawIndicatorBar()
+        end
+
+        function set.PlaybackSpeed(obj, newValue)
+            obj.PlaybackSpeed = newValue;
+            obj.updatePlaybackSpeedLabel()
         end
 
         function set.CurrentChannels(obj, newValue)
@@ -678,38 +684,23 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
             switch src.Tag
                 case 'Play'
-                    obj.PlayButton.Tag = 'Pause';
                     obj.switchPlayPauseIcon('pause')
-                    obj.ParentApp.playVideo([], []);
+                    if ~isempty(obj.PlaybackStartedFcn)
+                        obj.PlaybackStartedFcn(obj, uim.event.ToggleEvent(1))
+                    end
 
                 case 'Pause'
-                    obj.PlayButton.Tag = 'Play';
-                    obj.ParentApp.isPlaying = false;
                     obj.switchPlayPauseIcon('play')
+                    if ~isempty(obj.PlaybackStoppedFcn)
+                        obj.PlaybackStoppedFcn(obj, uim.event.ToggleEvent(0))
+                    end
 
                 case 'Incr'
-                    obj.ParentApp.playbackspeed = obj.ParentApp.playbackspeed * 2;
-                    if obj.ParentApp.playbackspeed == 1
-                        obj.Tincr.String = '';
-                    else
-                        if mod(obj.ParentApp.playbackspeed, 1) == 0
-                            obj.Tincr.String = sprintf( '%dx', obj.ParentApp.playbackspeed);
-                        else
-                            obj.Tincr.String = sprintf( '%.1fx', obj.ParentApp.playbackspeed);
-                        end
-                    end
+                    obj.applyPlaybackSpeed(obj.PlaybackSpeed * 2)
 
                 case 'Decr'
-                    obj.ParentApp.playbackspeed = obj.ParentApp.playbackspeed / 2;
-                    if obj.ParentApp.playbackspeed == 1
-                        obj.Tincr.String = '';
-                    else
-                        if mod(obj.ParentApp.playbackspeed, 1) == 0
-                            obj.Tincr.String = sprintf( '%dx', obj.ParentApp.playbackspeed);
-                        else
-                            obj.Tincr.String = sprintf( '%.1fx', obj.ParentApp.playbackspeed);
-                        end
-                    end
+                    obj.applyPlaybackSpeed(obj.PlaybackSpeed / 2)
+
                 case 'Next'
 
                 case 'Prev'
@@ -723,7 +714,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                     if newValue < obj.Minimum; newValue = obj.Minimum; end
                     if newValue > obj.Maximum; newValue = obj.Maximum; end
 
-                    obj.ParentApp.changeFrame(struct('String', newValue), [], 'jumptoframe');
+                    obj.applyValueFromUser(newValue)
             end
         end
 
@@ -799,10 +790,10 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
         function knobPressed(obj, ~, ~)
 
-            el = listener(obj.ParentApp.Figure, 'WindowMouseMotion', @obj.knobMoving);
+            el = listener(obj.Figure, 'WindowMouseMotion', @obj.knobMoving);
             obj.WindowMouseMotionListener = el;
 
-            el = listener(obj.ParentApp.Figure, 'WindowMouseRelease', @obj.knobReleased);
+            el = listener(obj.Figure, 'WindowMouseRelease', @obj.knobReleased);
             obj.WindowMouseReleaseListener = el;
 
             obj.IsKnobDown = true;
@@ -819,10 +810,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                 if newValue < obj.Minimum; newValue = obj.Minimum; end
                 if newValue > obj.Maximum; newValue = obj.Maximum; end
 
-                % Call guis changeFrame methods
-                % is it better with event notification?
-
-                obj.ParentApp.changeFrame(struct('Value', newValue), [], 'slider');
+                obj.applyValueFromUser(newValue)
             end
         end
 
@@ -844,11 +832,11 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
         function rangeButtonPressed(obj, hBtn)
 
-            el = listener(obj.ParentApp.Figure, ...
+            el = listener(obj.Figure, ...
                 'WindowMouseMotion', @(s,e) obj.rangeButtonMoving(hBtn));
             obj.WindowMouseMotionListener = el;
 
-            el = listener(obj.ParentApp.Figure, ...
+            el = listener(obj.Figure, ...
                 'WindowMouseRelease', @(s,e) obj.rangeButtonReleased());
             obj.WindowMouseReleaseListener = el;
 
@@ -892,6 +880,58 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             end
         end
 
+    % % % Host application notification
+
+        function applyValueFromUser(obj, newValue)
+        %applyValueFromUser Update Value from an interaction and notify host
+            oldValue = obj.Value;
+            if newValue == oldValue; return; end
+
+            obj.Value = newValue;
+
+            if ~isempty(obj.ValueChangedFcn)
+                evtData = uim.event.ValueChangedEventData(oldValue, newValue);
+                obj.ValueChangedFcn(obj, evtData)
+            end
+        end
+
+        function applyPlaybackSpeed(obj, newSpeed)
+        %applyPlaybackSpeed Update PlaybackSpeed from an interaction and notify host
+            oldSpeed = obj.PlaybackSpeed;
+            obj.PlaybackSpeed = newSpeed; % Set method updates the speed label
+
+            if ~isempty(obj.PlaybackSpeedChangedFcn)
+                evtData = uim.event.ValueChangedEventData(oldSpeed, newSpeed);
+                obj.PlaybackSpeedChangedFcn(obj, evtData)
+            end
+        end
+
+        function onChannelSelectionChanged(obj, currentChannels)
+        %onChannelSelectionChanged Forward channel selection to the host
+            if ~isempty(obj.CurrentChannelsChangedFcn)
+                evtData = uim.event.EventData('CurrentChannels', currentChannels);
+                obj.CurrentChannelsChangedFcn(obj, evtData)
+            end
+        end
+
+        function onChannelColorChangedByUser(obj, ~, evtData)
+        %onChannelColorChangedByUser Forward a channel color change to the host
+        %
+        %   evtData is the ChannelIndicator's uim.event.EventData with
+        %   ChannelNumber and RgbColor properties, passed on unchanged.
+            if ~isempty(obj.ChannelColorChangedFcn)
+                obj.ChannelColorChangedFcn(obj, evtData)
+            end
+        end
+
+        function onPlaneChangedByUser(obj, planeNumber)
+        %onPlaneChangedByUser Forward a plane change to the host
+            if ~isempty(obj.CurrentPlaneChangedFcn)
+                evtData = uim.event.EventData('CurrentPlane', planeNumber);
+                obj.CurrentPlaneChangedFcn(obj, evtData)
+            end
+        end
+
     % % % Housekeeping
 
         function resetWindowMouseListeners(obj)
@@ -909,6 +949,18 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
     end
 
     methods (Access = private) % Property set callbacks
+
+        function updatePlaybackSpeedLabel(obj)
+            if ~obj.IsConstructed || isempty(obj.Tincr); return; end
+
+            if obj.PlaybackSpeed == 1
+                obj.Tincr.String = '';
+            elseif mod(obj.PlaybackSpeed, 1) == 0
+                obj.Tincr.String = sprintf('%dx', obj.PlaybackSpeed);
+            else
+                obj.Tincr.String = sprintf('%.1fx', obj.PlaybackSpeed);
+            end
+        end
 
         function onBackgroundColorSet(obj)
             if ~obj.IsConstructed; return; end
@@ -1039,8 +1091,8 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                 params = {...
                     'Position', pos, ...
                     'NumChannels', obj.NumChannels, ...
-                    'Callback', @(ind) obj.ParentApp.changeChannel(ind), ...
-                    'ChannelColorCallback', @(idx,rgb) obj.ParentApp.changeChannelColor(idx, rgb)};
+                    'Callback', @obj.onChannelSelectionChanged, ...
+                    'ChannelColorCallback', @obj.onChannelColorChangedByUser};
 
                 if ~isempty(obj.ChannelColors)
                     params = [params, {'ChannelColors', obj.ChannelColors}];
@@ -1078,7 +1130,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                 params = {...
                     'Position', pos, ...
                     'NumPlanes', obj.NumPlanes, ...
-                    'Callback', @(ind) obj.ParentApp.changePlane(ind), ...
+                    'Callback', @obj.onPlaneChangedByUser, ...
                     'ForegroundColor', obj.ButtonColor };
 
                 obj.PlaneSwitcher = uim.widget.PlaneSwitcher( ...

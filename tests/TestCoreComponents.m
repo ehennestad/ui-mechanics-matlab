@@ -522,6 +522,34 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyEqual(switcher.CurrentPlane, 4);
         end
 
+        function playbackControlRunsStandaloneInPanel(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure);
+
+            control = uim.widget.PlaybackControl(hPanel, ...
+                "Minimum", 1, "Maximum", 100, ...
+                "NumChannels", 3, "NumPlanes", 2);
+            testCase.addTeardown(@deleteValid, control);
+
+            % Sub-widgets are created and wired without a parent app.
+            testCase.verifyEqual(...
+                numel(findall(hPanel, "Tag", "ChannelIndicator")), 3);
+            testCase.verifyNumElements(...
+                findall(hPanel, "Tag", "PlaneSwitcherToggleButton"), 1);
+
+            % The host pushes state in through properties.
+            control.Value = 42;
+            testCase.verifyEqual(control.Value, 42);
+
+            control.PlaybackSpeed = 4;
+            speedLabel = findall(hPanel, "Type", "text", "String", "4x");
+            testCase.verifyNumElements(speedLabel, 1);
+
+            control.CurrentChannels = [1, 3];
+            testCase.verifyEqual(control.CurrentChannels, [1, 3]);
+        end
+
         function messageBoxDisplaysInPlainPanel(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
