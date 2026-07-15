@@ -28,6 +28,27 @@ function disableAxesInteractivity(hAxes)
         suppressUnsupportedFigureWarning()
         hAxes.InteractionOptions.DatatipsSupported = 'off';
     end
+
+    % In java-based figures neither axes-level switch above stops
+    % click-pinned data tips — tips still attach to objects in the axes
+    % (observed on R2026a). Exclude every object drawn into the axes
+    % from the data-cursor machinery instead. The listener's lifetime
+    % is tied to the axes.
+    excludeFromDataTips(hAxes.Children)
+    addlistener(hAxes, 'ChildAdded', ...
+        @(~, evt) excludeFromDataTips(evt.ChildNode));
+end
+
+function excludeFromDataTips(hObjects)
+    for i = 1:numel(hObjects)
+        try
+            hBehavior = hggetbehavior(hObjects(i), 'DataCursor');
+            hBehavior.Enable = false;
+        catch
+            % Object type without data-cursor behavior support; there is
+            % nothing to exclude.
+        end
+    end
 end
 
 function suppressUnsupportedFigureWarning()
