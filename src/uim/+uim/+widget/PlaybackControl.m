@@ -1082,7 +1082,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                     'ForegroundColor', obj.ButtonColor };
 
                 obj.PlaneSwitcher = uim.widget.PlaneSwitcher( ...
-                    obj.ParentApp, obj.ButtonAxes, params{:});
+                    obj.ButtonAxes, params{:});
             else
                 obj.PlaneSwitcher.NumPlanes = obj.NumPlanes;
             end

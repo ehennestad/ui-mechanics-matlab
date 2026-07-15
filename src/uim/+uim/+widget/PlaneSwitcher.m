@@ -20,7 +20,6 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 
     properties (Access = protected)
 
-        ParentApp
         Figure % Window which figure is located in. % Make dependent...
         Axes
 
@@ -44,10 +43,9 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 
     methods % Structor
 
-        function obj = PlaneSwitcher(parentGui, hParent, varargin)
+        function obj = PlaneSwitcher(hParent, varargin)
 
-            obj.ParentApp = parentGui;
-            obj.Figure = obj.ParentApp.Figure;
+            obj.Figure = ancestor(hParent, 'figure');
 
             obj.resolveParent(hParent)
 
@@ -164,7 +162,7 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
             args = {'Min', 1, 'Max', obj.NumPlanes, 'NumTicks', ...
                 obj.NumPlanes-1};
 
-            hSlider = uim.widget.Slider('Parent', obj.ParentApp.Axes.Parent, ...
+            hSlider = uim.widget.Slider('Parent', obj.Axes.Parent, ...
                     'Position', [0, obj.Position(4)+10, 100, 10], 'Orientation', 'vertical', ...
                     'Units', 'pixel', args{:}, 'Value', obj.CurrentPlane, ...
                     'TextColor', obj.ForegroundColor, 'Padding', [0,9,3,9], ...
@@ -183,7 +181,9 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
         function onPlaneSliderValueChanged(obj, src, ~)
 
             newPlaneIdx = src.Value;
-            obj.Callback(newPlaneIdx)
+            if ~isempty(obj.Callback)
+                obj.Callback(newPlaneIdx)
+            end
         end
 
         function onPlaneSwitcherToggleButtonPushed(obj)

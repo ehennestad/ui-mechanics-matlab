@@ -29,6 +29,18 @@ properties. Migration notes per widget:
 - Callbacks are unchanged (`Callback`, `ChannelColorCallback`,
   `ChangeDefaultsCallback`).
 
+#### `uim.widget.PlaneSwitcher`
+
+- Constructor: `PlaneSwitcher(parentGui, hParent, ...)` →
+  `PlaneSwitcher(hParent, ...)`. The figure is resolved via
+  `ancestor(hParent, 'figure')`.
+- The `ParentApp` property is removed. The pop-out plane slider is now
+  parented in the container of the switcher's own axes rather than
+  `parentGui.Axes.Parent` (for the typical case — both axes living in
+  the same figure/panel — this is the same container as before).
+- `Callback` is unchanged, and is now optional: dragging the plane
+  slider with no callback set no longer errors.
+
 ### Changed — Breaking: full API rename to PascalCase
 
 Every class, property, and several methods across the toolbox have been

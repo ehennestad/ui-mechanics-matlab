@@ -505,6 +505,23 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             end
         end
 
+        function planeSwitcherRunsStandaloneInPanel(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure);
+
+            switcher = uim.widget.PlaneSwitcher(hPanel, "NumPlanes", 5, ...
+                "CurrentPlane", 2);
+            testCase.addTeardown(@deleteValid, switcher);
+
+            toggleButton = findall(hPanel, "Tag", "PlaneSwitcherToggleButton");
+            testCase.verifyNumElements(toggleButton, 1);
+            testCase.verifyEqual(switcher.CurrentPlane, 2);
+
+            switcher.CurrentPlane = 4;
+            testCase.verifyEqual(switcher.CurrentPlane, 4);
+        end
+
         function messageBoxDisplaysInPlainPanel(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
