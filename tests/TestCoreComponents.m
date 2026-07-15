@@ -529,8 +529,17 @@ classdef TestCoreComponents < matlab.unittest.TestCase
 
             control = uim.widget.PlaybackControl(hPanel, ...
                 "Minimum", 1, "Maximum", 100, ...
-                "NumChannels", 3, "NumPlanes", 2);
+                "NumChannels", 3, "NumPlanes", 2, ...
+                "PlaybackSpeed", 2, "CurrentChannels", [2, 3], ...
+                "CurrentPlane", 2);
             testCase.addTeardown(@deleteValid, control);
+
+            % Constructor-supplied state reaches the lazily created
+            % sub-widgets and the speed label.
+            testCase.verifyEqual(control.CurrentChannels, [2, 3]);
+            testCase.verifyEqual(control.CurrentPlane, 2);
+            testCase.verifyNumElements(...
+                findall(hPanel, "Type", "text", "String", "2x"), 1);
 
             % Sub-widgets are created and wired without a parent app.
             testCase.verifyEqual(...
@@ -595,6 +604,12 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyGreaterThan(toolbarPosition(2), expectedRect(4)/2);
             testCase.verifyLessThanOrEqual(...
                 toolbarPosition(1) + toolbarPosition(3), expectedRect(3) + 1);
+
+            % The getpixelposition wrapper resolves the canvas parent to
+            % a real pixel frame instead of erroring on the canvas object.
+            toolbarPixelPosition = toolbar.getpixelposition();
+            testCase.verifyEqual(toolbarPixelPosition(1:2), ...
+                expectedRect(1:2) + toolbarPosition(1:2), "AbsTol", 1);
         end
 
         function overlayCanvasTracksTargetAxesPosition(testCase)
@@ -643,6 +658,13 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyError(@() uim.UIComponentCanvas(hAxesOne), ...
                 "uim:UIComponentCanvas:DuplicateCanvas");
 
+            % Canvases created later stack on top (registration order).
+            stacked = allchild(hFigure);
+            testCase.verifyLessThan(find(stacked == overlayTwo.Axes), ...
+                find(stacked == overlayOne.Axes));
+            testCase.verifyLessThan(find(stacked == overlayOne.Axes), ...
+                find(stacked == figureCanvas.Axes));
+
             % Non-LIFO teardown: deleting the first-installed canvas must
             % not corrupt the shared axes-creation hook for the remaining
             % canvases (registry regression).
@@ -650,6 +672,12 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             siblingAxes = axes(hFigure);
             testCase.verifyTrue(isvalid(siblingAxes));
             testCase.verifyTrue(isvalid(overlayOne) && isvalid(overlayTwo));
+
+            stacked = allchild(hFigure);
+            testCase.verifyLessThan(find(stacked == overlayTwo.Axes), ...
+                find(stacked == overlayOne.Axes));
+            testCase.verifyLessThan(find(stacked == overlayOne.Axes), ...
+                find(stacked == siblingAxes));
         end
 
         function deletingTargetAxesDeletesOverlayAndComponents(testCase)
@@ -690,6 +718,10 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 @() uim.widget.Toolbar(hAxes, "CanvasMode", "private"), ...
                 "uim:Container:PrivateCanvasUnsupportedOnOverlay");
 
+            % A Panel wraps a real uipanel, which can not live on a canvas.
+            testCase.verifyError(@() uim.Panel(hAxes), ...
+                "uim:Panel:CanvasParentNotSupported");
+
             % Axes inside a tiled layout can not host a sibling overlay.
             tiledFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, tiledFigure);
@@ -697,6 +729,23 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             hTiledAxes = nexttile(hLayout);
             testCase.verifyError(@() uim.UIComponentCanvas(hTiledAxes), ...
                 "uim:UIComponentCanvas:UnsupportedAxesParent");
+        end
+
+        function explicitSizeSurvivesParentResize(testCase)
+            hFigure = figure("Visible", "off", "Position", [200, 200, 500, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure);
+            canvas = uim.UIComponentCanvas(hPanel);
+
+            slider = uim.widget.RangeSlider(canvas);
+            slider.Size = [123, 17];
+            testCase.verifyEqual(slider.Size, [123, 17]);
+
+            % An explicit size assignment opts out of auto-layout, so it
+            % must survive a parent resize instead of being recomputed.
+            hFigure.Position(3:4) = [350, 300];
+            drawnow
+            testCase.verifyEqual(slider.Size, [123, 17]);
         end
     end
 end

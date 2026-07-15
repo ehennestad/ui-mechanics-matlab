@@ -327,6 +327,9 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
         end
 
         function set.Size(obj, newValue)
+            % An explicit size assignment opts out of auto-layout;
+            % otherwise the next parent resize recomputes and clobbers it.
+            obj.switchSizeMode('manual')
             obj.Position_(3:4) = newValue;
             if strcmp(obj.PositionMode, 'auto')
                 obj.setAutoLocation()
@@ -434,12 +437,16 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 
         function set.MinimumSize(obj, newValue)
             obj.MinimumSize = newValue;
-            obj.Size = obj.Size; % Re-clamp the current size to the new bound.
+            % Re-clamp through Position_ (not Size): set.Size would also
+            % switch an auto-sized component to manual size mode.
+            obj.Position_ = obj.Position_;
         end
 
         function set.MaximumSize(obj, newValue)
             obj.MaximumSize = newValue;
-            obj.Size = obj.Size; % Re-clamp the current size to the new bound.
+            % Re-clamp through Position_ (not Size): set.Size would also
+            % switch an auto-sized component to manual size mode.
+            obj.Position_ = obj.Position_;
         end
 
         function set.Visible(obj, newValue)
@@ -772,7 +779,14 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
             if nargin < 2; recursive=false; end
 
             hContainer = obj.getGraphicsContainer();
-            parentPos = getpixelposition(hContainer, recursive);
+            if isa(hContainer, 'uim.UIComponentCanvas')
+                % Component positions are canvas-local; the canvas axes
+                % rect is the pixel frame they live in (this also holds
+                % for overlay canvases covering a data axes).
+                parentPos = getpixelposition(hContainer.Axes, recursive);
+            else
+                parentPos = getpixelposition(hContainer, recursive);
+            end
 
             pos = obj.Position;
             pos(1:2) = pos(1:2) + parentPos(1:2);
@@ -782,18 +796,30 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
     methods (Hidden) % Wrappers for placing matlab components (shadow builtins)
 
         function h = uicontrol(obj, varargin)
-            hContainer = obj.getGraphicsContainer();
-            h = uicontrol(hContainer, varargin{:});
+            h = uicontrol(obj.getGraphicsPlacementParent(), varargin{:});
         end
 
         function h = uitable(obj, varargin)
-            hContainer = obj.getGraphicsContainer();
-            h = uitable(hContainer, varargin{:});
+            h = uitable(obj.getGraphicsPlacementParent(), varargin{:});
         end
 
         function h = axes(obj, varargin)
-            hContainer = obj.getGraphicsContainer();
-            h = axes(hContainer, varargin{:});
+            h = axes(obj.getGraphicsPlacementParent(), varargin{:});
+        end
+    end
+
+    methods (Access = private)
+
+        function hParent = getGraphicsPlacementParent(obj)
+        %getGraphicsPlacementParent Real graphics object that can parent controls
+        %
+        %   A component's graphics container may be a UIComponentCanvas,
+        %   which can not parent MATLAB controls; resolve to the container
+        %   hosting the canvas axes in that case.
+            hParent = obj.getGraphicsContainer();
+            if isa(hParent, 'uim.UIComponentCanvas')
+                hParent = hParent.Axes.Parent;
+            end
         end
     end
 

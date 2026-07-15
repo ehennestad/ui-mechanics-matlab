@@ -21,6 +21,14 @@ classdef Panel < uim.abstract.Container
 
     methods (Access = protected)
         function createBackground(obj)
+            if isa(obj.Parent, 'uim.UIComponentCanvas')
+                % The panel background is a real uipanel, which can not
+                % live on a canvas (canvases only host plotted graphics).
+                error('uim:Panel:CanvasParentNotSupported', ...
+                    ['uim.Panel wraps a real uipanel and requires a ', ...
+                     'figure, panel or tab parent. It can not be placed ', ...
+                     'on a UIComponentCanvas or inside an axes.'])
+            end
             obj.PanelHandle = uipanel(obj.Parent);
             obj.PanelHandle.BorderType = 'none';
             obj.PanelHandle.Units = 'pixel';

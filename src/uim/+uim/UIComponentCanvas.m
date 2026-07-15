@@ -285,6 +285,12 @@ classdef UIComponentCanvas < handle
             % installSiblingCreatedHook).
 
             uim.UIComponentCanvas.installSiblingCreatedHook(obj.Parent, obj)
+
+            % Hoist our own axes now: it was created before this canvas
+            % registered with the hook, so its creation event restacked
+            % only the previously registered canvases. This keeps the
+            % invariant that canvases created later stack on top.
+            obj.onSiblingCreated()
         end
 
     end

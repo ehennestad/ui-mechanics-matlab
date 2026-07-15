@@ -398,6 +398,10 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             if obj.NumPlanes > 1
                 obj.onNumPlanesChanged()
             end
+
+            % A PlaybackSpeed passed to the constructor was assigned
+            % before the speed label existed; sync the label now.
+            obj.updatePlaybackSpeedLabel()
         end
 
     % % % Methods for drawing the components
@@ -885,6 +889,8 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         function applyValueFromUser(obj, newValue)
         %applyValueFromUser Update Value from an interaction and notify host
             oldValue = obj.Value;
+            % Exact == is safe here: both call sites round() the slider
+            % value, so this compares integer-valued doubles.
             if newValue == oldValue; return; end
 
             obj.Value = newValue;
@@ -1098,6 +1104,12 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                     params = [params, {'ChannelColors', obj.ChannelColors}];
                 end
 
+                % Forward a CurrentChannels value that was assigned (and
+                % buffered) before the sub-widget existed.
+                if ~isempty(obj.CurrentChannels_)
+                    params = [params, {'CurrentChannels', obj.CurrentChannels_}];
+                end
+
                 obj.ChannelIndicator = uim.widget.ChannelIndicator( ...
                     obj.ButtonAxes, params{:});
             else
@@ -1132,6 +1144,12 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                     'NumPlanes', obj.NumPlanes, ...
                     'Callback', @obj.onPlaneChangedByUser, ...
                     'ForegroundColor', obj.ButtonColor };
+
+                % Forward a CurrentPlane value that was assigned (and
+                % buffered) before the sub-widget existed.
+                if ~isempty(obj.CurrentPlane_)
+                    params = [params, {'CurrentPlane', obj.CurrentPlane_}];
+                end
 
                 obj.PlaneSwitcher = uim.widget.PlaneSwitcher( ...
                     obj.ButtonAxes, params{:});

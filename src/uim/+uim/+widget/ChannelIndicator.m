@@ -505,6 +505,10 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
         function onCurrentChannelsChanged(obj)
 
+            % Before construction the indicator graphics do not exist yet;
+            % createWidgetComponents applies the state via drawIndicatorState.
+            if ~obj.IsConstructed; return; end
+
             for i = 1:obj.NumChannels
                 obj.changeIndicatorAppearance(i)
 
