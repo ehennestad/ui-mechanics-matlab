@@ -11,6 +11,25 @@ classdef UIComponentCanvas < handle
 %   canvas already attached to hParent, or creates one if none exists.
 %   A parent container holds at most one canvas.
 %
+%   canvas = uim.UIComponentCanvas(hAxes), where hAxes is an axes,
+%   creates an *overlay* canvas: instead of covering the whole
+%   container, the canvas axes covers just the pixel rectangle of hAxes
+%   (the target axes) and tracks its position and size. This lets
+%   components anchor inside a data axes (e.g. a toolbar in the
+%   northeast corner of an image display). An axes holds at most one
+%   overlay canvas, and overlay canvases coexist with a whole-container
+%   canvas on the same container.
+%
+%   Overlay mode limitations (v1):
+%     - The canvas anchors to the axes Position rectangle, not the
+%       visible plot box (these differ under axis image/equal).
+%     - Z-order among multiple canvases in a container follows canvas
+%       creation order (later canvases stack on top).
+%     - The target axes must be parented directly in a figure, uifigure,
+%       panel or tab (no TiledChartLayout).
+%     - Containers with CanvasMode='private' are not supported on an
+%       overlay canvas.
+%
 %   Description
 %       Built around an axes which overlays all other components in a
 %       figure. All interactivity of the axes is turned off, but components
@@ -47,6 +66,7 @@ classdef UIComponentCanvas < handle
     properties (SetAccess = private, Transient)
         Parent matlab.graphics.Graphics             % Parent handle (figure/uifigure)
         Axes matlab.graphics.axis.Axes               % Handle to the axes which components are plotted in
+        TargetAxes matlab.graphics.axis.Axes        % Overlay mode: the data axes this canvas covers (empty in classic mode)
         Children uim.abstract.Component % Flat list of all components drawn on this canvas
         Tag (1,1) string = "UI Component Canvas" % A tag which is also applied to the axes.
     end
@@ -77,7 +97,27 @@ classdef UIComponentCanvas < handle
             end
 
             obj.Tag = options.Tag;
-            obj.Parent = hParent;
+
+            if isa(hParent, 'matlab.graphics.axis.Axes')
+                % Overlay mode: cover the pixel rectangle of the target
+                % axes with a sibling canvas axes that tracks its geometry.
+                hContainer = hParent.Parent;
+                isSupportedContainer = isa(hContainer, 'matlab.ui.Figure') ...
+                    || isa(hContainer, 'matlab.ui.container.Panel') ...
+                    || isa(hContainer, 'matlab.ui.container.Tab');
+                if ~isSupportedContainer
+                    error('uim:UIComponentCanvas:UnsupportedAxesParent', ...
+                        ['An overlay canvas requires the target axes to be ', ...
+                         'parented directly in a figure, panel or tab. ', ...
+                         'Axes inside a %s are not supported.'], class(hContainer))
+                end
+                % Must be assigned before Parent; the Parent setter keys
+                % canvas ownership on the target axes in overlay mode.
+                obj.TargetAxes = hParent;
+                obj.Parent = hContainer;
+            else
+                obj.Parent = hParent;
+            end
 
             obj.onSizeChanged() % Call update because we set the parent
 
@@ -131,6 +171,11 @@ classdef UIComponentCanvas < handle
     methods
 
         function reparent(obj, newParent)
+            if obj.isOverlay()
+                error('uim:UIComponentCanvas:OverlayReparentNotSupported', ...
+                    ['An overlay canvas follows its target axes and can not ', ...
+                     'be reparented directly.'])
+            end
             obj.Parent = newParent;
         end
 
@@ -201,11 +246,15 @@ classdef UIComponentCanvas < handle
                 delete(obj.ParentLocationChangedListener)
             end
 
-            % Create listeners for Parent's SizeChanged & LocationChanged
-            el = listener(obj.Parent, 'SizeChanged', @obj.onSizeChanged);
+            % Create SizeChanged & LocationChanged listeners on the
+            % tracked object (the parent container, or the target axes
+            % in overlay mode).
+            hSource = obj.getGeometryEventSource();
+
+            el = listener(hSource, 'SizeChanged', @obj.onSizeChanged);
             obj.ParentSizeChangedListener = el;
 
-            el = listener(obj.Parent, 'LocationChanged', @obj.onLocationChanged);
+            el = listener(hSource, 'LocationChanged', @obj.onLocationChanged);
             obj.ParentLocationChangedListener = el;
 
         end
@@ -217,7 +266,11 @@ classdef UIComponentCanvas < handle
                 delete(obj.ParentDestroyedListener)
             end
 
-            obj.ParentDestroyedListener = addlistener(obj.Parent, ...
+            % In overlay mode the canvas dies with its target axes (which
+            % also covers container destruction, since axes destruction
+            % cascades from the container).
+            obj.ParentDestroyedListener = addlistener(...
+                obj.getGeometryEventSource(), ...
                 'ObjectBeingDestroyed', @(~,~) delete(obj));
         end
 
@@ -240,12 +293,12 @@ classdef UIComponentCanvas < handle
 
         function onSizeChanged(obj, ~, ~)
         %onSizeChanged Call an update to the PixelSize property
-            newParentPosition = uim.utility.getContentPixelPosition(obj.Parent);
+            newPixelPosition = obj.getTrackedPixelPosition();
 
             oldSize = obj.PixelSize;
-            newSize = newParentPosition(3:4);
+            newSize = newPixelPosition(3:4);
 
-            obj.PixelPosition = newParentPosition;
+            obj.PixelPosition = newPixelPosition;
             obj.PixelSize = newSize;
 
             % On creation oldSize is [nan, nan]; listeners can use this to
@@ -255,7 +308,14 @@ classdef UIComponentCanvas < handle
         end
 
         function onLocationChanged(obj, ~, ~)
-            obj.PixelPosition = uim.utility.getContentPixelPosition(obj.Parent);
+            obj.PixelPosition = obj.getTrackedPixelPosition();
+
+            if obj.isOverlay()
+                % A pure move changes the overlay origin without a size
+                % change, so the set.PixelSize pathway will not trigger
+                % an axes reposition. Do it here.
+                obj.setAxesLimits()
+            end
         end
 
         function onSiblingCreated(obj, ~, ~)
@@ -286,6 +346,41 @@ classdef UIComponentCanvas < handle
         end
     end
 
+    methods (Access = private) % Mode helpers
+
+        function tf = isOverlay(obj)
+        %isOverlay True when the canvas covers a target axes, not a container
+            tf = ~isempty(obj.TargetAxes);
+        end
+
+        function pixelPosition = getTrackedPixelPosition(obj)
+        %getTrackedPixelPosition Pixel rect the canvas axes should cover
+            if obj.isOverlay()
+                pixelPosition = getpixelposition(obj.TargetAxes);
+            else
+                pixelPosition = uim.utility.getContentPixelPosition(obj.Parent);
+            end
+        end
+
+        function hSource = getGeometryEventSource(obj)
+        %getGeometryEventSource Object whose geometry and lifetime the canvas tracks
+            if obj.isOverlay()
+                hSource = obj.TargetAxes;
+            else
+                hSource = obj.Parent;
+            end
+        end
+
+        function hOwner = getOwnershipHandle(obj, hParent)
+        %getOwnershipHandle Handle holding the canvas' appdata registration
+            if obj.isOverlay()
+                hOwner = obj.TargetAxes;
+            else
+                hOwner = hParent;
+            end
+        end
+    end
+
     methods (Access = private) % Internal updates
 
         function setAxesLimits(obj)
@@ -298,7 +393,22 @@ classdef UIComponentCanvas < handle
                 axesSize = max(obj.PixelSize, [1, 1]);
                 axesLimits = [1, max(axesSize(1)+1, 2); ...
                               1, max(axesSize(2)+1, 2)];
-                newPosition = [1,1, axesSize];
+
+                if obj.isOverlay()
+                    % The canvas axes and target axes share a graphics
+                    % parent, so the target's pixel rect (from
+                    % getpixelposition) is directly usable as the canvas
+                    % axes position.
+                    origin = obj.PixelPosition(1:2);
+                else
+                    % In classic mode PixelPosition(1:2) is the parent's
+                    % content offset in the *grandparent* frame (from
+                    % getContentPixelPosition) and must not be used here;
+                    % the canvas axes fills its parent, whose local frame
+                    % starts at [1,1].
+                    origin = [1, 1];
+                end
+                newPosition = [origin, axesSize];
 
                 set(obj.Axes, 'Position', newPosition, ...
                     'XLim', axesLimits(1, :), 'YLim', axesLimits(2, :))
@@ -315,10 +425,11 @@ classdef UIComponentCanvas < handle
                 uim.UIComponentCanvas.uninstallSiblingCreatedHook(obj.Parent, obj)
             end
 
-            if ~isempty(obj.Parent) && isvalid(obj.Parent) && ...
-                    isappdata(obj.Parent, 'UIComponentCanvas') && ...
-                    isequal(getappdata(obj.Parent, 'UIComponentCanvas'), obj)
-                rmappdata(obj.Parent, 'UIComponentCanvas')
+            hOwner = obj.getOwnershipHandle(obj.Parent);
+            if ~isempty(hOwner) && isvalid(hOwner) && ...
+                    isappdata(hOwner, 'UIComponentCanvas') && ...
+                    isequal(getappdata(hOwner, 'UIComponentCanvas'), obj)
+                rmappdata(hOwner, 'UIComponentCanvas')
             end
 
             if ~isempty(obj.ParentDestroyedListener)
@@ -358,9 +469,14 @@ classdef UIComponentCanvas < handle
         function set.Parent(obj, newValue)
         %set.Parent Validate value and assign to Parent property
 
-            % A parent holds at most one canvas; a second one would fight
-            % over the DefaultAxesCreateFcn hook and the appdata entry.
-            existingCanvas = getappdata(newValue, 'UIComponentCanvas');
+            % Ownership is keyed on the container in classic mode and on
+            % the target axes in overlay mode.
+            hOwner = obj.getOwnershipHandle(newValue);
+
+            % An owner holds at most one canvas; a second one would fight
+            % over the appdata entry (and, for containers, the
+            % DefaultAxesCreateFcn hook).
+            existingCanvas = getappdata(hOwner, 'UIComponentCanvas');
             if ~isempty(existingCanvas) && isvalid(existingCanvas) ...
                     && existingCanvas ~= obj
                 error('uim:UIComponentCanvas:DuplicateCanvas', ...
@@ -376,8 +492,8 @@ classdef UIComponentCanvas < handle
 
             obj.Parent = newValue;
 
-            % Add class instance to appdata of the parent handle
-            setappdata(obj.Parent, 'UIComponentCanvas', obj);
+            % Add class instance to appdata of the owner handle
+            setappdata(hOwner, 'UIComponentCanvas', obj);
 
             if hadParent
                 obj.reparentAxes();
@@ -483,6 +599,9 @@ classdef UIComponentCanvas < handle
 
         function obj = getOrCreate(hParent)
         %getOrCreate Return the canvas attached to hParent, creating one if needed
+        %
+        %   hParent can be a figure, uifigure, panel or tab (whole-container
+        %   canvas) or an axes (overlay canvas covering that axes).
             obj = getappdata(hParent, 'UIComponentCanvas');
             if isempty(obj) || ~isvalid(obj)
                 obj = uim.UIComponentCanvas(hParent);

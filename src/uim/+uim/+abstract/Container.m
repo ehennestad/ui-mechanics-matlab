@@ -30,6 +30,16 @@ classdef Container < uim.abstract.Component
 
             % Create an axes which will be the container for this widget.
             if isa(obj.Parent, 'uim.UIComponentCanvas')
+                if ~isempty(obj.Parent.TargetAxes)
+                    % Private-canvas layout math assumes the shared canvas
+                    % is container-aligned (canvas-local coordinates equal
+                    % container pixels), which does not hold when the
+                    % shared canvas is an overlay covering a target axes.
+                    error('uim:Container:PrivateCanvasUnsupportedOnOverlay', ...
+                        ['CanvasMode ''private'' is not supported for ', ...
+                         'containers placed on an overlay canvas. Use the ', ...
+                         'default shared canvas mode.'])
+                end
                 hGraphicsParent = obj.Parent.Axes.Parent;
             else
                 hGraphicsParent = obj.Parent;

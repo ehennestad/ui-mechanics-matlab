@@ -6,6 +6,50 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added — Overlay canvas: components anchor inside a data axes
+
+Component-family widgets (`uim.widget.Toolbar`, `uim.widget.RangeSlider`,
+`uim.widget.PageIndicator`, buttons, ...) now accept an **axes** as their
+parent, e.g. `uim.widget.Toolbar(hAxes, "Location", "northeast")` places
+a toolbar in the northeast corner of a data axes. This is non-breaking:
+all previously supported parents behave as before.
+
+Under the hood this is a new *overlay mode* for `uim.UIComponentCanvas`:
+
+- `uim.UIComponentCanvas(hAxes)` (or `getOrCreate(hAxes)`) creates an
+  invisible canvas axes covering the pixel rectangle of the target axes
+  and tracking its position and size, so component layout runs in
+  rect-local pixel coordinates. The target axes' data limits and
+  contents are untouched.
+- An axes holds at most one overlay canvas (`getOrCreate` returns the
+  existing one; a direct constructor call raises
+  `uim:UIComponentCanvas:DuplicateCanvas`). Overlay canvases coexist
+  with a whole-container canvas on the same figure/panel: canvas
+  ownership is keyed on the target axes, not the container.
+- Deleting the target axes deletes the overlay canvas and every
+  component on it, and restores the container's `DefaultAxesCreateFcn`.
+- `reparent` is not supported on an overlay canvas
+  (`uim:UIComponentCanvas:OverlayReparentNotSupported`).
+
+Known limitations in this first version:
+
+- The overlay anchors to the axes **Position rectangle**, not the
+  visible plot box — under `axis image`/`axis equal` these differ, so
+  components anchor to the rect edges, not the image edges.
+- Z-order among multiple canvases in one container follows canvas
+  creation order (canvases created later stack on top).
+- The target axes must be parented directly in a figure, uifigure,
+  panel or tab; axes inside a `TiledChartLayout` raise
+  `uim:UIComponentCanvas:UnsupportedAxesParent`.
+- Containers with `CanvasMode='private'` are rejected on an overlay
+  canvas (`uim:Container:PrivateCanvasUnsupportedOnOverlay`).
+
+Internal supporting change: the per-canvas `DefaultAxesCreateFcn`
+chaining (used to keep canvas axes on top of the uistack) was replaced
+by a per-container registry with a single shared hook, so multiple
+canvases on one container can be created and deleted in any order
+without corrupting the hook chain.
+
 ### Changed — Breaking: app-coupled widgets decoupled from ParentApp
 
 `ChannelIndicator`, `PlaneSwitcher` and `PlaybackControl` previously

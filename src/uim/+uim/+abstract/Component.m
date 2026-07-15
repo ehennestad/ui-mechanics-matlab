@@ -167,6 +167,10 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
                 end
             elseif isa(hParent, 'uim.UIComponentCanvas')
                 obj.Parent = hParent;
+            elseif isa(hParent, 'matlab.graphics.axis.Axes')
+                % An axes can not contain the component directly; use (or
+                % create) an overlay canvas covering the axes' pixel rect.
+                obj.Parent = uim.UIComponentCanvas.getOrCreate(hParent);
             elseif isgraphics(hParent)
                 obj.Parent = hParent;
             else

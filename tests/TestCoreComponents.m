@@ -564,6 +564,140 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             messageBox.clearMessage()
             testCase.verifyFalse(messageBox.isMessageDisplaying());
         end
+
+        function toolbarAnchorsInsideDataAxes(testCase)
+            hFigure = figure("Visible", "off", "Position", [200, 200, 560, 420]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [60, 50, 400, 300]);
+            plot(hAxes, 1:10, (1:10).^2)
+            originalXLim = hAxes.XLim;
+            originalYLim = hAxes.YLim;
+
+            toolbar = uim.widget.Toolbar(hAxes, "Location", "northeast");
+
+            canvas = getappdata(hAxes, "UIComponentCanvas");
+            testCase.verifyClass(canvas, "uim.UIComponentCanvas");
+            testCase.verifySameHandle(canvas.TargetAxes, hAxes);
+            testCase.verifySameHandle(toolbar.Canvas, canvas);
+
+            expectedRect = getpixelposition(hAxes);
+            testCase.verifyEqual(canvas.Axes.Position, expectedRect, "AbsTol", 1);
+            testCase.verifyEqual(canvas.Size, expectedRect(3:4), "AbsTol", 1);
+
+            % Data limits of the target axes are untouched by the overlay.
+            testCase.verifyEqual(hAxes.XLim, originalXLim);
+            testCase.verifyEqual(hAxes.YLim, originalYLim);
+
+            % The toolbar sits in the upper-right quadrant of the axes
+            % rect (positions are canvas-local, i.e. relative to the rect).
+            toolbarPosition = toolbar.Position;
+            testCase.verifyGreaterThan(toolbarPosition(1), expectedRect(3)/2);
+            testCase.verifyGreaterThan(toolbarPosition(2), expectedRect(4)/2);
+            testCase.verifyLessThanOrEqual(...
+                toolbarPosition(1) + toolbarPosition(3), expectedRect(3) + 1);
+        end
+
+        function overlayCanvasTracksTargetAxesPosition(testCase)
+            hFigure = figure("Visible", "off", "Position", [200, 200, 700, 500]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [50, 40, 300, 200]);
+
+            toolbar = uim.widget.Toolbar(hAxes, "Location", "northeast");
+            canvas = uim.UIComponentCanvas.getOrCreate(hAxes);
+            toolbarLocalPosition = toolbar.Position;
+
+            % Pure move: the overlay origin follows while its size and the
+            % canvas-local component position stay put.
+            hAxes.Position(1:2) = [180, 150];
+            drawnow
+            expectedRect = getpixelposition(hAxes);
+            testCase.verifyEqual(canvas.Axes.Position, expectedRect, "AbsTol", 1);
+            testCase.verifyEqual(canvas.Size, expectedRect(3:4), "AbsTol", 1);
+            testCase.verifyEqual(toolbar.Position, toolbarLocalPosition, "AbsTol", 1);
+
+            % Resize: the overlay size follows and the northeast anchor
+            % recomputes (toolbar shifts right with the wider rect).
+            hAxes.Position(3:4) = [420, 260];
+            drawnow
+            expectedRect = getpixelposition(hAxes);
+            testCase.verifyEqual(canvas.Axes.Position, expectedRect, "AbsTol", 1);
+            testCase.verifyGreaterThan(toolbar.Position(1), toolbarLocalPosition(1));
+        end
+
+        function overlayCanvasesCoexistWithContainerCanvas(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxesOne = axes(hFigure, "Units", "pixels", "Position", [40, 40, 200, 150]);
+            hAxesTwo = axes(hFigure, "Units", "pixels", "Position", [280, 40, 200, 150]);
+
+            figureCanvas = uim.UIComponentCanvas.getOrCreate(hFigure);
+            overlayOne = uim.UIComponentCanvas.getOrCreate(hAxesOne);
+            overlayTwo = uim.UIComponentCanvas.getOrCreate(hAxesTwo);
+
+            testCase.verifyNotSameHandle(overlayOne, figureCanvas);
+            testCase.verifyNotSameHandle(overlayTwo, figureCanvas);
+            testCase.verifyNotSameHandle(overlayOne, overlayTwo);
+            testCase.verifySameHandle(...
+                uim.UIComponentCanvas.getOrCreate(hAxesOne), overlayOne);
+
+            testCase.verifyError(@() uim.UIComponentCanvas(hAxesOne), ...
+                "uim:UIComponentCanvas:DuplicateCanvas");
+
+            % Non-LIFO teardown: deleting the first-installed canvas must
+            % not corrupt the shared axes-creation hook for the remaining
+            % canvases (registry regression).
+            delete(figureCanvas)
+            siblingAxes = axes(hFigure);
+            testCase.verifyTrue(isvalid(siblingAxes));
+            testCase.verifyTrue(isvalid(overlayOne) && isvalid(overlayTwo));
+        end
+
+        function deletingTargetAxesDeletesOverlayAndComponents(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [50, 50, 300, 220]);
+            originalCallback = get(hFigure, "DefaultAxesCreateFcn");
+
+            toolbar = uim.widget.Toolbar(hAxes, "Location", "northeast");
+            slider = uim.widget.RangeSlider(hAxes);
+            canvas = uim.UIComponentCanvas.getOrCreate(hAxes);
+            canvasAxes = canvas.Axes;
+
+            delete(hAxes)
+
+            testCase.verifyFalse(isvalid(canvas));
+            testCase.verifyFalse(isvalid(toolbar));
+            testCase.verifyFalse(isvalid(slider));
+            testCase.verifyFalse(isvalid(canvasAxes));
+            testCase.verifyTrue(isvalid(hFigure));
+            testCase.verifyEqual(get(hFigure, "DefaultAxesCreateFcn"), ...
+                originalCallback);
+            testCase.verifyFalse(...
+                isappdata(hFigure, "UIComponentCanvasSiblingHook"));
+        end
+
+        function overlayCanvasRejectsReparentAndPrivateMode(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [50, 50, 300, 220]);
+            hPanel = uipanel(hFigure);
+
+            canvas = uim.UIComponentCanvas.getOrCreate(hAxes);
+            testCase.verifyError(@() canvas.reparent(hPanel), ...
+                "uim:UIComponentCanvas:OverlayReparentNotSupported");
+
+            testCase.verifyError(...
+                @() uim.widget.Toolbar(hAxes, "CanvasMode", "private"), ...
+                "uim:Container:PrivateCanvasUnsupportedOnOverlay");
+
+            % Axes inside a tiled layout can not host a sibling overlay.
+            tiledFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, tiledFigure);
+            hLayout = tiledlayout(tiledFigure, 1, 1);
+            hTiledAxes = nexttile(hLayout);
+            testCase.verifyError(@() uim.UIComponentCanvas(hTiledAxes), ...
+                "uim:UIComponentCanvas:UnsupportedAxesParent");
+        end
     end
 end
 
