@@ -90,6 +90,27 @@ slider = uim.widget.RangeSlider(hPanel, 'Min', 0, 'Max', 10, ...
     'Callback', @(src, event) fprintf('%.1f - %.1f\n', event.Low, event.High));
 ```
 
+The same widgets can anchor *inside a data axes*: pass an axes as the
+parent and an overlay canvas is created covering just that axes'
+rectangle, tracking its position and size. The axes' data limits and
+contents are untouched:
+
+```matlab
+hFigure = figure;
+hAxes = axes(hFigure);
+imagesc(hAxes, peaks(200))
+
+toolbar = uim.widget.Toolbar(hAxes, 'Location', 'northeast', ...
+    'BackgroundAlpha', 0.5);
+toolbar.addButton('Text', 'Reset', ...
+    'Callback', @(src, event) disp('Reset pressed'))
+```
+
+Note that the overlay anchors to the axes *Position rectangle*; under
+`axis image`/`axis equal` the visible plot box can be smaller than the
+rectangle, so controls anchor to the rectangle edges, not the image
+edges.
+
 ## Contributing
 Please see the [Contributing guidelines](.github/CONTRIBUTING.md) and the [Developer notes](.github/DeveloperNotes.md)
 
