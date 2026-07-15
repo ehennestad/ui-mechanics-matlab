@@ -66,6 +66,12 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
 
         function drawFrameMarker(obj)
 
+            % Keep hold on while creating the marker parts so a
+            % caller-supplied axes with NextPlot 'replace' does not delete
+            % the earlier parts as the later ones are plotted.
+            wasHoldOn = ishold(obj.Axes);
+            hold(obj.Axes, 'on')
+
             obj.LineHandle = plot(obj.Axes, [1, 1], [0, 1], '-', 'HitTest', 'off');
 
             obj.TopButtonHandle = plot(obj.Axes, 1, 1, 'v', ...
@@ -75,6 +81,10 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
             obj.BottomButtonHandle = plot(obj.Axes, 1, 0, '^', ...
                 'HitTest', 'on', 'MarkerSize', 10);
             obj.BottomButtonHandle.ButtonDownFcn = @obj.knobPressed;
+
+            if ~wasHoldOn
+                hold(obj.Axes, 'off')
+            end
 
             allHandles = [obj.LineHandle, obj.TopButtonHandle, obj.BottomButtonHandle];
             %obj.hlineCurrentFrame(2).LineStyle = '-';

@@ -95,8 +95,18 @@ classdef Waitbar < uim.mixin.NameValueAssignable
 
             if isempty(obj.BarCompleted)
 
+                % Keep hold on while creating the bars so a caller-supplied
+                % axes with NextPlot 'replace' does not delete the first
+                % bar when the second one is plotted.
+                wasHoldOn = ishold(obj.Axes);
+                hold(obj.Axes, 'on')
+
                 obj.BarRemaining = plot(obj.Axes, Xb,Yb);
                 obj.BarCompleted = plot(obj.Axes, Xa,Ya);
+
+                if ~wasHoldOn
+                    hold(obj.Axes, 'off')
+                end
 
                 set([obj.BarCompleted, obj.BarRemaining], 'HitTest', ...
                     'off', 'PickableParts', 'none', 'Clipping', 'off')

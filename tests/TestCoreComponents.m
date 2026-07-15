@@ -432,6 +432,94 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyEqual(hAxes.XLim, [2, 8]);
             testCase.verifyEqual(hAxes.YLim, [1, 4]);
         end
+
+        function pointerManagerTogglesToolsOnPlainDataAxes(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "XLim", [0, 100], "YLim", [0, 50]);
+
+            manager = uim.interface.PointerManager(hFigure, hAxes, ...
+                {"zoomIn", "pan"});
+            testCase.addTeardown(@deleteValid, manager);
+            testCase.verifyEqual(fieldnames(manager.Pointers), ...
+                {'zoomIn'; 'pan'});
+
+            manager.togglePointerMode('zoomIn');
+            testCase.verifySameHandle(manager.CurrentPointerTool, ...
+                manager.Pointers.zoomIn);
+
+            manager.togglePointerMode('zoomIn');
+            testCase.verifyEmpty(manager.CurrentPointerTool);
+        end
+
+        function widgetOnPlainPanelCreatesAndSharesImplicitCanvas(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure);
+
+            button = uim.control.Button(hPanel, "Text", "Run");
+            testCase.verifyTrue(isappdata(hPanel, "UIComponentCanvas"));
+
+            canvas = getappdata(hPanel, "UIComponentCanvas");
+            testCase.verifyClass(canvas, "uim.UIComponentCanvas");
+            testCase.verifyTrue(any(canvas.Children == button));
+
+            % A second widget on the same panel reuses the same canvas.
+            slider = uim.widget.RangeSlider(hPanel, "Min", 0, "Max", 10);
+            testCase.verifySameHandle(getappdata(hPanel, "UIComponentCanvas"), canvas);
+            testCase.verifyTrue(any(canvas.Children == slider));
+        end
+
+        function waitbarRunsInPlainAxes(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure);
+
+            waitbar = uim.widget.Waitbar(hAxes, "Position", [1, 1, 200, 10]);
+            testCase.addTeardown(@deleteValid, waitbar);
+
+            waitbar.Status = 0.25;
+            barLines = findall(hAxes, "Type", "line");
+            testCase.verifyNumElements(barLines, 2);
+
+            barLengths = sort(arrayfun(@(h) max(h.XData) - min(h.XData), barLines));
+            testCase.verifyEqual(barLengths(1)/barLengths(2), 0.25, "RelTol", 0.05);
+
+            waitbar.Status = 1;
+            barLengths = arrayfun(@(h) max(h.XData) - min(h.XData), barLines);
+            testCase.verifyEqual(barLengths(1)/barLengths(2), 1, "RelTol", 0.05);
+        end
+
+        function frameMarkerTracksValueInPlainAxes(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "XLim", [0, 100], "YLim", [0, 1]);
+
+            marker = uim.widget.FrameMarker(hAxes, ...
+                "Minimum", 1, "Maximum", 100);
+
+            marker.Value = 42;
+            markerHandles = findall(hAxes, "Tag", "FrameMarker");
+            testCase.verifyNumElements(markerHandles, 3);
+            for i = 1:numel(markerHandles)
+                testCase.verifyEqual(unique(markerHandles(i).XData), 42);
+            end
+        end
+
+        function messageBoxDisplaysInPlainPanel(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure);
+
+            messageBox = uim.widget.MessageBox(hPanel);
+            testCase.addTeardown(@deleteValid, messageBox);
+
+            messageBox.displayMessage('Hello standalone world')
+            testCase.verifyTrue(messageBox.isMessageDisplaying());
+
+            messageBox.clearMessage()
+            testCase.verifyFalse(messageBox.isMessageDisplaying());
+        end
     end
 end
 
