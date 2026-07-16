@@ -261,11 +261,13 @@ classdef ContrastSlider < uim.widget.RangeSlider
 
         function S = getTypeDefaults()
             S = uim.widget.RangeSlider.getTypeDefaults();
-            % Extra right padding reserves room for the auto button; the
-            % high knob overhangs the track end by KnobSize/2, so the
-            % zone must clear the knob too.
-            S.Padding = [10, 5, 40, 5];
-            S.Size = [165, 25];
+            % The knobs overhang the track ends by KnobSize/2 (7.5 px
+            % by default), so the visual margin is the padding minus the
+            % overhang. Left: 16 px pads to ~8 px of knob clearance.
+            % Right: 40 px additionally reserves room for the auto
+            % button, which centers in the part clearing the knob.
+            S.Padding = [16, 5, 40, 5];
+            S.Size = [170, 25];
         end
     end
 end
