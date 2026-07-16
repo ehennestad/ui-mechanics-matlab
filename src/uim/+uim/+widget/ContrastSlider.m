@@ -23,6 +23,14 @@ classdef ContrastSlider < uim.widget.RangeSlider
 %   data, so the host computes them and pushes the result back through
 %   Limits (and applies its own CLim).
 %
+%   An intensity histogram can be drawn behind the track
+%   (imcontrast-style) by pushing bin counts spanning DataLimits into
+%   HistogramCounts, e.g.:
+%       slider.HistogramCounts = sqrt(histcounts(im(:), ...
+%           linspace(dataLimits(1), dataLimits(2), 129)));
+%   The counts are normalized to their maximum; apply sqrt/log before
+%   pushing to compress spiky histograms. Empty hides the histogram.
+%
 %   Example:
 %       slider = uim.widget.ContrastSlider(hAxes, ...
 %           'Location', 'northeast', ...
@@ -44,11 +52,20 @@ classdef ContrastSlider < uim.widget.RangeSlider
         AutoRequestedFcn = []   % Fired when the user presses the auto button. (src, uim.event.EventData)
 
         ShowAutoButton (1,:) char {mustBeMember(ShowAutoButton, {'on', 'off'})} = 'on'
+
+        % Bin counts spanning DataLimits uniformly, drawn as a faint
+        % area behind the track (imcontrast-style). The host pushes any
+        % nonnegative vector — it is normalized to its maximum, so
+        % scaling policy (e.g. sqrt to compress peaks) is the host's.
+        % Empty hides the histogram.
+        HistogramCounts (1,:) double {mustBeNonnegative} = []
+        HistogramColor = ones(1,3)*0.6
     end
 
     properties (Access = private, Transient)
         AutoButtonIcon           % uim.graphics.ImageVector
         AutoButtonHitArea = gobjects(0,1)
+        HistogramHandle = gobjects(0,1)
         LastNotifiedLimits (1,2) double = [0, 1]
 
         % RangeSlider invokes Callback from its value setters too, so
@@ -67,6 +84,7 @@ classdef ContrastSlider < uim.widget.RangeSlider
             obj.Callback = @obj.onRangeSliderChanged;
             obj.LastNotifiedLimits = obj.Limits;
 
+            obj.plotHistogram()
             obj.plotAutoButton()
             obj.updateAutoButtonVisibility()
         end
@@ -77,6 +95,9 @@ classdef ContrastSlider < uim.widget.RangeSlider
             end
             if ~isempty(obj.AutoButtonHitArea) && isvalid(obj.AutoButtonHitArea)
                 delete(obj.AutoButtonHitArea)
+            end
+            if ~isempty(obj.HistogramHandle) && isvalid(obj.HistogramHandle)
+                delete(obj.HistogramHandle)
             end
         end
     end
@@ -104,6 +125,16 @@ classdef ContrastSlider < uim.widget.RangeSlider
         function set.ShowAutoButton(obj, newValue)
             obj.ShowAutoButton = newValue;
             obj.updateAutoButtonVisibility()
+        end
+
+        function set.HistogramCounts(obj, newValue)
+            obj.HistogramCounts = newValue;
+            obj.updateHistogram()
+        end
+
+        function set.HistogramColor(obj, newValue)
+            obj.HistogramColor = newValue;
+            obj.updateHistogram()
         end
     end
 
@@ -157,6 +188,52 @@ classdef ContrastSlider < uim.widget.RangeSlider
             if ~isempty(obj.AutoRequestedFcn)
                 obj.AutoRequestedFcn(obj, uim.event.EventData())
             end
+        end
+
+        function plotHistogram(obj)
+        %plotHistogram Create the area patch drawn behind the track
+
+            obj.HistogramHandle = patch(obj.CanvasAxes, nan, nan, ...
+                obj.HistogramColor);
+            obj.HistogramHandle.FaceAlpha = 0.35;
+            obj.HistogramHandle.EdgeColor = 'none';
+            obj.HistogramHandle.PickableParts = 'none';
+            obj.HistogramHandle.HitTest = 'off';
+            obj.HistogramHandle.Tag = 'ContrastSliderHistogram';
+
+            % Stack the histogram just above the chip background, below
+            % the track, ticks and knobs.
+            uistack(obj.HistogramHandle, 'bottom')
+            uistack(obj.Background, 'bottom')
+
+            obj.updateHistogram()
+        end
+
+        function updateHistogram(obj)
+        %updateHistogram Map the pushed counts into the track region
+
+            if ~obj.IsConstructed || isempty(obj.HistogramHandle); return; end
+
+            counts = obj.HistogramCounts;
+            if isempty(counts) || ~any(counts)
+                set(obj.HistogramHandle, 'XData', nan, 'YData', nan)
+                return
+            end
+
+            % Bin centers spread uniformly across the track x-range.
+            trackLeft = obj.Position(1) + obj.Padding(1);
+            trackRight = obj.Position(1) + obj.Position(3) - obj.Padding(3);
+            xCenters = linspace(trackLeft, trackRight, numel(counts));
+
+            % Heights normalized to the padded widget height.
+            baseline = obj.Position(2) + obj.Padding(2);
+            maxHeight = obj.Position(4) - obj.Padding(2) - obj.Padding(4);
+            heights = counts./max(counts) .* maxHeight;
+
+            set(obj.HistogramHandle, ...
+                'XData', [trackLeft, xCenters, trackRight], ...
+                'YData', [baseline, baseline + heights, baseline], ...
+                'FaceColor', obj.HistogramColor)
         end
 
         function plotAutoButton(obj)
@@ -240,12 +317,14 @@ classdef ContrastSlider < uim.widget.RangeSlider
             if nargin < 2; mode = obj.PositionMode; end
             updateLocation@uim.widget.RangeSlider(obj, mode)
             obj.updateAutoButtonLocation()
+            obj.updateHistogram()
         end
 
         function updateSize(obj, mode)
             if nargin < 2; mode = obj.SizeMode; end
             updateSize@uim.widget.RangeSlider(obj, mode)
             obj.updateAutoButtonLocation()
+            obj.updateHistogram()
         end
     end
 
@@ -254,6 +333,9 @@ classdef ContrastSlider < uim.widget.RangeSlider
         function onVisibleChanged(obj, varargin)
             onVisibleChanged@uim.widget.RangeSlider(obj, varargin{:})
             obj.updateAutoButtonVisibility()
+            if ~isempty(obj.HistogramHandle) && isvalid(obj.HistogramHandle)
+                obj.HistogramHandle.Visible = obj.Visible;
+            end
         end
     end
 

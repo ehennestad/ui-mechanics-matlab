@@ -1039,6 +1039,26 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             autoButton.ButtonDownFcn([], [])
             testCase.verifyClass(getappdata(hFigure, 'AutoEvent'), ...
                 "uim.event.EventData");
+
+            % Pushed histogram counts render inside the track x-range;
+            % clearing them hides the histogram again.
+            histogram = findall(canvas.Axes, ...
+                "Tag", "ContrastSliderHistogram");
+            testCase.verifyNumElements(histogram, 1);
+            slider.HistogramCounts = [1, 4, 9, 4, 1];
+            trackLeft = slider.Position(1) + slider.Padding(1);
+            trackRight = slider.Position(1) + slider.Position(3) ...
+                - slider.Padding(3);
+            testCase.verifyGreaterThanOrEqual(min(histogram.XData), ...
+                trackLeft - 1e-6);
+            testCase.verifyLessThanOrEqual(max(histogram.XData), ...
+                trackRight + 1e-6);
+            testCase.verifyEqual(max(histogram.YData) - min(histogram.YData), ...
+                slider.Position(4) - slider.Padding(2) - slider.Padding(4), ...
+                "AbsTol", 1e-6);
+
+            slider.HistogramCounts = [];
+            testCase.verifyTrue(all(isnan(histogram.XData)));
         end
 
         function explicitSizeSurvivesParentResize(testCase)
