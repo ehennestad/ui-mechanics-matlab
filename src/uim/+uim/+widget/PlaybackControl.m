@@ -124,6 +124,9 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         function obj = PlaybackControl(parentHandle, varargin)
 
             obj.Figure = ancestor(parentHandle, 'figure');
+            % Draggable parts read CurrentPoint from motion listeners; in
+            % java figures that requires a WindowButtonMotionFcn.
+            uim.utility.ensurePointerMotionTracking(obj.Figure)
 
             obj.parseInputs(varargin{:})
 

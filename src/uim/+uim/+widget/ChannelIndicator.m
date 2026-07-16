@@ -76,6 +76,9 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         function obj = ChannelIndicator(hParent, varargin)
 
             obj.Figure = ancestor(hParent, 'figure');
+            % Draggable parts read CurrentPoint from motion listeners; in
+            % java figures that requires a WindowButtonMotionFcn.
+            uim.utility.ensurePointerMotionTracking(obj.Figure)
 
             obj.resolveParent(hParent)
 

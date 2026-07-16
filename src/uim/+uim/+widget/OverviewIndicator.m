@@ -75,6 +75,11 @@ classdef OverviewIndicator < uim.abstract.Control
 
             obj@uim.abstract.Control(hParent, varargin{:})
 
+            % View-rect drags read CurrentPoint from motion listeners; in
+            % java figures that requires a WindowButtonMotionFcn.
+            uim.utility.ensurePointerMotionTracking(...
+                ancestor(obj.CanvasAxes, 'figure'))
+
             obj.plotOutlines()
 
             obj.IsConstructed = true;

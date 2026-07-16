@@ -1003,6 +1003,11 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 'AutoRequestedFcn', ...
                 @(~, evt) setappdata(hFigure, 'AutoEvent', evt));
 
+            % Knob drags read CurrentPoint from motion listeners, which
+            % only tracks the mouse in java figures when the figure has
+            % a WindowButtonMotionFcn; construction must ensure one.
+            testCase.verifyNotEmpty(hFigure.WindowButtonMotionFcn);
+
             % Contrast-semantics properties map onto the range slider.
             testCase.verifyEqual(slider.DataLimits, [0, 255]);
             testCase.verifyEqual(slider.Limits, [10, 200]);
