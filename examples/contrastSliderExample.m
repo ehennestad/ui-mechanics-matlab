@@ -29,6 +29,11 @@ slider = uim.widget.ContrastSlider(hAxes, ...
     'LimitsChangedFcn', @(~, evt) set(hAxes, 'CLim', evt.NewValue), ...
     'AutoRequestedFcn', @(src, ~) applyAutoLevels(src, hAxes, imageData));
 
+% Show the intensity distribution behind the track. sqrt compresses the
+% peaks so the tails stay visible.
+slider.HistogramCounts = sqrt(histcounts(imageData(:), ...
+    linspace(0, 255, 129)));
+
 function applyAutoLevels(slider, hAxes, imageData)
 %applyAutoLevels Compute 1st-99th percentile limits and push them back
     sortedValues = sort(imageData(:));
