@@ -8,12 +8,12 @@
 %       elsewhere in the frame) to move the view; zooming with the
 %       tools or keyboard shortcuts (q/w/y) updates the outline.
 %
-%   Run from anywhere in the repository; the script adds src/ to the
-%   path if the toolbox is not already installed.
+%   Run from anywhere in the repository; the script puts the toolbox
+%   source first on the path.
 
-if ~exist('uim.UIComponentCanvas', 'class')
-    addpath(genpath(fullfile(fileparts(mfilename('fullpath')), '..', 'src')))
-end
+% Put this repository's source first on the path: an older uim package
+% (e.g. NANSEN's bundled copy) may otherwise shadow it.
+addpath(genpath(fullfile(fileparts(mfilename('fullpath')), '..', 'src')))
 
 hFigure = figure('Name', 'Zoom overview example', 'Color', 'w');
 hAxes = axes(hFigure);

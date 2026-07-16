@@ -6,12 +6,12 @@
 %   percentile of the image), which the host pushes back through the
 %   Limits property.
 %
-%   Run from anywhere in the repository; the script adds src/ to the
-%   path if the toolbox is not already installed.
+%   Run from anywhere in the repository; the script puts the toolbox
+%   source first on the path.
 
-if ~exist('uim.UIComponentCanvas', 'class')
-    addpath(genpath(fullfile(fileparts(mfilename('fullpath')), '..', 'src')))
-end
+% Put this repository's source first on the path: an older uim package
+% (e.g. NANSEN's bundled copy) may otherwise shadow it.
+addpath(genpath(fullfile(fileparts(mfilename('fullpath')), '..', 'src')))
 
 % A low-contrast image: most of the dynamic range is unused.
 imageData = 100 + 30*mat2gray(peaks(500));

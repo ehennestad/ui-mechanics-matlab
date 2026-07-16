@@ -5,12 +5,12 @@
 %   clicking a button toggles the tool, and toggling a tool by keyboard
 %   shortcut (q/w/y) or programmatically updates the button states.
 %
-%   Run from anywhere in the repository; the script adds src/ to the
-%   path if the toolbox is not already installed.
+%   Run from anywhere in the repository; the script puts the toolbox
+%   source first on the path.
 
-if ~exist('uim.UIComponentCanvas', 'class')
-    addpath(genpath(fullfile(fileparts(mfilename('fullpath')), '..', 'src')))
-end
+% Put this repository's source first on the path: an older uim package
+% (e.g. NANSEN's bundled copy) may otherwise shadow it.
+addpath(genpath(fullfile(fileparts(mfilename('fullpath')), '..', 'src')))
 
 hFigure = figure('Name', 'Pointer toolbar example', 'Color', 'w');
 hAxes = axes(hFigure);
