@@ -172,6 +172,12 @@ classdef ContrastSlider < uim.widget.RangeSlider
             obj.AutoButtonIcon.Width = 12;
             obj.AutoButtonIcon.Color = obj.TextColor;
 
+            % Anchor at the bottom-left corner (like uim.control.Button
+            % does): these are the reliable alignment code paths, and
+            % they make the Position math below explicit.
+            obj.AutoButtonIcon.HorizontalAlignment = 'left';
+            obj.AutoButtonIcon.VerticalAlignment = 'bottom';
+
             % An invisible patch is the click target: it gives a larger,
             % rectangular hit area than the glyph outline itself.
             obj.AutoButtonHitArea = patch(obj.CanvasAxes, nan, nan, 'w');
@@ -190,10 +196,14 @@ classdef ContrastSlider < uim.widget.RangeSlider
 
             if isempty(obj.AutoButtonHitArea); return; end
 
-            % Center of the reserved zone inside the right padding.
+            % Center of the reserved zone inside the right padding. The
+            % zone starts where the high knob's overhang past the track
+            % end (KnobSize/2) stops.
             hitSize = [16, 16];
-            centerX = obj.Position(1) + obj.Position(3) ...
-                - obj.Padding(3)/2;
+            zoneLeft = obj.Position(1) + obj.Position(3) ...
+                - obj.Padding(3) + obj.KnobSize/2;
+            zoneRight = obj.Position(1) + obj.Position(3);
+            centerX = (zoneLeft + zoneRight)/2;
             centerY = obj.Position(2) + obj.Position(4)/2;
 
             iconSize = [obj.AutoButtonIcon.Width, obj.AutoButtonIcon.Height];
@@ -251,9 +261,11 @@ classdef ContrastSlider < uim.widget.RangeSlider
 
         function S = getTypeDefaults()
             S = uim.widget.RangeSlider.getTypeDefaults();
-            % Extra right padding reserves room for the auto button.
-            S.Padding = [10, 5, 28, 5];
-            S.Size = [150, 25];
+            % Extra right padding reserves room for the auto button; the
+            % high knob overhangs the track end by KnobSize/2, so the
+            % zone must clear the knob too.
+            S.Padding = [10, 5, 40, 5];
+            S.Size = [165, 25];
         end
     end
 end
