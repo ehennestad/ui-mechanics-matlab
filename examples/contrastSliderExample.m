@@ -27,12 +27,21 @@ slider = uim.widget.ContrastSlider(hAxes, ...
     'DataLimits', [0, 255], 'Limits', [0, 255], ...
     'BackgroundColor', 'k', 'BackgroundAlpha', 0.5, ...
     'LimitsChangedFcn', @(~, evt) set(hAxes, 'CLim', evt.NewValue), ...
-    'AutoRequestedFcn', @(src, ~) applyAutoLevels(src, hAxes, imageData));
+    'AutoRequestedFcn', @(src, ~) applyAutoLevels(src, hAxes, imageData), ...
+    'HistogramRequestedFcn', @(src, ~) pushHistogram(src, imageData));
 
-% Show the intensity distribution behind the track. sqrt compresses the
-% peaks so the tails stay visible.
-slider.HistogramCounts = sqrt(histcounts(imageData(:), ...
-    linspace(0, 255, 129)));
+% Show the intensity distribution behind the track. For image streams,
+% only push while slider.HistogramVisible is 'on' (e.g. skip during
+% frame scrubbing); the histogram toggle button requests fresh counts
+% through HistogramRequestedFcn when the user turns it back on.
+pushHistogram(slider, imageData)
+
+function pushHistogram(slider, imageData)
+%pushHistogram Compute and push bin counts spanning the data limits
+%   sqrt compresses the peaks so the tails stay visible.
+    slider.HistogramCounts = sqrt(histcounts(imageData(:), ...
+        linspace(slider.DataLimits(1), slider.DataLimits(2), 129)));
+end
 
 function applyAutoLevels(slider, hAxes, imageData)
 %applyAutoLevels Compute 1st-99th percentile limits and push them back
