@@ -248,6 +248,82 @@ git push origin feature/new-functionality
 - **Documentation**: Update documentation when adding new features
 - **Versioning**: Follow semantic versioning (MAJOR.MINOR.PATCH)
 
+## 🖱️ Graphics Interaction Gotchas
+
+Hard-won rules for widget interaction code. These failure modes are
+**invisible to headless tests** (which drive callbacks directly) and to
+web-based figures (new desktop) — they only surface with a real mouse in
+java-based figures (classic desktop). Test interactively in both figure
+regimes before trusting a widget.
+
+### CurrentPoint freezes without a WindowButtonMotionFcn
+
+- **Symptom**: dragging a knob/handle changes the value once (computed
+  from the press point) and then stops following the mouse, even though
+  `WindowMouseMotion` listeners keep firing.
+- **Cause**: in java-based figures, the figure and axes `CurrentPoint`
+  only update during mouse motion while the figure has a **non-empty
+  `WindowButtonMotionFcn`**. Event listeners fire regardless — but they
+  read a stale point. The bug hides whenever something else installs a
+  motion callback (a `PointerManager`, a host app, a debug callback),
+  which makes it look intermittent.
+- **Rule**: every widget that reads `CurrentPoint` from motion listeners
+  must call `uim.utility.ensurePointerMotionTracking(hFigure)` in its
+  constructor. It assigns a no-op `WindowButtonMotionFcn` only when the
+  slot is empty. (This has been independently rediscovered at least
+  twice; `PointerManager`'s dummy motion callback is the same fix from
+  an earlier round.)
+
+### Data objects swallow clicks before the axes callback
+
+- **Symptom**: tools/callbacks wired to an axes' `ButtonDownFcn` never
+  fire when the axes displays an image or other data.
+- **Cause**: data objects have `HitTest = 'on'` by default and capture
+  every click; the axes callback only fires for clicks on empty axes
+  regions.
+- **Rule**: capture presses at the window level (`WindowMousePress`
+  listener) and gate on `event.HitObject` (ignore objects with their own
+  `ButtonDownFcn`, and objects outside the managed axes) — see
+  `uim.interface.PointerManager.onWindowMousePress`. Do not require apps
+  to set `HitTest = 'off'` on their data.
+
+### Data tips attach to widget graphics
+
+- **Symptom**: clicking widget parts pins MATLAB data tips on them.
+- **Cause**: three independent mechanisms, varying by figure regime:
+  the default interaction set, `InteractionOptions.DatatipsSupported`
+  (web figures), and the per-object `DataCursor` behavior (java
+  figures).
+- **Rule**: every axes the toolbox creates must go through
+  `uim.utility.disableAxesInteractivity(hAxes)`, which handles all
+  three (including a `ChildAdded` listener for objects plotted later).
+  Widgets drawing into a *caller's* axes must not touch the axes —
+  use primitive `line()` objects (no `DataTipTemplate`) for
+  interactive parts instead, as `FrameMarker` does.
+
+### Pointer hover behaviors outlive their graphics
+
+- **Symptom**: an endless stream of "Invalid or deleted object" listener
+  warnings on every mouse move after deleting a widget or part of one.
+- **Cause**: `iptPointerManager` keeps invoking registered enter/exit
+  callbacks for the object the cursor was on, even after that object is
+  deleted.
+- **Rule**: deregister before deleting —
+  `uim.utility.setPointerBehavior(h, [])` for every registered object in
+  the teardown path (see `uim.abstract.Control.delete` and
+  `uim.widget.DropDown.close`), and make hover callbacks
+  `isvalid`-guarded.
+
+### Stale sessions after pulling changes
+
+- **Symptom**: phantom bugs (or phantom fixes) after `git pull` into a
+  running MATLAB session — behavior does not match the code on disk.
+- **Cause**: MATLAB caches class definitions and `persistent` variables.
+- **Rule**: run `clear all; clear functions` (or restart MATLAB) after
+  pulling before judging behavior. Utility caches keyed on file
+  timestamps (see `uim.style.getDefaultIcons`) avoid one class of this,
+  but class definitions still require clearing.
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
