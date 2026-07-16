@@ -31,6 +31,19 @@ classdef ContrastSlider < uim.widget.RangeSlider
 %   The counts are normalized to their maximum; apply sqrt/log before
 %   pushing to compress spiky histograms. Empty hides the histogram.
 %
+%   The histogram button (shown while ShowHistogramButton is 'on')
+%   toggles HistogramVisible; toggling it ON fires
+%   HistogramRequestedFcn(src, evt) so the host can compute counts
+%   lazily. Recommended pattern for image streams: skip histogram
+%   computation while HistogramVisible is 'off' (e.g. during frame
+%   scrubbing), and refresh in HistogramRequestedFcn — counts are only
+%   ever computed when someone is looking at them:
+%       if strcmp(slider.HistogramVisible, 'on')
+%           slider.HistogramCounts = ... % on frame change
+%       end
+%   Programmatic assignment to HistogramVisible updates the display
+%   without firing the callback.
+%
 %   Example:
 %       slider = uim.widget.ContrastSlider(hAxes, ...
 %           'Location', 'northeast', ...
@@ -48,10 +61,16 @@ classdef ContrastSlider < uim.widget.RangeSlider
     end
 
     properties
-        LimitsChangedFcn = []   % Fired when the user moves a knob. (src, uim.event.ValueChangedEventData with [low, high] values)
-        AutoRequestedFcn = []   % Fired when the user presses the auto button. (src, uim.event.EventData)
+        LimitsChangedFcn = []       % Fired when the user moves a knob. (src, uim.event.ValueChangedEventData with [low, high] values)
+        AutoRequestedFcn = []       % Fired when the user presses the auto button. (src, uim.event.EventData)
+        HistogramRequestedFcn = []  % Fired when the user toggles the histogram on. (src, uim.event.EventData)
 
         ShowAutoButton (1,:) char {mustBeMember(ShowAutoButton, {'on', 'off'})} = 'on'
+        ShowHistogramButton (1,:) char {mustBeMember(ShowHistogramButton, {'on', 'off'})} = 'on'
+
+        % Whether the pushed histogram is currently displayed. Toggled
+        % by the histogram button; programmatic assignment is silent.
+        HistogramVisible (1,:) char {mustBeMember(HistogramVisible, {'on', 'off'})} = 'on'
 
         % Bin counts spanning DataLimits uniformly, drawn as a faint
         % area behind the track (imcontrast-style). The host pushes any
@@ -65,6 +84,8 @@ classdef ContrastSlider < uim.widget.RangeSlider
     properties (Access = private, Transient)
         AutoButtonIcon           % uim.graphics.ImageVector
         AutoButtonHitArea = gobjects(0,1)
+        HistogramButtonIcon      % uim.graphics.ImageVector
+        HistogramButtonHitArea = gobjects(0,1)
         HistogramHandle = gobjects(0,1)
         LastNotifiedLimits (1,2) double = [0, 1]
 
@@ -85,8 +106,8 @@ classdef ContrastSlider < uim.widget.RangeSlider
             obj.LastNotifiedLimits = obj.Limits;
 
             obj.plotHistogram()
-            obj.plotAutoButton()
-            obj.updateAutoButtonVisibility()
+            obj.plotGlyphButtons()
+            obj.updateGlyphButtonVisibility()
         end
 
         function delete(obj)
@@ -95,6 +116,12 @@ classdef ContrastSlider < uim.widget.RangeSlider
             end
             if ~isempty(obj.AutoButtonHitArea) && isvalid(obj.AutoButtonHitArea)
                 delete(obj.AutoButtonHitArea)
+            end
+            if ~isempty(obj.HistogramButtonIcon) && isvalid(obj.HistogramButtonIcon)
+                delete(obj.HistogramButtonIcon)
+            end
+            if ~isempty(obj.HistogramButtonHitArea) && isvalid(obj.HistogramButtonHitArea)
+                delete(obj.HistogramButtonHitArea)
             end
             if ~isempty(obj.HistogramHandle) && isvalid(obj.HistogramHandle)
                 delete(obj.HistogramHandle)
@@ -124,7 +151,18 @@ classdef ContrastSlider < uim.widget.RangeSlider
 
         function set.ShowAutoButton(obj, newValue)
             obj.ShowAutoButton = newValue;
-            obj.updateAutoButtonVisibility()
+            obj.updateGlyphButtonVisibility()
+        end
+
+        function set.ShowHistogramButton(obj, newValue)
+            obj.ShowHistogramButton = newValue;
+            obj.updateGlyphButtonVisibility()
+        end
+
+        function set.HistogramVisible(obj, newValue)
+            obj.HistogramVisible = newValue;
+            obj.updateHistogramDisplay()
+            obj.updateGlyphButtonVisibility()
         end
 
         function set.HistogramCounts(obj, newValue)
@@ -214,6 +252,8 @@ classdef ContrastSlider < uim.widget.RangeSlider
 
             if ~obj.IsConstructed || isempty(obj.HistogramHandle); return; end
 
+            obj.updateHistogramDisplay()
+
             counts = obj.HistogramCounts;
             if isempty(counts) || ~any(counts)
                 set(obj.HistogramHandle, 'XData', nan, 'YData', nan)
@@ -236,77 +276,140 @@ classdef ContrastSlider < uim.widget.RangeSlider
                 'FaceColor', obj.HistogramColor)
         end
 
-        function plotAutoButton(obj)
-        %plotAutoButton Auto-level glyph in the reserved right padding
+        function updateHistogramDisplay(obj)
+        %updateHistogramDisplay Apply widget and histogram visibility
+
+            if isempty(obj.HistogramHandle) || ~isvalid(obj.HistogramHandle)
+                return
+            end
+
+            if strcmp(obj.Visible, 'on') && strcmp(obj.HistogramVisible, 'on')
+                obj.HistogramHandle.Visible = 'on';
+            else
+                obj.HistogramHandle.Visible = 'off';
+            end
+        end
+
+        function onHistogramButtonPressed(obj)
+        %onHistogramButtonPressed Toggle the histogram; request counts on show
+
+            if strcmp(obj.HistogramVisible, 'on')
+                obj.HistogramVisible = 'off';
+            else
+                obj.HistogramVisible = 'on';
+                % Counts may be stale or absent (hosts typically skip
+                % histogram computation while it is hidden); ask for
+                % fresh ones.
+                if ~isempty(obj.HistogramRequestedFcn)
+                    obj.HistogramRequestedFcn(obj, uim.event.EventData())
+                end
+            end
+        end
+
+        function plotGlyphButtons(obj)
+        %plotGlyphButtons Histogram and auto buttons in the right padding
 
             icons = uim.style.getDefaultIcons();
 
-            obj.AutoButtonIcon = uim.graphics.ImageVector(...
-                obj.CanvasAxes, icons.auto);
-            obj.AutoButtonIcon.flipud() % Icon vector data is stored upside down
-            obj.AutoButtonIcon.PickableParts = 'none';
-            obj.AutoButtonIcon.HitTest = 'off';
-            obj.AutoButtonIcon.Width = 12;
-            obj.AutoButtonIcon.Color = obj.TextColor;
+            [obj.HistogramButtonIcon, obj.HistogramButtonHitArea] = ...
+                obj.createGlyphButton(icons.hist, ...
+                'ContrastSliderHistogramButton', ...
+                @(~, ~) obj.onHistogramButtonPressed());
+
+            [obj.AutoButtonIcon, obj.AutoButtonHitArea] = ...
+                obj.createGlyphButton(icons.auto, ...
+                'ContrastSliderAutoButton', ...
+                @(~, ~) obj.onAutoButtonPressed());
+
+            obj.updateGlyphButtonLocations()
+        end
+
+        function [hIcon, hHitArea] = createGlyphButton(obj, iconData, tag, callback)
+
+            hIcon = uim.graphics.ImageVector(obj.CanvasAxes, iconData);
+            hIcon.flipud() % Icon vector data is stored upside down
+            hIcon.PickableParts = 'none';
+            hIcon.HitTest = 'off';
+            hIcon.Width = 12;
+            hIcon.Color = obj.TextColor;
 
             % Anchor at the bottom-left corner (like uim.control.Button
             % does): these are the reliable alignment code paths, and
-            % they make the Position math below explicit.
-            obj.AutoButtonIcon.HorizontalAlignment = 'left';
-            obj.AutoButtonIcon.VerticalAlignment = 'bottom';
+            % they make the location math explicit.
+            hIcon.HorizontalAlignment = 'left';
+            hIcon.VerticalAlignment = 'bottom';
 
             % An invisible patch is the click target: it gives a larger,
             % rectangular hit area than the glyph outline itself.
-            obj.AutoButtonHitArea = patch(obj.CanvasAxes, nan, nan, 'w');
-            obj.AutoButtonHitArea.FaceAlpha = 0;
-            obj.AutoButtonHitArea.EdgeColor = 'none';
-            obj.AutoButtonHitArea.HitTest = 'on';
-            obj.AutoButtonHitArea.PickableParts = 'all';
-            obj.AutoButtonHitArea.Tag = 'ContrastSliderAutoButton';
-            obj.AutoButtonHitArea.ButtonDownFcn = ...
-                @(~, ~) obj.onAutoButtonPressed();
-
-            obj.updateAutoButtonLocation()
+            hHitArea = patch(obj.CanvasAxes, nan, nan, 'w');
+            hHitArea.FaceAlpha = 0;
+            hHitArea.EdgeColor = 'none';
+            hHitArea.HitTest = 'on';
+            hHitArea.PickableParts = 'all';
+            hHitArea.Tag = tag;
+            hHitArea.ButtonDownFcn = callback;
         end
 
-        function updateAutoButtonLocation(obj)
+        function updateGlyphButtonLocations(obj)
 
             if isempty(obj.AutoButtonHitArea); return; end
 
-            % Center of the reserved zone inside the right padding. The
-            % zone starts where the high knob's overhang past the track
-            % end (KnobSize/2) stops.
-            hitSize = [16, 16];
+            % The reserved zone inside the right padding starts where
+            % the high knob's overhang past the track end (KnobSize/2)
+            % stops, and splits into one slot per button: histogram
+            % first (nearest the track), auto outermost.
             zoneLeft = obj.Position(1) + obj.Position(3) ...
                 - obj.Padding(3) + obj.KnobSize/2;
             zoneRight = obj.Position(1) + obj.Position(3);
-            centerX = (zoneLeft + zoneRight)/2;
+            slotWidth = (zoneRight - zoneLeft)/2;
             centerY = obj.Position(2) + obj.Position(4)/2;
 
-            iconSize = [obj.AutoButtonIcon.Width, obj.AutoButtonIcon.Height];
-            obj.AutoButtonIcon.Position = [centerX, centerY] - iconSize/2;
-
-            obj.AutoButtonHitArea.XData = ...
-                centerX + [-1, 1, 1, -1]*hitSize(1)/2;
-            obj.AutoButtonHitArea.YData = ...
-                centerY + [-1, -1, 1, 1]*hitSize(2)/2;
+            obj.placeGlyphButton(obj.HistogramButtonIcon, ...
+                obj.HistogramButtonHitArea, zoneLeft + slotWidth/2, centerY)
+            obj.placeGlyphButton(obj.AutoButtonIcon, ...
+                obj.AutoButtonHitArea, zoneLeft + 1.5*slotWidth, centerY)
         end
 
-        function updateAutoButtonVisibility(obj)
+        function placeGlyphButton(~, hIcon, hHitArea, centerX, centerY)
+
+            hitSize = [16, 16];
+            iconSize = [hIcon.Width, hIcon.Height];
+            hIcon.Position = [centerX, centerY] - iconSize/2;
+
+            hHitArea.XData = centerX + [-1, 1, 1, -1]*hitSize(1)/2;
+            hHitArea.YData = centerY + [-1, -1, 1, 1]*hitSize(2)/2;
+        end
+
+        function updateGlyphButtonVisibility(obj)
 
             if isempty(obj.AutoButtonHitArea); return; end
 
-            isShown = strcmp(obj.ShowAutoButton, 'on') ...
-                && strcmp(obj.Visible, 'on');
+            obj.applyGlyphButtonVisibility(obj.AutoButtonIcon, ...
+                obj.AutoButtonHitArea, obj.ShowAutoButton)
+            obj.applyGlyphButtonVisibility(obj.HistogramButtonIcon, ...
+                obj.HistogramButtonHitArea, obj.ShowHistogramButton)
+
+            % Dim the histogram glyph while the histogram is hidden, so
+            % the button reads as a toggle.
+            if strcmp(obj.HistogramVisible, 'on')
+                obj.HistogramButtonIcon.Color = obj.TextColor;
+            else
+                obj.HistogramButtonIcon.Color = obj.TextColor*0.55;
+            end
+        end
+
+        function applyGlyphButtonVisibility(obj, hIcon, hHitArea, showFlag)
+
+            isShown = strcmp(showFlag, 'on') && strcmp(obj.Visible, 'on');
             visibility = 'off';
             if isShown; visibility = 'on'; end
 
-            obj.AutoButtonIcon.Visible = visibility;
-            obj.AutoButtonHitArea.Visible = visibility;
+            hIcon.Visible = visibility;
+            hHitArea.Visible = visibility;
             if isShown
-                obj.AutoButtonHitArea.PickableParts = 'all';
+                hHitArea.PickableParts = 'all';
             else
-                obj.AutoButtonHitArea.PickableParts = 'none';
+                hHitArea.PickableParts = 'none';
             end
         end
     end
@@ -316,14 +419,14 @@ classdef ContrastSlider < uim.widget.RangeSlider
         function updateLocation(obj, mode)
             if nargin < 2; mode = obj.PositionMode; end
             updateLocation@uim.widget.RangeSlider(obj, mode)
-            obj.updateAutoButtonLocation()
+            obj.updateGlyphButtonLocations()
             obj.updateHistogram()
         end
 
         function updateSize(obj, mode)
             if nargin < 2; mode = obj.SizeMode; end
             updateSize@uim.widget.RangeSlider(obj, mode)
-            obj.updateAutoButtonLocation()
+            obj.updateGlyphButtonLocations()
             obj.updateHistogram()
         end
     end
@@ -332,10 +435,8 @@ classdef ContrastSlider < uim.widget.RangeSlider
 
         function onVisibleChanged(obj, varargin)
             onVisibleChanged@uim.widget.RangeSlider(obj, varargin{:})
-            obj.updateAutoButtonVisibility()
-            if ~isempty(obj.HistogramHandle) && isvalid(obj.HistogramHandle)
-                obj.HistogramHandle.Visible = obj.Visible;
-            end
+            obj.updateGlyphButtonVisibility()
+            obj.updateHistogramDisplay()
         end
     end
 
@@ -346,10 +447,12 @@ classdef ContrastSlider < uim.widget.RangeSlider
             % The knobs overhang the track ends by KnobSize/2 (7.5 px
             % by default), so the visual margin is the padding minus the
             % overhang. Left: 16 px pads to ~8 px of knob clearance.
-            % Right: 40 px additionally reserves room for the auto
-            % button, which centers in the part clearing the knob.
-            S.Padding = [16, 5, 40, 5];
-            S.Size = [170, 25];
+            % Right: 62 px additionally reserves one slot per glyph
+            % button (histogram, auto) in the part clearing the knob.
+            % The chip is taller than a plain RangeSlider so the
+            % histogram behind the track has room to read.
+            S.Padding = [16, 6, 62, 6];
+            S.Size = [200, 30];
         end
     end
 end

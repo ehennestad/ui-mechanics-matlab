@@ -1059,6 +1059,27 @@ classdef TestCoreComponents < matlab.unittest.TestCase
 
             slider.HistogramCounts = [];
             testCase.verifyTrue(all(isnan(histogram.XData)));
+
+            % The histogram button toggles visibility: off silently, on
+            % with a request so the host can compute counts lazily.
+            slider.HistogramCounts = [1, 2, 3];
+            histogramButton = findall(canvas.Axes, ...
+                "Tag", "ContrastSliderHistogramButton");
+            testCase.verifyNumElements(histogramButton, 1);
+
+            setappdata(hFigure, 'HistEvent', [])
+            histogramButton.ButtonDownFcn([], [])
+            testCase.verifyEqual(slider.HistogramVisible, 'off');
+            testCase.verifyEqual(char(histogram.Visible), 'off');
+            testCase.verifyEmpty(getappdata(hFigure, 'HistEvent'));
+
+            slider.HistogramRequestedFcn = ...
+                @(~, evt) setappdata(hFigure, 'HistEvent', evt);
+            histogramButton.ButtonDownFcn([], [])
+            testCase.verifyEqual(slider.HistogramVisible, 'on');
+            testCase.verifyEqual(char(histogram.Visible), 'on');
+            testCase.verifyClass(getappdata(hFigure, 'HistEvent'), ...
+                "uim.event.EventData");
         end
 
         function explicitSizeSurvivesParentResize(testCase)
