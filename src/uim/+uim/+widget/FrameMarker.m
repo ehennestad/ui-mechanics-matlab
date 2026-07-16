@@ -102,6 +102,10 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
             set(allHandles(1), 'Color', [ones(1,3)*0.4, 0.6])
             set(allHandles, 'HandleVisibility', 'off')
 
+            % The knobs keep HitTest on for dragging, so interactive
+            % data tips are excluded per object.
+            uim.utility.excludeFromDataTips(allHandles)
+
             obj.setPointerBehavior(obj.TopButtonHandle)
             obj.setPointerBehavior(obj.BottomButtonHandle)
         end
@@ -151,9 +155,9 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
 
         function onMouseEnterSlider(obj, h, varargin)
         %onMouseEntered Callback for mouse entering button
-            if isa(h, 'matlab.graphics.primitive.Patch')
+            if isgraphics(h, 'patch')
                 h.FaceColor = ones(1,3) * 0.8;
-            elseif isa(h, 'matlab.graphics.chart.primitive.Line')
+            elseif isgraphics(h, 'line') % Primitive or chart line
                 h.MarkerFaceColor = ones(1,3) * 0.5;
                 h.MarkerSize = 12;
             end
@@ -165,9 +169,9 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
 
         function onMouseExitSlider(obj, h, varargin)
         %onMouseEntered Callback for mouse leaving button
-            if isa(h, 'matlab.graphics.primitive.Patch')
+            if isgraphics(h, 'patch')
                 h.FaceColor = ones(1,3) * 0.6;
-            elseif isa(h, 'matlab.graphics.chart.primitive.Line')
+            elseif isgraphics(h, 'line') % Primitive or chart line
                 if ~obj.IsButtonDown
                     h.MarkerFaceColor = ones(1,3) * 0.4;
                     h.MarkerSize = 10;

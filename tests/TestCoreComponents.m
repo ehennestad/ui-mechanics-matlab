@@ -503,6 +503,25 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             for i = 1:numel(markerHandles)
                 testCase.verifyEqual(unique(markerHandles(i).XData), 42);
             end
+
+            % The marker lives in the caller's axes, so interactive data
+            % tips are excluded per object (the DataCursor behavior is
+            % the gate the interactive machinery consults; programmatic
+            % datatip() bypasses it by design and is not the oracle).
+            for i = 1:numel(markerHandles)
+                hBehavior = hggetbehavior(markerHandles(i), ...
+                    'DataCursor', '-peek');
+                testCase.verifyFalse(isempty(hBehavior) ...
+                    || logical(hBehavior.Enable));
+            end
+
+            % Hover styling must match the primitive-line knobs (a
+            % chart-line-only class check silently broke this once).
+            knob = findall(hAxes, "Tag", "FrameMarker", "Marker", "v");
+            marker.onMouseEnterSlider(knob)
+            testCase.verifyEqual(knob.MarkerSize, 12);
+            marker.onMouseExitSlider(knob)
+            testCase.verifyEqual(knob.MarkerSize, 10);
         end
 
         function planeSwitcherRunsStandaloneInPanel(testCase)
