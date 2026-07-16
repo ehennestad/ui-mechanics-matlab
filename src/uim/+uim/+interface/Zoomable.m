@@ -1,0 +1,179 @@
+classdef Zoomable < handle
+
+    % TODO:
+    % [ ] Add switcher to only zoom in x or only zoom in y.
+    % [ ] Add plot zoom region here.
+    %
+    % [ ] Make this super class for both zoom and panning, i.e an
+    %     axesDataLimits mixin (abstract) pointer tool...
+
+    properties (Abstract)
+        ZoomFactor
+        XLimOrig
+        YLimOrig
+    end
+
+    properties
+        ZoomFinishedFcn
+        % LimitsChangedFcn % Function to run when limits change.
+    end
+
+    methods
+
+        function shiftView(obj, shift)
+        % Move visible portion of axes according to shift
+
+            % todo...
+
+            % Get current axes limits
+            xlim = get(obj.Axes, 'XLim');
+            ylim = get(obj.Axes, 'YLim');
+
+            % Convert mouse shift to image shift
+            imshift = shift;
+            xLimNew = xlim - imshift(1);
+            yLimNew = ylim + imshift(2);
+
+            obj.setNewImageLimits(xLimNew, yLimNew)
+        end
+
+        function imageZoom(obj, direction, speed)
+            % Zoom in image
+
+            if nargin < 3; speed = 1; end
+
+            switch direction
+                case 'in'
+                        zoomF = -obj.ZoomFactor .* speed;
+                case 'out'
+                        zoomF = obj.ZoomFactor*2 .* speed;
+            end
+
+            xLim = get(obj.Axes, 'XLim');
+            yLim = get(obj.Axes, 'YLim');
+
+            % Get cursor position in figure (in pixels). The point which is
+            % clicked should appear under the pointer when zooming in.
+            figUnits = obj.Figure.Units;
+            obj.Figure.Units = 'pixel';
+            mp_f = get(obj.Figure, 'CurrentPoint');
+            obj.Figure.Units = figUnits;
+
+            axUnits = obj.Axes.Units;
+            obj.Axes.Units = 'pixel';
+            mp_a = get(obj.Axes, 'CurrentPoint');
+            obj.Axes.Units = axUnits;
+            mp_a = mp_a(1, 1:2);
+
+            axPos = getpixelposition(obj.Axes, true); % Need axes position in figure
+
+            axLim = axPos + [0, 0, axPos(1), axPos(2)];
+
+            % Check if mousepoint is within axes limits.
+            insideImageAx = ~any(any(diff([axLim(1:2); mp_f; axLim(3:4)]) < 0));
+
+            xLimNew = xLim + [-1, 1] * zoomF * diff(xLim);
+            yLimNew = yLim + [-1, 1] * zoomF * diff(yLim);
+
+            if insideImageAx
+                mp_f = mp_f - [axPos(1), axPos(2)];
+
+                % Correction of 0.25 was found to give precise zooming in and
+                % out of a point... Is it the 0.5 offset in image coordinates
+                % divided by 2?
+
+                shiftX = (axPos(3)-mp_f(1)+0.25) / axPos(3)               * diff(xLimNew) - (xLim(1) + diff(xLim)/2 + diff(xLimNew)/2 - mp_a(1)) ;
+
+                switch obj.Axes.YDir
+                    case 'normal'
+                        shiftY = (axPos(4)-mp_f(2)) / axPos(4) * diff(yLimNew) - (yLim(1) + diff(yLim)/2 + diff(yLimNew)/2 - mp_a(2)) ;
+                    case 'reverse'
+                        shiftY = (axPos(4)-abs(axPos(4)-mp_f(2)-0.25)) / axPos(4) * diff(yLimNew) - (yLim(1) + diff(yLim)/2 + diff(yLimNew)/2 - mp_a(2)) ;
+                end
+
+                xLimNew = xLimNew + shiftX;
+                yLimNew = yLimNew + shiftY;
+            end
+
+            xLimNew = obj.clampRangeToOriginal(xLimNew, obj.XLimOrig);
+            yLimNew = obj.clampRangeToOriginal(yLimNew, obj.YLimOrig);
+
+            setNewImageLimits(obj, xLimNew, yLimNew)
+        end
+
+        function setNewImageLimits(obj, xLimNew, yLimNew)
+
+            % Todo: Have tests here to prevent setting limits outside of
+            % image limits.
+
+            pos = getpixelposition(obj.Axes);
+            axAR = pos(3)/pos(4); % Axes aspect ratio.
+
+            xRange = diff(xLimNew); yRange = diff(yLimNew);
+
+            % Adjust limits so that the zoomed image fills up the display
+            if xRange/yRange > axAR
+                yLimNew = yLimNew + [-1, 1] * (xRange/axAR - yRange)/2 ;
+            elseif xRange/yRange < axAR
+                xLimNew = xLimNew + [-1, 1] * (yRange*axAR-xRange)/2;
+            end
+
+            xLimNew = obj.clampRangeToOriginal(xLimNew, obj.XLimOrig);
+            yLimNew = obj.clampRangeToOriginal(yLimNew, obj.YLimOrig);
+
+            set(obj.Axes, 'XLim', xLimNew, 'YLim', yLimNew)
+            %plotZoomRegion(obj, xLimNew, yLimNew)
+
+            if ~isempty(obj.ZoomFinishedFcn)
+                obj.ZoomFinishedFcn()
+            end
+        end
+
+        function setNewXLims(obj, newLimits)
+
+            if nargin == 1 || isempty(newLimits)
+                newLimits = obj.XLimOrig;
+            end
+
+            % Todo: Make sure XLim2 > XLim1
+
+            newLimits(1) = max([obj.XLimOrig(1), newLimits(1)]);
+            newLimits(2) = min([obj.XLimOrig(2), newLimits(2)]);
+
+            % Set new limits
+            set(obj.Axes, 'XLim', newLimits);
+
+            drawnow limitrate
+        end
+
+        function setNewYLims(obj, newLimits)
+
+            if nargin == 1 || isempty(newLimits)
+                newLimits = obj.YLimOrig;
+            end
+
+            newLimits(1) = max([obj.YLimOrig(1), newLimits(1)]);
+            newLimits(2) = min([obj.YLimOrig(2), newLimits(2)]);
+            set(obj.Axes, 'YLim', newLimits);
+        end
+    end
+
+    methods (Static, Access = private)
+
+        function limNew = clampRangeToOriginal(limNew, limOrig)
+        %clampRangeToOriginal Clamp a [min,max] range within its original bounds
+        %
+        %   Snaps back to limOrig if limNew is wider than limOrig,
+        %   otherwise shifts limNew (preserving its width) so it does
+        %   not extend past either edge of limOrig.
+
+            if diff(limNew) > diff(limOrig)
+                limNew = limOrig;
+            elseif limNew(1) <= limOrig(1)
+                limNew = limNew - limNew(1) + limOrig(1);
+            elseif limNew(2) > limOrig(2)
+                limNew = limNew - (limNew(2) - limOrig(2));
+            end
+        end
+    end
+end
