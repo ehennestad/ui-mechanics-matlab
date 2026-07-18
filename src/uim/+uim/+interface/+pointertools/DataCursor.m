@@ -15,6 +15,13 @@ classdef DataCursor < uim.interface.PointerTool
         XLimOrig
         YLimOrig
         CursorColor = ones(1,3)*0.5
+
+        % Fired on every cursor movement while the tool is active, after
+        % the crosshair is updated. (src, evt) pass through from the
+        % window motion event; read the position from the axes
+        % CurrentPoint. Hosts use this to display information about the
+        % data under the cursor.
+        CursorMovedFcn = []
     end
 
     properties (Access = private)
@@ -66,8 +73,11 @@ classdef DataCursor < uim.interface.PointerTool
 
             obj.plotCrosshair(currentPoint)
 
-            if ~isempty(obj.ButtonMotionFcn)
-            	obj.ButtonMotionFcn(src, evt)
+            % The generic ButtonMotionFcn is a shift-style callback on
+            % other tools (Pan, AxisZoom); the data cursor's motion
+            % notification has its own, documented seam.
+            if ~isempty(obj.CursorMovedFcn)
+                obj.CursorMovedFcn(src, evt)
             end
         end
 
