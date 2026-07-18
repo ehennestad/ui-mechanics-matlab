@@ -155,7 +155,16 @@ classdef ToolTip < uim.Handle
 
         function bringTooltipToFront(obj)
             if ~isempty(obj.TooltipHandle) && isvalid(obj.TooltipHandle)
-                uistack(obj.TooltipHandle, 'top')
+                try
+                    uistack(obj.TooltipHandle, 'top')
+                catch
+                    % This runs from a ChildAdded listener, which also
+                    % fires while OTHER code is restacking the axes
+                    % children (e.g. a widget calling uistack); the
+                    % re-entrant uistack can fail on that transient
+                    % state. Safe to skip: the tooltip is hoisted again
+                    % on the next ChildAdded.
+                end
             end
         end
     end

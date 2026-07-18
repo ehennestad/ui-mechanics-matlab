@@ -74,6 +74,11 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
             obj@uim.abstract.Control(hParent, varargin{:})
 
+            % Knob drags read CurrentPoint from motion listeners; in
+            % java figures that requires a WindowButtonMotionFcn.
+            uim.utility.ensurePointerMotionTracking(...
+                ancestor(obj.CanvasAxes, 'figure'))
+
             obj.initializeFiniteRange()
 
             obj.createSlider()

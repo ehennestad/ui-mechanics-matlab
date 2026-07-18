@@ -71,6 +71,11 @@ classdef Slider < handle
 
             obj.createSlider()
 
+            % Knob drags read CurrentPoint from motion listeners; in
+            % java figures that requires a WindowButtonMotionFcn.
+            uim.utility.ensurePointerMotionTracking(...
+                ancestor(obj.Axes, 'figure'))
+
             obj.IsConstructed = true;
         end
 

@@ -49,6 +49,9 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
         function obj = FrameMarker(hAxes, varargin)
             obj.Axes = hAxes;
             obj.ParentFigure = ancestor(hAxes, 'figure');
+            % Knob drags read CurrentPoint from motion listeners; in
+            % java figures that requires a WindowButtonMotionFcn.
+            uim.utility.ensurePointerMotionTracking(obj.ParentFigure)
             obj.parseInputs(varargin{:})
             obj.drawFrameMarker()
             obj.IsConstructed = true;

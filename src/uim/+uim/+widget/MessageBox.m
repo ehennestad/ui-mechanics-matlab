@@ -63,6 +63,10 @@ classdef MessageBox < uim.mixin.Resizable
             % Todo: parse varargin...
 
             obj.ReferenceAxes = hParent;
+            % Draggable parts read CurrentPoint from motion listeners; in
+            % java figures that requires a WindowButtonMotionFcn.
+            uim.utility.ensurePointerMotionTracking(...
+                ancestor(hParent, 'figure'))
 
             obj.createAxes()
             obj.createTextbox()

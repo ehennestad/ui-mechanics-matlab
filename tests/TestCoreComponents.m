@@ -443,6 +443,11 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyEqual(fieldnames(manager.Pointers), ...
                 {'zoomIn'; 'pan'});
 
+            % The manager captures presses at the window level; it must
+            % not hijack the axes ButtonDownFcn (clicks on data objects
+            % such as images never reach that callback anyway).
+            testCase.verifyEmpty(hAxes.ButtonDownFcn);
+
             manager.togglePointerMode('zoomIn');
             testCase.verifySameHandle(manager.CurrentPointerTool, ...
                 manager.Pointers.zoomIn);
@@ -750,6 +755,333 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 "uim:UIComponentCanvas:UnsupportedAxesParent");
         end
 
+        function readoutDisplaysFormattedValue(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            readout = uim.widget.Readout(canvas, ...
+                'Label', 'Frame', 'Format', '%d');
+            readout.Value = 42;
+            testCase.verifyEqual(readout.String, 'Frame: 42');
+            testCase.verifyNumElements(findall(canvas.Axes, ...
+                "Type", "text", "String", "Frame: 42"), 1);
+
+            % Without a label, only the formatted value is shown.
+            plain = uim.widget.Readout(canvas, ...
+                'Format', '%.2f', 'Location', 'northeast');
+            plain.Value = pi;
+            testCase.verifyEqual(plain.String, '3.14');
+
+            delete(readout)
+            testCase.verifyEmpty(findall(canvas.Axes, ...
+                "Type", "text", "String", "Frame: 42"));
+        end
+
+        function spinnerStepsClampsAndEdits(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure);
+            canvas = uim.UIComponentCanvas(hPanel);
+
+            spinner = uim.widget.Spinner(canvas, ...
+                'Value', 5, 'Minimum', 0, 'Maximum', 6, 'Step', 2, ...
+                'ValueChangedFcn', ...
+                @(~, evt) setappdata(hFigure, 'LastEvent', evt));
+
+            incrementFcn = get(findall(canvas.Axes, ...
+                "Tag", "SpinnerIncrement"), 'ButtonDownFcn');
+            decrementFcn = get(findall(canvas.Axes, ...
+                "Tag", "SpinnerDecrement"), 'ButtonDownFcn');
+
+            % Stepping clamps to Maximum and notifies with old/new values.
+            incrementFcn([], [])
+            testCase.verifyEqual(spinner.Value, 6);
+            evt = getappdata(hFigure, 'LastEvent');
+            testCase.verifyEqual(evt.OldValue, 5);
+            testCase.verifyEqual(evt.NewValue, 6);
+
+            % A step that does not change the value fires no callback.
+            setappdata(hFigure, 'LastEvent', [])
+            incrementFcn([], [])
+            testCase.verifyEmpty(getappdata(hFigure, 'LastEvent'));
+
+            decrementFcn([], [])
+            testCase.verifyEqual(spinner.Value, 4);
+
+            % Programmatic assignment updates silently (push model).
+            setappdata(hFigure, 'LastEvent', [])
+            spinner.Value = 1;
+            testCase.verifyEmpty(getappdata(hFigure, 'LastEvent'));
+
+            % Clicking the value opens an edit box; committing applies
+            % the typed value through the user pathway.
+            editFcn = get(findall(canvas.Axes, ...
+                "Tag", "SpinnerValue"), 'ButtonDownFcn');
+            editFcn([], [])
+            editBox = findall(hFigure, "Type", "uicontrol", "Style", "edit");
+            testCase.verifyNumElements(editBox, 1);
+
+            editBox.String = '3';
+            editBox.Callback(editBox, [])
+            testCase.verifyEqual(spinner.Value, 3);
+            testCase.verifyFalse(isvalid(editBox));
+            evt = getappdata(hFigure, 'LastEvent');
+            testCase.verifyEqual(evt.NewValue, 3);
+        end
+
+        function dropDownSelectsItemAndNotifies(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            dropdown = uim.widget.DropDown(canvas, ...
+                'Items', ["gray", "jet", "parula"], 'Value', "jet", ...
+                'ValueChangedFcn', ...
+                @(~, evt) setappdata(hFigure, 'LastEvent', evt));
+
+            testCase.verifyEqual(dropdown.Value, "jet");
+            testCase.verifyEqual(dropdown.ValueIndex, 2);
+            testCase.verifyFalse(dropdown.IsOpen);
+
+            dropdown.open()
+            testCase.verifyTrue(dropdown.IsOpen);
+            rows = findall(canvas.Axes, "Tag", "DropDownItem");
+            testCase.verifyNumElements(rows, 3);
+
+            % Clicking an item selects it, closes the list and notifies.
+            thirdRow = rows([rows.UserData] == 3);
+            thirdRow.ButtonDownFcn([], [])
+            testCase.verifyEqual(dropdown.Value, "parula");
+            testCase.verifyFalse(dropdown.IsOpen);
+            testCase.verifyEmpty(findall(canvas.Axes, "Tag", "DropDownItem"));
+            evt = getappdata(hFigure, 'LastEvent');
+            testCase.verifyEqual(evt.OldValue, "jet");
+            testCase.verifyEqual(evt.NewValue, "parula");
+
+            % Selecting the current item closes without notifying.
+            setappdata(hFigure, 'LastEvent', [])
+            dropdown.open()
+            rows = findall(canvas.Axes, "Tag", "DropDownItem");
+            currentRow = rows([rows.UserData] == dropdown.ValueIndex);
+            currentRow.ButtonDownFcn([], [])
+            testCase.verifyFalse(dropdown.IsOpen);
+            testCase.verifyEmpty(getappdata(hFigure, 'LastEvent'));
+
+            % Programmatic assignment updates silently; invalid values
+            % are rejected.
+            dropdown.Value = "gray";
+            testCase.verifyEmpty(getappdata(hFigure, 'LastEvent'));
+            testCase.verifyError(...
+                @() assignProperty(dropdown, 'Value', "bogus"), ...
+                "uim:DropDown:InvalidValue");
+
+            delete(dropdown)
+            testCase.verifyEmpty(findall(canvas.Axes, "Type", "text", ...
+                "String", "gray"));
+        end
+
+        function dropDownAppliesListColors(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            dropdown = uim.widget.DropDown(canvas, ...
+                'Items', ["a", "b"], 'Value', "b", ...
+                'ListBackgroundColor', [0.1, 0.2, 0.3], ...
+                'ListBorderColor', [1, 0, 0], ...
+                'SelectionColor', [0, 0, 1]);
+
+            dropdown.open()
+
+            listBackground = findall(canvas.Axes, "Type", "patch", ...
+                "FaceColor", [0.1, 0.2, 0.3]);
+            testCase.verifyNumElements(listBackground, 1);
+            testCase.verifyEqual(listBackground.EdgeColor, [1, 0, 0]);
+
+            rows = findall(canvas.Axes, "Tag", "DropDownItem");
+            selectedRow = rows([rows.UserData] == dropdown.ValueIndex);
+            testCase.verifyEqual(selectedRow.FaceColor, [0, 0, 1]);
+            testCase.verifyEqual(selectedRow.FaceAlpha, 0.15);
+        end
+
+        function pointerToolbarBindingSyncsButtonsAndTools(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "Units", "pixels", ...
+                "Position", [50, 50, 300, 220]);
+            imagesc(hAxes, magic(50))
+
+            manager = uim.interface.PointerManager(hFigure, hAxes, ...
+                {'zoomIn', 'pan'});
+            testCase.addTeardown(@deleteValid, manager);
+
+            toolbar = uim.widget.Toolbar(hAxes, "Location", "northeast");
+            binding = uim.interface.PointerToolBinding(toolbar, manager, ...
+                ["zoomIn", "pan"]);
+
+            testCase.verifyNumElements(binding.Buttons, 2);
+            zoomButton = binding.Buttons(1);
+            panButton = binding.Buttons(2);
+
+            % Modes with a shipped default icon render it (not a text label).
+            testCase.verifyClass(zoomButton.Icon, "struct");
+            testCase.verifyEmpty(zoomButton.Text);
+
+            % Button -> tool: clicking the button activates the tool,
+            % and the tool's toggle event flips the button state.
+            zoomButton.Callback([], [])
+            testCase.verifySameHandle(...
+                manager.CurrentPointerTool, manager.Pointers.zoomIn);
+            testCase.verifyTrue(logical(zoomButton.Value));
+
+            % Tool -> buttons: switching mode by other means updates
+            % both button states.
+            manager.togglePointerMode('pan')
+            testCase.verifySameHandle(...
+                manager.CurrentPointerTool, manager.Pointers.pan);
+            testCase.verifyFalse(logical(zoomButton.Value));
+            testCase.verifyTrue(logical(panButton.Value));
+
+            % Modes the manager does not know are rejected clearly.
+            testCase.verifyError(@() uim.interface.PointerToolBinding(...
+                toolbar, manager, "crop"), ...
+                "uim:PointerToolBinding:UnknownMode");
+
+            % Deleting the binding removes the buttons it created.
+            delete(binding)
+            testCase.verifyFalse(isvalid(zoomButton));
+            testCase.verifyFalse(isvalid(panButton));
+        end
+
+        function overviewIndicatorMapsAndNotifies(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            indicator = uim.widget.OverviewIndicator(canvas, ...
+                'DataLimits', [0, 200; 0, 100], ...
+                'ViewLimits', [50, 100; 25, 50], ...
+                'YDir', 'reverse', ...
+                'ViewChangedFcn', ...
+                @(~, evt) setappdata(hFigure, 'LastEvent', evt));
+
+            % The frame preserves the data aspect ratio (2:1) and the
+            % view rect spans a quarter of the frame width.
+            frame = findall(canvas.Axes, "Tag", "OverviewFrame");
+            viewRect = findall(canvas.Axes, "Tag", "OverviewViewRect");
+            frameWidth = max(frame.XData) - min(frame.XData);
+            frameHeight = max(frame.YData) - min(frame.YData);
+            testCase.verifyEqual(frameWidth/frameHeight, 2, "AbsTol", 1e-10);
+            viewWidth = max(viewRect.XData) - min(viewRect.XData);
+            testCase.verifyEqual(viewWidth, frameWidth/4, "AbsTol", 1e-10);
+
+            % Programmatic push updates silently.
+            setappdata(hFigure, 'LastEvent', [])
+            indicator.ViewLimits = [0, 100; 0, 50];
+            testCase.verifyEmpty(getappdata(hFigure, 'LastEvent'));
+
+            % centerViewOn keeps the view size, clamps to the data
+            % extent and notifies with the applied limits.
+            indicator.centerViewOn(190, 90) % Near the corner -> clamped
+            evt = getappdata(hFigure, 'LastEvent');
+            testCase.verifyEqual(evt.XLim, [100, 200], "AbsTol", 1e-10);
+            testCase.verifyEqual(evt.YLim, [50, 100], "AbsTol", 1e-10);
+            testCase.verifyEqual(indicator.ViewLimits, [100, 200; 50, 100], ...
+                "AbsTol", 1e-10);
+        end
+
+        function contrastSliderPushesAndNotifies(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            slider = uim.widget.ContrastSlider(canvas, ...
+                'DataLimits', [0, 255], 'Limits', [10, 200], ...
+                'LimitsChangedFcn', ...
+                @(~, evt) setappdata(hFigure, 'LimitsEvent', evt), ...
+                'AutoRequestedFcn', ...
+                @(~, evt) setappdata(hFigure, 'AutoEvent', evt));
+
+            % Knob drags read CurrentPoint from motion listeners, which
+            % only tracks the mouse in java figures when the figure has
+            % a WindowButtonMotionFcn; construction must ensure one.
+            testCase.verifyNotEmpty(hFigure.WindowButtonMotionFcn);
+
+            % Contrast-semantics properties map onto the range slider.
+            testCase.verifyEqual(slider.DataLimits, [0, 255]);
+            testCase.verifyEqual(slider.Limits, [10, 200]);
+            testCase.verifyEqual([slider.Min, slider.Max], [0, 255]);
+            testCase.verifyEqual([slider.Low, slider.High], [10, 200]);
+
+            % Programmatic push updates silently.
+            slider.Limits = [0, 128];
+            testCase.verifyEmpty(getappdata(hFigure, 'LimitsEvent'));
+
+            % A user interaction (the internal RangeSlider callback
+            % channel) notifies with old/new limit pairs.
+            slider.Callback(slider, struct('Low', 20, 'High', 220))
+            evt = getappdata(hFigure, 'LimitsEvent');
+            testCase.verifyEqual(evt.OldValue, [0, 128]);
+            testCase.verifyEqual(evt.NewValue, [20, 220]);
+
+            % A collapsed range is clamped to strictly increasing limits
+            % before notification, so hosts can assign NewValue to CLim.
+            slider.Callback(slider, struct('Low', 50, 'High', 40))
+            evt = getappdata(hFigure, 'LimitsEvent');
+            testCase.verifyGreaterThan(evt.NewValue(2), evt.NewValue(1));
+            testCase.verifyEqual(evt.NewValue(1), 50);
+
+            % The auto button requests auto levels from the host.
+            autoButton = findall(canvas.Axes, ...
+                "Tag", "ContrastSliderAutoButton");
+            testCase.verifyNumElements(autoButton, 1);
+            autoButton.ButtonDownFcn([], [])
+            testCase.verifyClass(getappdata(hFigure, 'AutoEvent'), ...
+                "uim.event.EventData");
+
+            % Pushed histogram counts render inside the track x-range;
+            % clearing them hides the histogram again.
+            histogram = findall(canvas.Axes, ...
+                "Tag", "ContrastSliderHistogram");
+            testCase.verifyNumElements(histogram, 1);
+            slider.HistogramCounts = [1, 4, 9, 4, 1];
+            trackLeft = slider.Position(1) + slider.Padding(1);
+            trackRight = slider.Position(1) + slider.Position(3) ...
+                - slider.Padding(3);
+            testCase.verifyGreaterThanOrEqual(min(histogram.XData), ...
+                trackLeft - 1e-6);
+            testCase.verifyLessThanOrEqual(max(histogram.XData), ...
+                trackRight + 1e-6);
+            testCase.verifyEqual(max(histogram.YData) - min(histogram.YData), ...
+                slider.Position(4) - slider.Padding(2) - slider.Padding(4), ...
+                "AbsTol", 1e-6);
+
+            slider.HistogramCounts = [];
+            testCase.verifyTrue(all(isnan(histogram.XData)));
+
+            % The histogram button toggles visibility: off silently, on
+            % with a request so the host can compute counts lazily.
+            slider.HistogramCounts = [1, 2, 3];
+            histogramButton = findall(canvas.Axes, ...
+                "Tag", "ContrastSliderHistogramButton");
+            testCase.verifyNumElements(histogramButton, 1);
+
+            setappdata(hFigure, 'HistEvent', [])
+            histogramButton.ButtonDownFcn([], [])
+            testCase.verifyEqual(slider.HistogramVisible, 'off');
+            testCase.verifyEqual(char(histogram.Visible), 'off');
+            testCase.verifyEmpty(getappdata(hFigure, 'HistEvent'));
+
+            slider.HistogramRequestedFcn = ...
+                @(~, evt) setappdata(hFigure, 'HistEvent', evt);
+            histogramButton.ButtonDownFcn([], [])
+            testCase.verifyEqual(slider.HistogramVisible, 'on');
+            testCase.verifyEqual(char(histogram.Visible), 'on');
+            testCase.verifyClass(getappdata(hFigure, 'HistEvent'), ...
+                "uim.event.EventData");
+        end
+
         function explicitSizeSurvivesParentResize(testCase)
             hFigure = figure("Visible", "off", "Position", [200, 200, 500, 400]);
             testCase.addTeardown(@deleteValid, hFigure);
@@ -777,4 +1109,10 @@ function deleteValid(object)
     if ~isempty(object) && all(isvalid(object))
         delete(object)
     end
+end
+
+function assignProperty(object, propertyName, value)
+%assignProperty Assign a property inside a function call, so property-set
+%errors can be verified with verifyError.
+    object.(propertyName) = value;
 end
