@@ -50,10 +50,6 @@ classdef ContrastSlider < uim.widget.RangeSlider
 %           'DataLimits', [0, 255], 'Limits', [0, 255], ...
 %           'LimitsChangedFcn', ...
 %               @(src, evt) set(hAxes, 'CLim', evt.NewValue));
-%
-%   Note: this widget owns the inherited Callback property (it is the
-%   internal notification channel from RangeSlider); use
-%   LimitsChangedFcn.
 
     properties (Dependent)
         DataLimits (1,2) double  % [min, max] full range of the data
@@ -61,7 +57,7 @@ classdef ContrastSlider < uim.widget.RangeSlider
     end
 
     properties
-        LimitsChangedFcn = []       % Fired when the user moves a knob. (src, uim.event.ValueChangedEventData with [low, high] values)
+        LimitsChangedFcn = []       % Fired when the user moves a knob. (src, evt with [low, high] values)
         AutoRequestedFcn = []       % Fired when the user presses the auto button. (src, uim.event.EventData)
         HistogramRequestedFcn = []  % Fired when the user toggles the histogram on. (src, uim.event.EventData)
 
@@ -100,9 +96,6 @@ classdef ContrastSlider < uim.widget.RangeSlider
 
             obj@uim.widget.RangeSlider(hParent, varargin{:})
 
-            % The inherited Callback is the internal notification channel
-            % from RangeSlider's knob/track interactions.
-            obj.Callback = @obj.onRangeSliderChanged;
             obj.LastNotifiedLimits = obj.Limits;
 
             obj.plotHistogram()
@@ -132,8 +125,15 @@ classdef ContrastSlider < uim.widget.RangeSlider
     methods % Set/Get
 
         function set.DataLimits(obj, newValue)
-            obj.applySilently(@() set(obj, ...
-                'Min', newValue(1), 'Max', newValue(2)))
+            % Assign in an order that keeps Min < Max at every step: a
+            % range lying above the current one must raise Max first.
+            if newValue(1) >= obj.Max
+                obj.applySilently(@() set(obj, ...
+                    'Max', newValue(2), 'Min', newValue(1)))
+            else
+                obj.applySilently(@() set(obj, ...
+                    'Min', newValue(1), 'Max', newValue(2)))
+            end
         end
 
         function limits = get.DataLimits(obj)
@@ -141,8 +141,15 @@ classdef ContrastSlider < uim.widget.RangeSlider
         end
 
         function set.Limits(obj, newValue)
-            obj.applySilently(@() set(obj, ...
-                'Low', newValue(1), 'High', newValue(2)))
+            % Assign in an order that keeps Low <= High at every step: a
+            % range lying above the current one must raise High first.
+            if newValue(1) > obj.High
+                obj.applySilently(@() set(obj, ...
+                    'High', newValue(2), 'Low', newValue(1)))
+            else
+                obj.applySilently(@() set(obj, ...
+                    'Low', newValue(1), 'High', newValue(2)))
+            end
         end
 
         function limits = get.Limits(obj)
@@ -196,12 +203,12 @@ classdef ContrastSlider < uim.widget.RangeSlider
             end
         end
 
-        function onRangeSliderChanged(obj, ~, evtData)
+        function onRangeSliderChanged(obj)
         %onRangeSliderChanged Clamp to an increasing range and notify
 
             if obj.SuppressNotification; return; end
 
-            newLimits = [evtData.Low, evtData.High];
+            newLimits = [obj.Low, obj.High];
 
             % CLim must be strictly increasing; absorb collapsed ranges
             % here so hosts can assign NewValue to CLim unguarded.
@@ -209,6 +216,17 @@ classdef ContrastSlider < uim.widget.RangeSlider
                 eps(newLimits(1)));
             if newLimits(2) <= newLimits(1) + minSeparation
                 newLimits(2) = newLimits(1) + minSeparation;
+                if newLimits(2) > obj.Max
+                    newLimits = newLimits - (newLimits(2) - obj.Max);
+                end
+
+                % Push the corrected interval back into the slider, so
+                % the knobs and the inherited Low/High state match what
+                % is reported to the host.
+                obj.SuppressNotification = true;
+                restoreFlag = onCleanup(@() obj.enableNotification());
+                set(obj, 'High', newLimits(2), 'Low', newLimits(1))
+                delete(restoreFlag)
             end
 
             if isequal(newLimits, obj.LastNotifiedLimits); return; end
@@ -390,11 +408,13 @@ classdef ContrastSlider < uim.widget.RangeSlider
                 obj.HistogramButtonHitArea, obj.ShowHistogramButton)
 
             % Dim the histogram glyph while the histogram is hidden, so
-            % the button reads as a toggle.
+            % the button reads as a toggle. validatecolor normalizes
+            % char colorspecs (e.g. 'w') before the arithmetic.
             if strcmp(obj.HistogramVisible, 'on')
                 obj.HistogramButtonIcon.Color = obj.TextColor;
             else
-                obj.HistogramButtonIcon.Color = obj.TextColor*0.55;
+                obj.HistogramButtonIcon.Color = ...
+                    validatecolor(obj.TextColor)*0.55;
             end
         end
 
@@ -415,6 +435,22 @@ classdef ContrastSlider < uim.widget.RangeSlider
     end
 
     methods (Access = protected)
+
+        function notifyValueChanged(obj)
+        %notifyValueChanged Clamp, then notify the host on both channels
+        %
+        %   Runs the clamp/push-back first (onRangeSliderChanged), so a
+        %   host-assigned Callback always sees the same corrected,
+        %   strictly-increasing pair as LimitsChangedFcn, and never
+        %   fires during a silent programmatic push (onRangeSliderChanged
+        %   leaves SuppressNotification set for the duration of one).
+
+            obj.onRangeSliderChanged()
+
+            if obj.SuppressNotification; return; end
+
+            notifyValueChanged@uim.widget.RangeSlider(obj)
+        end
 
         function updateLocation(obj, mode)
             if nargin < 2; mode = obj.PositionMode; end

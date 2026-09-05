@@ -29,9 +29,7 @@ classdef PointerManager < handle
         PreviousPointerTool
         WasCursorInAxes (1,1) logical = false;
 
-        OriginalWindowButtonMotionFcn = []
-        DummyWindowButtonMotionFcn = []
-        OwnsWindowButtonMotionFcn (1,1) logical = false
+        OriginalAxesButtonDownFcn = []
 
         AxesButtonPressListener event.listener
         WindowMousePressListener event.listener
@@ -55,14 +53,20 @@ classdef PointerManager < handle
 
             obj.Figure = hFigure;
             obj.Axes = hAxes;
-            obj.OriginalWindowButtonMotionFcn = hFigure.WindowButtonMotionFcn;
 
-            % Assign dummy callback if WindowButtonMotionFcn is unassigned
-            if isempty( hFigure.WindowButtonMotionFcn )
-                obj.DummyWindowButtonMotionFcn = @obj.mouseMotionDummyCallback;
-                hFigure.WindowButtonMotionFcn = obj.DummyWindowButtonMotionFcn;
-                obj.OwnsWindowButtonMotionFcn = true;
-            end
+            % While a manager is attached, pointer tools own presses on
+            % the axes background exclusively: displace a pre-existing
+            % ButtonDownFcn (restored on delete) so a host callback and
+            % a pointer tool never both run on the same click.
+            obj.OriginalAxesButtonDownFcn = hAxes.ButtonDownFcn;
+            hAxes.ButtonDownFcn = [];
+
+            % In java figures CurrentPoint only follows the mouse while
+            % a WindowButtonMotionFcn is installed. The shared helper
+            % keeps its no-op for the figure's lifetime: widgets rely on
+            % the same mechanism, so it must survive this manager's
+            % deletion.
+            uim.utility.ensurePointerMotionTracking(hFigure)
 
             % Create listeners for mouse event in figure. Button presses
             % are captured at the window level (not via the axes
@@ -87,9 +91,12 @@ classdef PointerManager < handle
 
             obj.deleteFigureMouseListeners()
 
-            if obj.OwnsWindowButtonMotionFcn && isvalid(obj.Figure) && ...
-                    isequal(obj.Figure.WindowButtonMotionFcn, obj.DummyWindowButtonMotionFcn)
-                obj.Figure.WindowButtonMotionFcn = obj.OriginalWindowButtonMotionFcn;
+            % Restore only if nothing has reassigned ButtonDownFcn since
+            % construction (it is still the empty value the manager set):
+            % a host that took over clicks while the manager was attached
+            % must not have that callback silently overwritten.
+            if isvalid(obj.Axes) && isempty(obj.Axes.ButtonDownFcn)
+                obj.Axes.ButtonDownFcn = obj.OriginalAxesButtonDownFcn;
             end
         end
     end
@@ -313,20 +320,45 @@ classdef PointerManager < handle
                 isequal(ancestor(hitObject, 'axes'), obj.Axes);
             if ~isInManagedAxes; return; end
 
-            if ~isequal(hitObject, obj.Axes) && ...
-                    ~isempty(hitObject.ButtonDownFcn)
-                return
+            if ~isequal(hitObject, obj.Axes)
+                % Objects with their own ButtonDownFcn handle the press
+                % themselves. Not every hit object exposes the property
+                % (e.g. datatips) — treat those as interactive too.
+                if ~isprop(hitObject, 'ButtonDownFcn') || ...
+                        ~isempty(hitObject.ButtonDownFcn)
+                    return
+                end
             end
 
             % The window-level event data carries no Button; translate
             % the figure SelectionType for tools that check evt.Button.
+            % SelectionType conflates modified left-clicks with other
+            % buttons ('alt' is ctrl+left OR right, 'extend' is
+            % shift+left OR middle), so consult CurrentModifier to keep
+            % reporting modifier-left-clicks as button 1, like the axes
+            % ButtonDownFcn eventdata did. (A ctrl+right-click is
+            % indistinguishable from ctrl+left and also reports 1.)
+            modifiers = obj.Figure.CurrentModifier;
             switch obj.Figure.SelectionType
-                case 'alt';    buttonNumber = 3;
-                case 'extend'; buttonNumber = 2;
-                otherwise;     buttonNumber = 1;
+                case 'alt'
+                    if any(strcmp(modifiers, 'control'))
+                        buttonNumber = 1;
+                    else
+                        buttonNumber = 3;
+                    end
+                case 'extend'
+                    if any(strcmp(modifiers, 'shift'))
+                        buttonNumber = 1;
+                    else
+                        buttonNumber = 2;
+                    end
+                otherwise
+                    buttonNumber = 1;
             end
+
             eventData = struct('Button', buttonNumber, ...
-                'HitObject', hitObject, 'Point', event.Point);
+                'HitObject', hitObject, 'Point', event.Point, ...
+                'IntersectionPoint', event.IntersectionPoint);
 
             obj.onButtonDown(src, eventData)
         end
@@ -413,13 +445,6 @@ classdef PointerManager < handle
 
         function resetMouseDownPointerTool(obj)
             obj.MouseDownPointerTool = [];
-        end
-
-        function mouseMotionDummyCallback(~, ~, ~)
-            % Assign this if the WindowButtonMotionFcn of a figure is empty
-
-            % The figure's CurrentPoint property is only updated if a
-            % mousemotion callback is assigned.
         end
     end
 

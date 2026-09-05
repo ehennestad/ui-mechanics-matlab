@@ -52,7 +52,9 @@ classdef DropDown < uim.abstract.Control
         % List colors take effect the next time the list opens.
 
         ListBackgroundColor = []        % Background of the open list. Empty: follow BackgroundColor
-        ListBackgroundAlpha (1,1) double {mustBeGreaterThanOrEqual(ListBackgroundAlpha, 0), mustBeLessThanOrEqual(ListBackgroundAlpha, 1)} = 0.9
+        ListBackgroundAlpha (1,1) double ...
+            {mustBeGreaterThanOrEqual(ListBackgroundAlpha, 0), ...
+             mustBeLessThanOrEqual(ListBackgroundAlpha, 1)} = 0.9
         ListBorderColor = []            % Edge color of the open list. Empty: follow ForegroundColor
 
         HighlightColor = 'w'            % Fill of the row under the cursor
@@ -147,8 +149,11 @@ classdef DropDown < uim.abstract.Control
     methods % Set/Get
 
         function set.Items(obj, newValue)
+            % Validate against the incoming list before assigning, so a
+            % rejected update leaves Items and Value consistent.
+            obj.assertValueCompatibleWithItems(newValue)
             obj.Items = newValue;
-            obj.validateValueInItems()
+            obj.applyDefaultValue()
             obj.close()
         end
 
@@ -340,6 +345,12 @@ classdef DropDown < uim.abstract.Control
         end
 
         function assertValueIsMemberOfItems(obj, newValue)
+            % "" always resets to no selection, regardless of Items: it
+            % is the escape hatch for switching to an Items list disjoint
+            % from the current Value (set Value to "" first, then assign
+            % the new Items).
+            if newValue == ""; return; end
+
             if ~isempty(obj.Items) && ~any(obj.Items == newValue)
                 error('uim:DropDown:InvalidValue', ...
                     ['"%s" is not a member of Items. Set Items first, ', ...
@@ -347,18 +358,24 @@ classdef DropDown < uim.abstract.Control
             end
         end
 
-        function validateValueInItems(obj)
-        %validateValueInItems Reconcile Value with a new Items list
+        function assertValueCompatibleWithItems(obj, newItems)
+        %assertValueCompatibleWithItems Reject Items lacking the current Value
 
-            if isempty(obj.Items); return; end
+            if isempty(newItems) || obj.Value == ""; return; end
 
-            if obj.Value == ""
-                obj.Value = obj.Items(1);
-            elseif ~any(obj.Items == obj.Value)
+            if ~any(newItems == obj.Value)
                 error('uim:DropDown:InvalidValue', ...
                     ['The current Value ("%s") is not a member of the ', ...
-                     'new Items list. Set Value to one of the new items ', ...
-                     'first, or include it in Items.'], obj.Value)
+                     'new Items list. Set Value to "" or one of the new ', ...
+                     'items first, or include it in Items.'], obj.Value)
+            end
+        end
+
+        function applyDefaultValue(obj)
+        %applyDefaultValue Default Value to the first item when unset
+
+            if ~isempty(obj.Items) && obj.Value == ""
+                obj.Value = obj.Items(1);
             end
         end
     end

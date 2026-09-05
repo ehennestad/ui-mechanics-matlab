@@ -70,8 +70,15 @@ classdef PointerToolBinding < handle
         end
 
         function delete(obj)
+            % Remove buttons through the toolbar, so its layout
+            % bookkeeping (button list, positions, count) stays
+            % consistent for later addButton/resize operations.
             for i = 1:numel(obj.Buttons)
-                if isvalid(obj.Buttons(i))
+                if ~isvalid(obj.Buttons(i)); continue; end
+
+                if isvalid(obj.Toolbar)
+                    obj.Toolbar.removeButton(obj.Buttons(i))
+                else
                     delete(obj.Buttons(i))
                 end
             end
