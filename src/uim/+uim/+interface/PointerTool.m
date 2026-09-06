@@ -98,7 +98,7 @@ classdef PointerTool < handle & matlab.mixin.Heterogeneous
                 currentPoint = obj.Axes.CurrentPoint(1, 1:2);
             end
 
-            tf = uim.interface.internal.isPointInsideLimits(...
+            tf = uim.geometry.isPointInsideLimits(...
                 currentPoint, obj.Axes.XLim, obj.Axes.YLim);
         end
 

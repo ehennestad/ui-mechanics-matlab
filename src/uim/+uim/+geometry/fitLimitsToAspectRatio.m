@@ -1,7 +1,7 @@
 function [xLim, yLim] = fitLimitsToAspectRatio(xLim, yLim, aspectRatio)
 %fitLimitsToAspectRatio Widen limits so the view fills an axes of given aspect
 %
-%   [xLim, yLim] = uim.interface.internal.fitLimitsToAspectRatio(xLim, ...
+%   [xLim, yLim] = uim.geometry.fitLimitsToAspectRatio(xLim, ...
 %       yLim, aspectRatio) expands whichever interval is too narrow for
 %   the axes width/height ratio aspectRatio, symmetrically about its
 %   centre, so that diff(xLim)/diff(yLim) equals aspectRatio. Nothing is

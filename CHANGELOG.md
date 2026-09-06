@@ -18,6 +18,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- New `uim.geometry` package holding the axis-limit, range and rectangle
+  arithmetic that was previously duplicated across two private packages:
+  `fitRangeInside` (was `uim.interface.internal.clampRangeWithin`) and
+  `shiftLimitsInside` (was `uim.widget.internal.clampLimitsToExtent`)
+  solved the same problem at different arity, and the names now say which
+  one narrows a range that does not fit and which only shifts it. The
+  other twelve move across unchanged: `intersectRanges`,
+  `isRangeStrictlyInside`, `isPointInsideLimits`, `scaleLimits`,
+  `stretchLimits`, `panLimits`, `zoomLimitsAboutPoint`,
+  `fitLimitsToAspectRatio`, `limitsToRectangle`, `rectangleToLimits`,
+  `centeredLimits` and `letterboxFit`. Interaction-specific helpers
+  (`cropMaskOutline`, `isClickWithoutDrag`, `keyToPointerToolName`,
+  `rectangleOutlineBetween`, `selectionTypeToButton`) stay private to
+  `uim.interface`.
 - Moved classes and functions into the package that owns them:
   `uim.interface.Zoomable` and `uim.abstract.ToolbarComponent` are now
   `uim.mixin.Zoomable` and `uim.mixin.ToolbarComponent` (both are mixins,

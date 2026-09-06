@@ -1,7 +1,7 @@
 function [xLim, yLim] = panLimits(xLim, yLim, shiftPixels, axesSizePixels, yDir)
 %panLimits Translate axes limits by a pointer movement in pixels
 %
-%   [xLim, yLim] = uim.interface.internal.panLimits(xLim, yLim, ...
+%   [xLim, yLim] = uim.geometry.panLimits(xLim, yLim, ...
 %       shiftPixels, axesSizePixels, yDir) moves the limits opposite to
 %   the pointer shift ([dx, dy] pixels) so the content follows the
 %   pointer. axesSizePixels is [width, height]; with yDir 'reverse'

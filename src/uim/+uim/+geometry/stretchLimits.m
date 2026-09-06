@@ -1,7 +1,7 @@
 function limits = stretchLimits(limits, deltaPixels, axisLengthPixels)
 %stretchLimits Expand or contract limits by dragging along an axis
 %
-%   limits = uim.interface.internal.stretchLimits(limits, deltaPixels, ...
+%   limits = uim.geometry.stretchLimits(limits, deltaPixels, ...
 %       axisLengthPixels) moves both ends outwards by the fraction
 %   deltaPixels/axisLengthPixels of the current width (inwards for a
 %   negative delta). The axis-zoom tool maps a drag along an axis ruler

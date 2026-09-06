@@ -1,7 +1,7 @@
 function tf = isPointInsideLimits(point, xLim, yLim)
 %isPointInsideLimits True when a point lies within x- and y-limits (inclusive)
 %
-%   tf = uim.interface.internal.isPointInsideLimits(point, xLim, yLim)
+%   tf = uim.geometry.isPointInsideLimits(point, xLim, yLim)
 %   tests the [x, y] point against the two [min, max] intervals. Pointer
 %   tools use it with the axes limits (in data units) or with a pixel
 %   rectangle converted to limits.

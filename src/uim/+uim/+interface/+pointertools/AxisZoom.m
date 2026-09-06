@@ -104,7 +104,7 @@ classdef AxisZoom < uim.interface.PointerTool
             end
 
             deltaY = currentPoint(2) - obj.PreviousMousePoint(2);
-            newYLim = uim.interface.internal.stretchLimits(...
+            newYLim = uim.geometry.stretchLimits(...
                 obj.Axes.YLim, deltaY, obj.Axes.Position(4));
             obj.setNewYLims(newYLim)
 
@@ -118,7 +118,7 @@ classdef AxisZoom < uim.interface.PointerTool
 
             currentPoint = obj.Figure.CurrentPoint;
             deltaX = currentPoint(1) - obj.PreviousMousePoint(1);
-            newXLim = uim.interface.internal.stretchLimits(...
+            newXLim = uim.geometry.stretchLimits(...
                 obj.Axes.XLim, deltaX, obj.Axes.Position(3));
             obj.setNewXLims(newXLim)
         end
@@ -129,14 +129,14 @@ classdef AxisZoom < uim.interface.PointerTool
         function setNewXLims(obj, newLimits)
         % setNewXLims Set axes XLim, clamped to the original limits
 
-            newLimits = uim.interface.internal.intersectRanges(newLimits, obj.XLimOrig);
+            newLimits = uim.geometry.intersectRanges(newLimits, obj.XLimOrig);
             set(obj.Axes, 'XLim', newLimits);
         end
 
         function setNewYLims(obj, newLimits)
         % setNewYLims Set axes YLim, clamped to the original limits
 
-            newLimits = uim.interface.internal.intersectRanges(newLimits, obj.YLimOrig);
+            newLimits = uim.geometry.intersectRanges(newLimits, obj.YLimOrig);
             set(obj.Axes, 'YLim', newLimits);
         end
     end

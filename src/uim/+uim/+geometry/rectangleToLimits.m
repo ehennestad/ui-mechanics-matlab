@@ -1,11 +1,11 @@
 function [xLim, yLim] = rectangleToLimits(rectangle)
 %rectangleToLimits Convert an [x, y, width, height] crop rectangle to pixel limits
 %
-%   [xLim, yLim] = uim.interface.internal.rectangleToLimits(rectangle)
+%   [xLim, yLim] = uim.geometry.rectangleToLimits(rectangle)
 %   returns inclusive pixel limits: a rectangle of width w starting at
 %   x covers pixels x through x + w - 1.
 %
-%   See also uim.interface.internal.limitsToRectangle
+%   See also uim.geometry.limitsToRectangle
 
     arguments
         rectangle (1,4) double

@@ -430,7 +430,7 @@ classdef PointerManager < handle
         function tf = isCursorInsideAxes(~, hAx)
 
             currentPoint = hAx.CurrentPoint(1, 1:2);
-            tf = uim.interface.internal.isPointInsideLimits(...
+            tf = uim.geometry.isPointInsideLimits(...
                 currentPoint, hAx.XLim, hAx.YLim);
         end
 

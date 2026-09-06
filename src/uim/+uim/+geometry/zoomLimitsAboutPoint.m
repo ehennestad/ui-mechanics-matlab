@@ -2,7 +2,7 @@ function [xLimNew, yLimNew] = zoomLimitsAboutPoint(xLim, yLim, zoomFactor, ...
         pointerPixel, axesSizePixels, pointerData, yDir)
 %zoomLimitsAboutPoint Scale axes limits so the point under the pointer stays put
 %
-%   [xLimNew, yLimNew] = uim.interface.internal.zoomLimitsAboutPoint(...
+%   [xLimNew, yLimNew] = uim.geometry.zoomLimitsAboutPoint(...
 %       xLim, yLim, zoomFactor, pointerPixel, axesSizePixels, pointerData,
 %       yDir) scales both limits by zoomFactor (see scaleLimits) and then
 %   shifts them so the data point pointerData ([x, y]) remains under the
@@ -24,8 +24,8 @@ function [xLimNew, yLimNew] = zoomLimitsAboutPoint(xLim, yLim, zoomFactor, ...
         yDir {mustBeTextScalar}
     end
 
-    xLimNew = uim.interface.internal.scaleLimits(xLim, zoomFactor);
-    yLimNew = uim.interface.internal.scaleLimits(yLim, zoomFactor);
+    xLimNew = uim.geometry.scaleLimits(xLim, zoomFactor);
+    yLimNew = uim.geometry.scaleLimits(yLim, zoomFactor);
 
     width = axesSizePixels(1);
     height = axesSizePixels(2);
