@@ -46,7 +46,7 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
             button = toolbar.addButton("Text", "A");
 
             toolbar.DarkMode = 'off';
-            testCase.verifyClass(button.Style, "uim.style.ButtonLightMode2");
+            testCase.verifyClass(button.Style, "uim.style.ButtonLightModeTranslucent");
             toolbar.DarkMode = 'on';
             testCase.verifyClass(button.Style, "uim.style.ButtonDarkMode");
 

@@ -1,4 +1,4 @@
-function [nRows, nCols] = findgridsize(n, ~, fullAr)
+function [nRows, nCols] = findGridSize(n, ~, fullAr)
 
 if nargin < 3
     lowerlim = 4/3;

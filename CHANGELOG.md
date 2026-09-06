@@ -18,6 +18,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Renamed style classes whose numeric suffixes said nothing about what they
+  look like: `ButtonDarkMode3` -> `ButtonDarkModeBold`, `ButtonLightMode2`
+  -> `ButtonLightModeTranslucent`, `TabButton2` -> `TabButtonDark`. Each
+  now carries help text naming the variant it differs from.
+  `ButtonSymbol2` is deliberately left alone: it differs from
+  `ButtonSymbol` only in `BorderWidth` while both set `BorderColor` to
+  `none`, so it has no visible difference to name it after, and it is a
+  deletion candidate rather than a rename candidate.
+- Renamed two run-on lowercase functions to the lowerCamelCase the rest of
+  the toolbox uses: `uim.utility.setpixelpositionnonscalar` ->
+  `uim.utility.setPixelPositions` and `uim.utility.layout.findgridsize` ->
+  `uim.utility.layout.findGridSize`.
 - New `uim.geometry` package for axis-limit, range and rectangle
   arithmetic that hosts can use too: `scaleLimits`, `intersectRanges`,
   `fitRangeInside`, `isPointInsideLimits`, `fitLimitsToAspectRatio`,
@@ -38,6 +50,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   not interaction machinery or abstract bases), and the single-function
   `uim.menu` package is gone — `createColormapList` now lives in
   `uim.graphics.internal` beside its only caller.
+
+### Fixed
+
+- `uim.utility.setPixelPositions` raised `MATLAB:builtins:MessageCatalogLoadFailed`
+  instead of reporting a wrongly sized position, because it referenced a
+  MATLAB message identifier that does not exist
+  (`MATLAB:setpixelpositionnonscalar:InvalidPosition`). It now raises
+  `uim:utility:InvalidPosition` and says what shape is expected.
 
 ### Removed
 

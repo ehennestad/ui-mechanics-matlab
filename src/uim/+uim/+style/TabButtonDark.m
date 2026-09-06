@@ -1,4 +1,8 @@
-classdef TabButton2 < uim.style.ButtonScheme
+classdef TabButtonDark < uim.style.ButtonScheme
+%TabButtonDark Tab button styling for a dark background
+%
+%   White labels on a dark slate tab. Compare uim.style.TabButton (dark
+%   labels on light grey) and uim.style.TabButtonLight.
 
     properties (Constant)
 

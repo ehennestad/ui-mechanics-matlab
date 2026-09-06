@@ -1,4 +1,9 @@
-classdef ButtonLightMode2 < uim.style.ButtonScheme
+classdef ButtonLightModeTranslucent < uim.style.ButtonScheme
+%ButtonLightModeTranslucent Light button styling with a translucent fill
+%
+%   As uim.style.ButtonLightMode, but the fill is partly transparent and
+%   the border takes an accent colour, so the button reads as an overlay
+%   on top of whatever it covers.
 
     properties (Constant)
 

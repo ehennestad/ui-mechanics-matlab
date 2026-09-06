@@ -1,4 +1,4 @@
-function setpixelpositionnonscalar(h,position,recursive)
+function setPixelPositions(h,position,recursive)
 % SETPIXELPOSITION Set position HG object in pixels.
 %   SETPIXELPOSITION(HANDLE, POSITION) sets the position of the object specified by
 %   HANDLE in pixel units to the specified POSITION.
@@ -35,7 +35,10 @@ numHandles = numel(h);
 
 % Verify that if "position" does exist it is a 1x4 numerical matrix
 if ~(size(position,2) == 4 && size(position,1) == numHandles && isnumeric(position))
-        error(message('MATLAB:setpixelpositionnonscalar:InvalidPosition'))
+        error('uim:utility:InvalidPosition', ...
+            ['Position must be a %d-by-4 matrix, one row per handle. ', ...
+             'Supply one [x, y, width, height] row for each of the %d ', ...
+             'handles in h.'], numHandles, numHandles)
 end
 
 if nargin < 3
