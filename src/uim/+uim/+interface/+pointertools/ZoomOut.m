@@ -1,4 +1,4 @@
-classdef ZoomOut < uim.interface.PointerTool & uim.interface.Zoomable
+classdef ZoomOut < uim.interface.PointerTool & uim.mixin.Zoomable
 
     properties (Constant)
         ExitMode = 'previous';

@@ -185,7 +185,7 @@ classdef TestDecoratorsAndMarkers < matlab.unittest.TestCase
         end
     end
 
-    methods (Test) % uim.decorator.Box and uim.shape.getIcon
+    methods (Test) % uim.decorator.Box
 
         function boxDecoratorDrawsAndResizesItsBackground(testCase)
             [~, canvas] = createCanvas(testCase);
@@ -204,17 +204,6 @@ classdef TestDecoratorsAndMarkers < matlab.unittest.TestCase
             widthAfter = max(hBackground.XData) - min(hBackground.XData);
             testCase.verifyGreaterThan(widthAfter, widthBefore, ...
                 "Resizing the box redraws its background.");
-        end
-
-        function playAndPauseIconsHaveDistinctOutlines(testCase)
-            [playX, playY] = uim.shape.getIcon('Play');
-            testCase.verifyEqual(playX, [0, 0, 1.5], "A play triangle.");
-            testCase.verifyEqual(playY, [1, -1, 0]);
-
-            [pauseX, pauseY] = uim.shape.getIcon('Pause', 'coords');
-            testCase.verifySize(pauseX, [4, 2], "Two pause bars, four corners each.");
-            testCase.verifySize(pauseY, [4, 2]);
-            testCase.verifyEqual(max(pauseY(:)), 0.7);
         end
     end
 

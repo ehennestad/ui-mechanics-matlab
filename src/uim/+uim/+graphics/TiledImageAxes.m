@@ -343,7 +343,7 @@ methods (Access = private) % Methods for setting up gui
 
             % Add context menu to image.
             obj.Image.UIContextMenu = uicontextmenu(obj.Figure_);
-            uim.menu.createColormapList(obj.Image.UIContextMenu, obj.Axes_)
+            uim.graphics.internal.createColormapList(obj.Image.UIContextMenu, obj.Axes_)
         else
             obj.Image.CData = imdata;
         end
