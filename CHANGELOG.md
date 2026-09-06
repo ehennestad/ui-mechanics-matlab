@@ -25,9 +25,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `uim.widget.ChannelIndicator`: assigning a `ChannelColors` list shorter
   than the previous one errored; the update now covers the indicators
   the new list describes.
-- `uim.widget.MessageBox`: a message too wide for even one character per
-  line could loop forever while folding; the wrapper now always makes
-  progress.
+- `uim.widget.MessageBox`: a message with no break point inside the
+  per-line budget could loop forever while folding; such a token now
+  takes a line of its own.
+- `uim.widget.FrameMarker`: a marker constructed with a `Value` was drawn
+  at the axes origin instead, and assigning `Visible` did nothing. Both
+  properties now reach the graphics.
+- `uim.widget.RangeSlider`: hovering a knob raised "Not enough input
+  arguments" because the pointer behaviour passes only the knob handle.
+- `uim.widget.PlaybackControl`: the active-range handles were drawn one
+  step to the right of the range bar they bound (the bar offset from
+  `Minimum`, the handles from zero).
 
 ### Changed — Pointer-tool arithmetic lives in `uim.interface.internal`
 
