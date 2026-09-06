@@ -181,35 +181,13 @@ classdef PointerManager < handle
             % if ~obj.isCursorInsideAxes(obj.Axes); return; end
             % disp(event.Key)
 
-            wasCaptured = true;
+            wasCaptured = false;
             if isempty(event.Modifier)
-                switch event.Key
-                    case 'x'
-                        obj.togglePointerMode('crop')
-                    case 'q'
-                        obj.togglePointerMode('zoomIn')
-                    case 'w'
-                        obj.togglePointerMode('zoomOut')
-                    case 'y'
-                        obj.togglePointerMode('pan')
-                    case 'i'
-                        obj.togglePointerMode('dataCursor')
-                    case 's'
-                        obj.togglePointerMode('selectObject')
-                    case 'd'
-                        obj.togglePointerMode('polyDraw')
-                    case 'o'
-                        obj.togglePointerMode('circleSelect')
-                    case 'a'
-                        obj.togglePointerMode('autoDetect')
-                    case 't'
-                        obj.togglePointerMode('freehandDraw')
-
-                    otherwise
-                        wasCaptured = false;
+                toolName = uim.interface.internal.keyToPointerToolName(event.Key);
+                if ~isempty(toolName)
+                    obj.togglePointerMode(toolName)
+                    wasCaptured = true;
                 end
-            else
-                wasCaptured = false;
             end
 
             % 2) Call pointertool's keypress
@@ -378,24 +356,10 @@ classdef PointerManager < handle
             end
 
             % The window-level event data carries no Button; translate
-            % the figure SelectionType for tools that check evt.Button.
-            % 'extend' is shift+left OR middle, so CurrentModifier is
-            % consulted to report shift+left as button 1. 'alt' (right OR
-            % ctrl+left) reports 3: on macOS ctrl+click is the secondary
-            % click, so tools leave it to the context menu.
-            modifiers = obj.Figure.CurrentModifier;
-            switch obj.Figure.SelectionType
-                case 'alt'
-                    buttonNumber = 3;
-                case 'extend'
-                    if any(strcmp(modifiers, 'shift'))
-                        buttonNumber = 1;
-                    else
-                        buttonNumber = 2;
-                    end
-                otherwise
-                    buttonNumber = 1;
-            end
+            % the figure SelectionType (and modifiers) for tools that
+            % check evt.Button.
+            buttonNumber = uim.interface.internal.selectionTypeToButton(...
+                obj.Figure.SelectionType, obj.Figure.CurrentModifier);
 
             eventData = struct('Button', buttonNumber, ...
                 'HitObject', hitObject, 'Point', event.Point, ...
@@ -466,14 +430,8 @@ classdef PointerManager < handle
         function tf = isCursorInsideAxes(~, hAx)
 
             currentPoint = hAx.CurrentPoint(1, 1:2);
-
-            xLim = hAx.XLim;
-            yLim = hAx.YLim;
-
-            axLim = [xLim(1), yLim(1), xLim(2), yLim(2)];
-
-            % Check if mousepoint is within axes limits.
-            tf = ~any(any(diff([axLim(1:2); currentPoint; axLim(3:4)]) < 0));
+            tf = uim.interface.internal.isPointInsideLimits(...
+                currentPoint, hAx.XLim, hAx.YLim);
         end
 
         function pointerTool = getMouseEventPointerTool(obj)

@@ -63,9 +63,10 @@ classdef ZoomIn < uim.interface.PointerTool & uim.interface.Zoomable & ...
             currentPoint = get(obj.Axes, 'CurrentPoint');
             currentPoint = currentPoint(1, 1:2);
 
-            deltaErr = mean( [diff(obj.Axes.XLim),diff(obj.Axes.YLim) ] ) / 100;
+            isClick = uim.interface.internal.isClickWithoutDrag(...
+                obj.AnchorPoint, currentPoint, obj.Axes.XLim, obj.Axes.YLim);
 
-            if all((abs(obj.AnchorPoint - currentPoint)) < deltaErr) % No movement
+            if isClick
                 if ~isempty(obj.ZoomInFcn)
                     if obj.RunDefault
                         obj.imageZoom('in')
