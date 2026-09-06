@@ -5,31 +5,8 @@ function hP = patchLineDrawing(ax, im, varargin)
 
     opt = uim.utility.parseNameValue(def, varargin{:});
 
-    % Crop image.
     if opt.cropImage
-        [height, ~, ~] = size(im);
-
-        A = arrayfun(@(i) find( im(i, :, 1) ~= 255, 1, 'first')-1, 1:height, 'uni', 0 );
-        B = arrayfun(@(i) find( im(i, :, 1) ~= 255, 1, 'last')+1, 1:height, 'uni', 0);
-
-        cropLeft = min([A{:}]);
-        cropRight = max([B{:}]);
-        if cropLeft == 0; cropLeft = 1; end
-        if cropRight > size(im, 2); cropRight = size(im, 2); end
-
-        im = im(:, cropLeft:cropRight, :);
-
-        [~, width, ~] = size(im);
-
-        C = arrayfun(@(i) find( im(:, i, 1) ~= 255, 1, 'first')-1, 1:width, 'uni', 0 );
-        D = arrayfun(@(i) find( im(:, i, 1) ~= 255, 1, 'last')+1, 1:width, 'uni', 0 );
-
-        cropTop = min([C{:}]);
-        cropBot = max([D{:}]);
-        if cropTop == 0; cropTop = 1; end
-        if cropBot > size(im, 1); cropBot = size(im, 1); end
-
-        im = im(cropTop:cropBot, :, :);
+        im = uim.graphics.internal.cropImageToContent(im);
     end
 
     %% Get coordinates of edges

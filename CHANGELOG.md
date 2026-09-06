@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed — Widget-layer arithmetic lives in `internal` namespaces
+
+- `uim.control.internal`: `contentOffsetInBox` (button text and icon
+  placement), `fittedIconDimension` (icon sizing).
+- `uim.widget.internal`: `alignRunStart` (toolbar button runs),
+  `wrapMessageLines` (message box folding).
+- `uim.graphics.internal`: `boundingBoxAnchor` (vector-image
+  positioning), `cropImageToContent` (icon rasters).
+- `uim.mixin.internal`: `rescaleChildPosition` (resizable children).
+
+### Fixed
+
+- `uim.graphics.ImageVector`: changing the alignment to 'right',
+  'center', 'top' or 'middle' moved the image by the wrong amount (a
+  sign error in the anchor shift); all anchors now go through
+  `boundingBoxAnchor`.
+- `uim.widget.ChannelIndicator`: assigning a `ChannelColors` list shorter
+  than the previous one errored; the update now covers the indicators
+  the new list describes.
+- `uim.widget.MessageBox`: a message too wide for even one character per
+  line could loop forever while folding; the wrapper now always makes
+  progress.
+
 ### Changed — Pointer-tool arithmetic lives in `uim.interface.internal`
 
 The zoom, pan, axis-drag, selection-rectangle and crop arithmetic of the

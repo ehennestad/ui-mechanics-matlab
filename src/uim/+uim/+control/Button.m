@@ -187,36 +187,17 @@ classdef Button < uim.abstract.Control
 
             if isempty(obj.ButtonText); return; end
 
-            % Todo (UI4) Create dependent properties for innerpostion
-            buttonTextWidth = obj.ButtonText.Extent(3);
-            buttonInnerWidth = obj.Position(3);
-
-            % Align text horizontally within button:
-            switch obj.HorizontalTextAlignment
-                case 'left'
-                    dX = obj.Padding(1);
-                case 'center'
-                    dX = (buttonInnerWidth - buttonTextWidth) / 2;
-                case 'right'
-                    dX = obj.Position(3) - obj.Padding(3) - buttonTextWidth;
-            end
-
-            % Align text vertically within button:
-            switch obj.VerticalTextAlignment
-                case 'bottom'
-                    dY = obj.Padding(2);
-                case 'middle'
-                    dY = (obj.Position(4) - obj.ButtonText.Extent(4))/2;
-                case 'top'
-                    dY = obj.Position(4) - obj.Padding(4) - obj.ButtonText.Extent(4);
-            end
+            textSize = obj.ButtonText.Extent(3:4);
+            offset = uim.control.internal.contentOffsetInBox(...
+                obj.Position(3:4), textSize, obj.Padding, ...
+                obj.HorizontalTextAlignment, obj.VerticalTextAlignment);
 
             % Todo: Expand to more cases...
             if ~isempty(obj.Icon)
-                dX = dX + obj.ButtonIcon.Width + obj.IconTextSpacing;
+                offset(1) = offset(1) + obj.ButtonIcon.Width + obj.IconTextSpacing;
             end
 
-            obj.ButtonText.Position(1:2) = obj.Position(1:2) + [dX, dY];
+            obj.ButtonText.Position(1:2) = obj.Position(1:2) + offset;
         end
 
         function autoWrapButtonText(obj)
@@ -268,24 +249,18 @@ classdef Button < uim.abstract.Control
         function updateIconSize(obj)
         %updateIconSize Update size of the icon within the button
 
-            % Get aspect ratios of icon and button...
-            iconAr = obj.ButtonIcon.Width / obj.ButtonIcon.Height;
-            buttonAr = (obj.Position(3) - sum(obj.Padding([1,3]))) / ...
-                            (obj.Position(4) - sum(obj.Padding([2,4])));
+            iconAspectRatio = obj.ButtonIcon.Width / obj.ButtonIcon.Height;
+            innerSize = obj.Size - obj.Padding(1:2) - obj.Padding(3:4);
 
-            if all(~isnan(obj.IconSize))
-                if iconAr > 1
-                    obj.ButtonIcon.Width = obj.IconSize(1);
-                else
-                    obj.ButtonIcon.Height = obj.IconSize(2);
-                end
-            else
-                %... in order to scale icon to fit within button
-                if iconAr >= buttonAr
-                    obj.ButtonIcon.Width = obj.Size(1) - sum(obj.Padding([1,3]));
-                else
-                    obj.ButtonIcon.Height = obj.Size(2) - sum(obj.Padding([2,4]));
-                end
+            [dimension, value] = uim.control.internal.fittedIconDimension(...
+                iconAspectRatio, innerSize, obj.IconSize);
+
+            % The icon keeps its aspect ratio, so one dimension suffices
+            switch dimension
+                case 'width'
+                    obj.ButtonIcon.Width = value;
+                case 'height'
+                    obj.ButtonIcon.Height = value;
             end
         end
 
@@ -300,20 +275,10 @@ classdef Button < uim.abstract.Control
                 iconSize = [obj.ButtonIcon.MarkerSize, obj.ButtonIcon.MarkerSize];
             end
 
-            % Calculate offset deltaX
-            switch obj.IconAlignment
-                case 'left'
-                    deltaX = obj.Padding(1);
-                case 'center'
-                    deltaX = (obj.Position(3) - iconSize(1)) / 2;
-                case 'right'
-                    deltaX = obj.Position(3) - obj.Padding(3) - iconSize(1);
-            end
+            offset = uim.control.internal.contentOffsetInBox(...
+                obj.Position(3:4), iconSize, obj.Padding, obj.IconAlignment, 'middle');
 
-            % Calculate offset deltaY
-            deltaY = (obj.Position(4) - iconSize(2)) / 2;
-
-            obj.ButtonIcon.Position = obj.Position(1:2) + [deltaX, deltaY];
+            obj.ButtonIcon.Position = obj.Position(1:2) + offset;
         end
 
         function plotSymbol(obj)

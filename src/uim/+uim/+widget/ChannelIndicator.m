@@ -146,11 +146,16 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
             obj.postSetChannelColors(oldColors)
         end
         function postSetChannelColors(obj, oldColors)
-            if ~isempty(obj.ChannelIndicators)
-                for i = 1:numel(oldColors)
-                    if ~isequal(oldColors{i}, obj.ChannelColors{i})
-                        obj.updateIndicatorColor(i, obj.ChannelColors{i})
-                    end
+            if isempty(obj.ChannelIndicators); return; end
+
+            % Compare against the previous list where it exists; entries
+            % beyond it (or beyond the indicators) are new or unused.
+            numIndicators = min(numel(obj.ChannelColors), numel(obj.ChannelIndicators));
+            for i = 1:numIndicators
+                isChanged = i > numel(oldColors) || ...
+                    ~isequal(oldColors{i}, obj.ChannelColors{i});
+                if isChanged
+                    obj.updateIndicatorColor(i, obj.ChannelColors{i})
                 end
             end
         end

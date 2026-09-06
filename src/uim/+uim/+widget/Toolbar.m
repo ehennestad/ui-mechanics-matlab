@@ -396,15 +396,8 @@ classdef Toolbar < uim.abstract.Container
             toolbarLocation = obj.Position(obj.DimL_) + obj.Padding(obj.DimL_);
             toolbarSize = obj.Position(obj.DimL_+2) - obj.Padding(obj.DimL_) - obj.Padding(obj.DimL_+2);
 
-            anchorPoint = toolbarLocation;
-
-            if any( strcmp(obj.ComponentAlignment, {'left', 'top'}) )
-                % Pass
-            elseif any( strcmp(obj.ComponentAlignment, {'center', 'middle'}) )
-                anchorPoint = anchorPoint + toolbarSize/2 - buttonExtents/2;
-            elseif any( strcmp(obj.ComponentAlignment, {'right', 'bottom'}) )
-                anchorPoint = anchorPoint + toolbarSize - buttonExtents;
-            end
+            anchorPoint = uim.widget.internal.alignRunStart(...
+                toolbarLocation, toolbarSize, buttonExtents, obj.ComponentAlignment);
 
             % Start replacing buttons starting from left/top
             for i = 1:numel(obj.Buttons)

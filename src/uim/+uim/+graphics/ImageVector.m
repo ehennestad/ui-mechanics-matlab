@@ -199,27 +199,30 @@ classdef ImageVector < handle
         end
 
         function reposition(obj, newAlignment)
+        %reposition Shift the shapes so the new alignment anchor sits at Position
+        %
+        %   newAlignment is one horizontal ('left', 'center', 'right') or
+        %   vertical ('bottom', 'middle', 'top') alignment; only that
+        %   coordinate moves.
 
             bbox = obj.BoundingBox;
-            [dx,dy] = deal(0);
+            shift = [0, 0];
 
             switch newAlignment
-
-                case 'left'
-                    dx = obj.CurrentPosition(1) - bbox(1);
-                case 'right'
-                    dx = obj.CurrentPosition(1) - bbox(1)+bbox(3);
-                case 'center'
-                    dx = obj.CurrentPosition(1) - bbox(1)+bbox(3)/2;
-                case 'top'
-                    dy = obj.CurrentPosition(2) - bbox(2)+bbox(4);
-                case 'bottom'
-                    dy = obj.CurrentPosition(2) - bbox(2);
-                case 'middle'
-                    dy = obj.CurrentPosition(2) - bbox(2)+bbox(4)/2;
+                case {'left', 'center', 'right'}
+                    anchor = uim.graphics.internal.boundingBoxAnchor(...
+                        bbox, newAlignment, 'bottom');
+                    shift(1) = obj.CurrentPosition(1) - anchor(1);
+                case {'bottom', 'middle', 'top'}
+                    anchor = uim.graphics.internal.boundingBoxAnchor(...
+                        bbox, 'left', newAlignment);
+                    shift(2) = obj.CurrentPosition(2) - anchor(2);
+                otherwise
+                    error('uim:graphics:InvalidAlignment', ...
+                        'Unknown alignment "%s".', newAlignment)
             end
 
-            obj.translate([dx, dy]);
+            obj.translate(shift);
         end
     end
 
@@ -336,27 +339,8 @@ classdef ImageVector < handle
 
         function set.Position(obj, value)
 
-            bbox = obj.BoundingBox;
-            anchorPosition = [0,0];
-
-            switch obj.VerticalAlignment
-                case 'top'
-                    anchorPosition(2) = bbox(2)+bbox(4);
-                case 'bottom'
-                    anchorPosition(2) = bbox(2);
-                case 'middle'
-                    anchorPosition(2) = bbox(2)+bbox(4)/2;
-            end
-
-            switch obj.HorizontalAlignment
-
-                case 'left'
-                    anchorPosition(1) = bbox(1);
-                case 'right'
-                    anchorPosition(1) = bbox(1)+bbox(3);
-                case 'center'
-                    anchorPosition(1) = bbox(1)+bbox(3)/2;
-            end
+            anchorPosition = uim.graphics.internal.boundingBoxAnchor(...
+                obj.BoundingBox, obj.HorizontalAlignment, obj.VerticalAlignment);
 
             shift = value - anchorPosition;
             obj.translate(shift);

@@ -339,37 +339,12 @@ classdef MessageBox < uim.mixin.Resizable
             extent = obj.MessageText.Extent;
             obj.MessageText.String = '';
 
-            nLines = ceil(extent(3));
-            %Extent is in normalized units, so the extent says how many
-            %lines the text should be divided on.
+            % Extent is in normalized units, so extent(3) is the number of
+            % textbox widths the single-line message occupies. Leave a
+            % margin of ten characters per line.
+            nCharsPerLine = max(floor(nChars ./ extent(3)) - 10, 1);
 
-            nCharsPerLine = floor(nChars ./ extent(3) ) - 10; % -10 to leave some margin
-
-            % Start loop where message is split on spaces to create lines
-            % that will not exceed the width of the textbox. Loop finished
-            % when it has gone over the whole message. Note: Messages are
-            % also split on file separator, so that long pathstrings are
-            % also split
-
-            % Todo: Improve/simplify code.
-
-            tmpmsg = msg;
-            lines = cell(nLines, 1);
-            finished = false;
-            c = 1;
-            while ~finished
-                [split, M] = strsplit(tmpmsg, {filesep, ' '});
-                M{end+1} = '';
-                a = cumsum( arrayfun(@(i) numel(split{i}) + i-1, 1:numel(split) ) );
-                b = a-nCharsPerLine;
-                b(b>0) = [];
-                [~, ind] = max(b);
-
-                lines{c} = strjoin( cat(1, split(1:ind), M(1:ind)), '');
-                tmpmsg = strjoin( cat(1, split(ind+1:end), M(ind+1:end)), '');
-                c = c + 1;
-                if isempty(tmpmsg); finished = true; end
-            end
+            lines = uim.widget.internal.wrapMessageLines(msg, nCharsPerLine);
 
             obj.MessageText.Interpreter = 'none';
             obj.MessageText.String = lines;
