@@ -112,7 +112,7 @@ classdef OverviewIndicator < uim.abstract.Control
         %centerViewOn Center the view on a data point and notify the host
 
             viewSize = diff(obj.ViewLimits, 1, 2);
-            newLimits = [x, x; y, y] + [-1, 1; -1, 1].*viewSize/2;
+            newLimits = uim.widget.internal.centeredLimits([x, y], viewSize');
             obj.applyViewFromUser(newLimits)
         end
     end
@@ -177,8 +177,8 @@ classdef OverviewIndicator < uim.abstract.Control
             paddingSize = obj.Padding(1:2) + obj.Padding(3:4);
             maxInnerSize = obj.ConfiguredSize - paddingSize;
 
-            obj.LocalScale = min(maxInnerSize(:)./dataSize);
-            frameSize = (dataSize*obj.LocalScale)';
+            [obj.LocalScale, frameSize] = uim.widget.internal.letterboxFit(...
+                dataSize', maxInnerSize);
 
             % Shrink the widget box to hug the letterboxed frame, so the
             % chip background does not extend past the outline. The fit
@@ -211,33 +211,15 @@ classdef OverviewIndicator < uim.abstract.Control
 
         function [xLocal, yLocal] = dataToLocal(obj, xData, yData)
         %dataToLocal Convert data coordinates to canvas-local pixels
-
-            xLocal = obj.FrameOrigin(1) ...
-                + (xData - obj.DataLimits(1,1))*obj.LocalScale;
-
-            yRelative = (yData - obj.DataLimits(2,1))*obj.LocalScale;
-            frameHeight = diff(obj.DataLimits(2,:))*obj.LocalScale;
-
-            if strcmp(obj.YDir, 'reverse')
-                yLocal = obj.FrameOrigin(2) + frameHeight - yRelative;
-            else
-                yLocal = obj.FrameOrigin(2) + yRelative;
-            end
+            [xLocal, yLocal] = uim.widget.internal.mapDataToFrame(...
+                xData, yData, obj.DataLimits, obj.FrameOrigin, ...
+                obj.LocalScale, obj.YDir);
         end
 
         function [x, y] = localToData(obj, localPoint)
         %localToData Convert a canvas-local pixel point to data coordinates
-
-            x = obj.DataLimits(1,1) ...
-                + (localPoint(1) - obj.FrameOrigin(1))/obj.LocalScale;
-
-            frameHeight = diff(obj.DataLimits(2,:))*obj.LocalScale;
-            if strcmp(obj.YDir, 'reverse')
-                yRelative = obj.FrameOrigin(2) + frameHeight - localPoint(2);
-            else
-                yRelative = localPoint(2) - obj.FrameOrigin(2);
-            end
-            y = obj.DataLimits(2,1) + yRelative/obj.LocalScale;
+            [x, y] = uim.widget.internal.mapFrameToData(localPoint, ...
+                obj.DataLimits, obj.FrameOrigin, obj.LocalScale, obj.YDir);
         end
 
         function onVisibleChanged(obj, ~)
@@ -304,11 +286,8 @@ classdef OverviewIndicator < uim.abstract.Control
         function applyViewFromUser(obj, newLimits)
         %applyViewFromUser Clamp to the data extent, update and notify
 
-            for dim = 1:2
-                overshoot = max(0, obj.DataLimits(dim,1) - newLimits(dim,1)) ...
-                    - max(0, newLimits(dim,2) - obj.DataLimits(dim,2));
-                newLimits(dim,:) = newLimits(dim,:) + overshoot;
-            end
+            newLimits = uim.widget.internal.clampLimitsToExtent(...
+                newLimits, obj.DataLimits);
 
             if isequal(newLimits, obj.ViewLimits); return; end
 

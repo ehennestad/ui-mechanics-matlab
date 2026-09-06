@@ -439,60 +439,15 @@ methods (Access = private) % Methods for setting up gui
     %setTileIndices Create indices for referencing data in tiles
     %
     %   This method is used for setting up an interface for easily updating
-    %   data within individual tiles.
-    %
-    %   The following properties are set:
-    %
-    %       tileIndices  : Cell array of linear indices for each pixel in a
-    %                      tile. Size is nRows x nCols
-    %       tileCorners  : Matrix with x- and y- pixel coordinates for each
-    %                      tile's corner. Size is nTiles x 2 (x = 1st col,
-    %                      y = 2nd col)
-    %       tileCenters  : Not implemented here.
-    %       tileIndexMap : A matrix with same size as the image object's
-    %                      CData. The value of each element is the tile
-    %                      number corresponding to the pixel at that
-    %                      position. Pixels between tiles are set to NaN
+    %   data within individual tiles. See
+    %   uim.graphics.internal.computeTileLayout for the fields that are set.
 
-        % Pixel coordinate for the position of rows and columns
-        x0 = ((1:obj.NumColumns)-1) .* (obj.ImageSize(2)+obj.PixelPadding) + 1;
-        y0 = ((1:obj.NumRows)-1) .* (obj.ImageSize(1)+obj.PixelPadding) + 1;
+        layout = uim.graphics.internal.computeTileLayout(obj.GridSize, ...
+            obj.ImageSize, obj.PixelPadding, obj.PlotOrder);
 
-        % Pixel coordinates for all pixels that are within rows/columns
-        X = arrayfun(@(x) (x-1) + (1:obj.ImageSize(2)), x0, 'uni', 0);
-        Y = arrayfun(@(y) (y-1) + (1:obj.ImageSize(1)), y0, 'uni', 0);
-
-        % Determine the ordering of tiles based on the plotOrder property
-        tileOrder = 1:obj.NumRows*obj.NumColumns;
-        switch obj.PlotOrder
-            case 'columnwise'
-                tileOrder = reshape(tileOrder, obj.NumRows, obj.NumColumns);
-            case 'rowwise'
-                tileOrder = reshape(tileOrder, obj.NumColumns, obj.NumRows)';
-        end
-
-        % Flip upside down because image coordinates are flipped.
-%             tileOrder = flipud(tileOrder); I dont remember why this was
-%             commented out, but probably for a good reason.
-
-        % Allocate property values.
-        obj.TileIndices = cell(size(tileOrder));
-        obj.TileCorners = zeros(numel(tileOrder), 2);
-        fullSize = [obj.PixelHeight, obj.PixelWidth];
-        obj.TileIndexMap = nan(fullSize);
-
-        % Assign the values. This is done so that tileIndices are assigned
-        % in either a row- or a column-based manner.
-        for j = 1:size(tileOrder,1)
-            for i = 1:size(tileOrder,2)
-                [ii, jj] = meshgrid(X{i}, Y{j});
-                obj.TileIndices{tileOrder(j,i)} = sub2ind(fullSize, jj, ii);
-                obj.TileCorners(tileOrder(j,i), :) = [X{i}(1), Y{j}(1)];
-
-                tileNum = tileOrder(j,i);
-                obj.TileIndexMap(Y{j}, X{i}) = tileNum;
-            end
-        end
+        obj.TileIndices = layout.TileIndices;
+        obj.TileCorners = layout.TileCorners;
+        obj.TileIndexMap = layout.TileIndexMap;
     end
 
     function h = initializePlotHandles(obj, hClass, n)
@@ -590,21 +545,15 @@ end
 methods
 
     function tileNum = hittest(obj, x, y)
+    %hittest Tile number at an axes coordinate (default: the pointer)
 
         if nargin < 3
-            mousePoint = obj.Axes.CurrentPoint(1,2);
-            mousePoint = round(mousePoint);
+            mousePoint = round(obj.Axes.CurrentPoint(1, 1:2));
             x = mousePoint(1); y = mousePoint(2);
         end
 
-        x = round(x .* obj.ScaleFactor(1));
-        y = round(y .* obj.ScaleFactor(2));
-
-        if x >= 1 && x <= obj.PixelWidth && y >= 1 && y <= obj.PixelHeight
-            tileNum = obj.TileIndexMap(y, x);
-        else
-            tileNum = nan;
-        end
+        tileNum = uim.graphics.internal.tileAtPoint(...
+            obj.TileIndexMap, x, y, obj.ScaleFactor);
     end
 
 % % Methods to get dependent properties
@@ -625,19 +574,15 @@ methods
     end
 
     function pixelWidth = get.PixelWidth(obj)
-%         pixelWidth = obj.NumColumns .* obj.ImageSize(2) + ...
-%                             (obj.NumColumns-1) .* obj.Padding;
-
-        pixelWidth = obj.NumColumns .* obj.ImageSize(2);
-        pixelWidth = pixelWidth + obj.PixelPadding .* (obj.NumColumns-1);
+        pixelSize = uim.graphics.internal.tileGridPixelSize(...
+            obj.GridSize, obj.ImageSize, obj.PixelPadding);
+        pixelWidth = pixelSize(2);
     end
 
     function pixelHeight = get.PixelHeight(obj)
-%          pixelHeight = obj.NumRows .* obj.ImageSize(1) + ...
-%                             (obj.NumRows-1) .* obj.Padding;
-
-        pixelHeight = obj.NumRows .* obj.ImageSize(1);
-        pixelHeight = pixelHeight + obj.PixelPadding .* (obj.NumRows-1);
+        pixelSize = uim.graphics.internal.tileGridPixelSize(...
+            obj.GridSize, obj.ImageSize, obj.PixelPadding);
+        pixelHeight = pixelSize(1);
     end
 
     function pixelPadding = get.PixelPadding(obj)
@@ -694,23 +639,11 @@ methods
     end
 
     function pos = getTileCenterAxesCoords(obj, tileNum)
-
-        %Position of tile center.
-
-        pad = obj.PixelPadding ./ obj.ScaleFactor;
-        origImSize = obj.ImageSize ./ obj.ScaleFactor;
-
-        iRow = ceil( tileNum / obj.NumColumns );
-        iCol = mod(tileNum-1, obj.NumColumns)+1;
-
-        pos = zeros(1,2);
-        pos(1) = origImSize(2)*(iCol-1) + pad(1)*(iCol-1) + origImSize(2)/2;
-        pos(2) = origImSize(1)*(iRow-1) + pad(2)*(iRow-1) + origImSize(1)/2;
-
-        pos = pos + 0.5;
+    %getTileCenterAxesCoords Axes coordinate of a tile's centre
+        pos = uim.graphics.internal.tileCenter(tileNum, obj.NumColumns, ...
+            obj.ImageSize, obj.PixelPadding, obj.ScaleFactor);
     end
 
-% % Methods to set properties
     function set.GridSize(obj, gridSize)
 
         validateattributes(gridSize, {'numeric'}, {'numel', 2})

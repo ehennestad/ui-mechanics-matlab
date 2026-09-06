@@ -643,30 +643,28 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         end
 
         function x = getSliderXposition(obj, sliderValue)
-        %getSliderXposition Get pixel position from slider value
+        %getSliderXposition Pixel position of a value relative to Minimum
+        %
+        %   sliderValue is measured from Minimum (a value of 0 sits at the
+        %   start of the track), so the same mapping also converts a
+        %   value span into a pixel length.
 
-            axLength = obj.SliderAxes.Position(3);
-            sliderLengthPix = axLength - obj.BarPadding*2;
-            sliderLengthVal = obj.Maximum - obj.Minimum;
-
-            x = sliderLengthPix / sliderLengthVal .* (sliderValue);
-
-            % Offset x coordinates according to padding value of slider
-            % within axes.
-            x = x + obj.BarPadding;
+            x = uim.widget.internal.mapValueToPixel(sliderValue, ...
+                [0, obj.Maximum - obj.Minimum], obj.BarPadding, ...
+                obj.getTrackLength());
         end
 
         function val = getSliderValue(obj, xPosition)
+        %getSliderValue Slider value at a pixel position along the track
 
-            % Correct for padding offset
-            xPosition = xPosition - obj.BarPadding;
+            val = uim.widget.internal.mapPixelToValue(xPosition, ...
+                [obj.Minimum, obj.Maximum], obj.BarPadding, ...
+                obj.getTrackLength());
+        end
 
-            axLength = obj.SliderAxes.Position(3);
-            sliderLengthPix = axLength - obj.BarPadding*2;
-            sliderLengthVal = obj.Maximum - obj.Minimum;
-
-            val = xPosition / sliderLengthPix .* sliderLengthVal;
-            val = val + obj.Minimum;
+        function trackLength = getTrackLength(obj)
+        %getTrackLength Pixel length of the track inside the bar padding
+            trackLength = obj.SliderAxes.Position(3) - obj.BarPadding*2;
         end
     end
 

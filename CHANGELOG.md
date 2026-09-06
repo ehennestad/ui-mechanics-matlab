@@ -6,6 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed — UI-free geometry lives in `internal` namespaces
+
+The coordinate and value arithmetic of the slider family, the scrollbar,
+the overview indicator and the tiled image axes is extracted into pure
+functions that are unit-tested without graphics. Widget behaviour is
+unchanged; the widgets now delegate to:
+
+- `uim.widget.internal` — `mapValueToPixel`/`mapPixelToValue`,
+  `snapToStep`, `nearestRangeKnob`, `tickMarkCoordinates`, `knobOutline`
+  (Slider, RangeSlider, PlaybackControl); `clampScrollChange`,
+  `acceptScrollStep`, `scrollBarSize` (ScrollBar); `letterboxFit`,
+  `mapDataToFrame`/`mapFrameToData`, `clampLimitsToExtent`,
+  `centeredLimits` (OverviewIndicator).
+- `uim.graphics.internal` — `computeTileLayout`, `tileGridPixelSize`,
+  `tileCenter`, `tileAtPoint` (TiledImageAxes).
+- `uim.utility.internal` — `findMonitorContainingPoint`
+  (getCurrentScreenSize).
+
+Namespace policy: `uim.utility` is the public helper API. Helpers that
+only serve one package live in that package's `internal` sub-namespace;
+`uim.internal` is reserved for helpers shared across namespaces.
+
+### Fixed
+
+- `uim.widget.ScrollBar`: a horizontal scrollbar wrote its track extent
+  to `YData` instead of `XData` when the limits changed.
+- `uim.graphics.TiledImageAxes`: `hittest()` without coordinates read a
+  single element of `CurrentPoint` and errored.
+- `uim.widget.Slider`: the value label was positioned on the full widget
+  width instead of the padded knob track.
+
+### Tests
+
+New headless test classes: `TestWidgetGeometry`, `TestTileLayout`,
+`TestLayoutUtilities`, `TestColorAndDataUtilities`, `TestSliderWidgets`.
+
 ### Added — New widgets: DropDown, Spinner, Readout
 
 Three new Component-family controls, usable on any supported parent
