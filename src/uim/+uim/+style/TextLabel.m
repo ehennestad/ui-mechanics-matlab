@@ -1,4 +1,9 @@
 classdef TextLabel < uim.style.ButtonScheme
+%TextLabel Styling for a static label
+%
+%   Blue text with no fill and no border. A label is not interactive, so
+%   every state uses the same colours; it takes a button scheme only
+%   because it is drawn by the same control.
 
     properties (Constant)
 

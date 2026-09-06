@@ -1,4 +1,7 @@
 classdef TableDark < uim.style.TableTheme
+%TableDark Table palette for dark backgrounds
+%
+%   Near-black body with light text, and a slate blue selection.
 
     properties (Constant)
 

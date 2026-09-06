@@ -1,4 +1,7 @@
 classdef ButtonLightMode < uim.style.ButtonScheme
+%ButtonLightMode Button styling for light backgrounds
+%
+%   Blue labels on an opaque light grey fill with a grey border.
 
     properties (Constant)
 

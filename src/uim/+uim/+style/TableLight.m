@@ -1,4 +1,7 @@
 classdef TableLight < uim.style.TableTheme
+%TableLight Table palette for light backgrounds
+%
+%   Near-white header and body with dark text, and an amber selection.
 
     properties (Constant)
 

@@ -1,4 +1,9 @@
 classdef ButtonSymbol2 < uim.style.ButtonScheme
+%ButtonSymbol2 Icon-only button styling, duplicate of ButtonSymbol
+%
+%   This differs from uim.style.ButtonSymbol only in BorderWidth, and
+%   both set BorderColor to 'none', so the two render identically.
+%   Prefer uim.style.ButtonSymbol; this class is a deletion candidate.
 
     properties (Constant)
 

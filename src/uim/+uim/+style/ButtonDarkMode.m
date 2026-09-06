@@ -1,4 +1,8 @@
 classdef ButtonDarkMode < uim.style.ButtonScheme
+%ButtonDarkMode Button styling for dark backgrounds
+%
+%   Light grey labels on a translucent dark fill with a black border,
+%   for toolbars sitting over dark content such as an image display.
 
     properties (Constant)
 
