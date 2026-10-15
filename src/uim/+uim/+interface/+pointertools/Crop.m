@@ -44,8 +44,8 @@ classdef Crop < uim.interface.PointerTool
         % Inclusive [first, last] pixel limits of the current crop, or []
         % before the first selection. Setting them before activation
         % sets the rectangle the user starts from.
-        CurrentXLim = []
-        CurrentYLim = []
+        CurrentXLim = [] % Inclusive [first, last] x pixel limits of the crop, or []
+        CurrentYLim = [] % Inclusive [first, last] y pixel limits of the crop, or []
     end
 
     properties

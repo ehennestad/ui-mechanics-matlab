@@ -83,10 +83,10 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         % a knob is released, the active colors while a knob is pressed.
         % Hovering sets the knob fill to light grey (0.95) and leaving
         % sets it to grey (0.8).
-        KnobEdgeColorInactive = ones(1,3)*0.7;
-        KnobEdgeColorActive = [0.1195    0.6095    0.5395]; % ones(1,3)*0.3; %;
-        KnobFaceColorInactive = ones(1,3)*0.8;
-        KnobFaceColorActive = ones(1,3)*0.65;
+        KnobEdgeColorInactive = ones(1,3)*0.7; % Knob edge at construction and after release
+        KnobEdgeColorActive = [0.1195    0.6095    0.5395]; % Knob edge while the knob is pressed
+        KnobFaceColorInactive = ones(1,3)*0.8; % Knob fill at construction and after release
+        KnobFaceColorActive = ones(1,3)*0.65; % Knob fill while the knob is pressed
 
         TickLength = 5 % Not used; the slider draws no tick marks
 
