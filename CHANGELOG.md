@@ -16,6 +16,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   positioning), `cropImageToContent` (icon rasters).
 - `uim.mixin.internal`: `rescaleChildPosition` (resizable children).
 
+### Changed
+
+- Moved classes and functions into the package that owns them:
+  `uim.interface.Zoomable` and `uim.abstract.ToolbarComponent` are now
+  `uim.mixin.Zoomable` and `uim.mixin.ToolbarComponent` (both are mixins,
+  not interaction machinery or abstract bases), and the single-function
+  `uim.menu` package is gone — `createColormapList` now lives in
+  `uim.graphics.internal` beside its only caller.
+
+### Removed
+
+- `uim.shape.getIcon`, which returned play/pause glyph coordinates. It was
+  unreferenced — `uim.widget.PlaybackControl` defines its own glyphs — and
+  it was not a shape.
+
 ### Fixed
 
 - `uim.graphics.ImageVector`: `Position` is the point named by the
@@ -267,7 +282,7 @@ see git history for the complete list):
 | `uim.tab` | `uim.Tab` |
 | `uim.tabgroup` | `uim.TabGroup` |
 | `uim.interface.abstractPointer` | `uim.interface.PointerTool` |
-| `uim.interface.zoom` | `uim.interface.Zoomable` |
+| `uim.interface.zoom` | `uim.mixin.Zoomable` |
 | `uim.interface.pointerManager` | `uim.interface.PointerManager` |
 | `uim.interface.pointerTool.*` (namespace) | `uim.interface.pointertools.*` |
 | `uim.interface.pointertools.axisZoom/crop/dataCursor/pan/zoomIn/zoomOut` | `AxisZoom/Crop/DataCursor/Pan/ZoomIn/ZoomOut` |
@@ -283,7 +298,7 @@ see git history for the complete list):
 | `uim.style.*` (18 classes) | PascalCase (`uim.style.ButtonScheme`, `uim.style.TableTheme`, etc.) |
 | `uim.decorator.box/image` | `uim.decorator.Box/Image` |
 | `uim.graphics.imageVector/tiledImageAxes` | `uim.graphics.ImageVector/TiledImageAxes` |
-| `uim.abstract.toolbarComponent` | `uim.abstract.ToolbarComponent` |
+| `uim.abstract.toolbarComponent` | `uim.mixin.ToolbarComponent` |
 
 The `+pointerTool` namespace was renamed to `+pointertools` (lowercase,
 plural) rather than `+pointerTool`, to avoid a case-only collision with the
