@@ -539,14 +539,17 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             end
         end
 
-        function onMouseEnterKnob(obj, hSource, ~)
+        function onMouseEnterKnob(obj, hSource)
+        %onMouseEnterKnob Lighten a knob while the pointer rests on it
 
             if ~obj.IsKnobPressed
                 hSource.FaceColor = ones(1,3) * 0.95;
             end
         end
 
-        function onMouseExitKnob(obj, hSource, ~)
+        function onMouseExitKnob(obj, hSource)
+        %onMouseExitKnob Restore a knob when the pointer leaves it
+
             if ~obj.IsKnobPressed
                 hSource.FaceColor = ones(1,3) * 0.8;
             end

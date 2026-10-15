@@ -1,11 +1,12 @@
 classdef ImageVector < handle
 %ImageVector Plot a set of polygons as one object.
 %
-%   Methods for placing and scaling all polygons belonging to the group
-
-    % NB: setting position and alignment of image has some bugs. setting
-    % alignment first and then position works, but not always the other
-    % way around?
+%   Methods for placing and scaling all polygons belonging to the group.
+%   Position is the point named by HorizontalAlignment and
+%   VerticalAlignment (for example the bottom-left corner); changing an
+%   alignment keeps Position and moves the image around it. scale (and
+%   Width and Height) resizes about the axes origin and rotate turns about
+%   the box centre; both leave Position at the anchor's new location.
 
     properties
 
@@ -85,6 +86,9 @@ classdef ImageVector < handle
             else
                 hParent.UserData.Handles = obj;
             end
+
+            obj.CurrentPosition = uim.graphics.internal.boundingBoxAnchor(...
+                obj.BoundingBox, obj.HorizontalAlignment, obj.VerticalAlignment);
         end
 
         function delete(obj)
@@ -123,11 +127,14 @@ classdef ImageVector < handle
 
             obj.CurrentAngle = obj.CurrentAngle + angle;
             obj.translate(offset);
+            obj.updateAnchorPosition()
         end
 
         function fliplr(obj)
 
             warning('off', 'MATLAB:polyshape:repairedBySimplify')
+
+            currentPositionKeep = obj.CurrentPosition;
 
             origBBox = obj.BoundingBox;
 
@@ -144,6 +151,8 @@ classdef ImageVector < handle
             obj.translate([dx, 0]);
 
             warning('on', 'MATLAB:polyshape:repairedBySimplify')
+
+            obj.CurrentPosition = currentPositionKeep;
         end
 
         function flipud(obj)
@@ -196,30 +205,45 @@ classdef ImageVector < handle
             for i = 1:obj.NumShapes
                 obj.Polygons(i).Shape = scale(obj.Polygons(i).Shape, scaleFactor);
             end
+            obj.updateAnchorPosition()
         end
 
         function reposition(obj, newAlignment)
+        %reposition Shift the shapes so the new alignment anchor sits at Position
+        %
+        %   newAlignment is one horizontal ('left', 'center', 'right') or
+        %   vertical ('bottom', 'middle', 'top') alignment; only that
+        %   coordinate of the image moves, and Position stays put.
 
             bbox = obj.BoundingBox;
-            [dx,dy] = deal(0);
+            shift = [0, 0];
 
             switch newAlignment
-
-                case 'left'
-                    dx = obj.CurrentPosition(1) - bbox(1);
-                case 'right'
-                    dx = obj.CurrentPosition(1) - bbox(1)+bbox(3);
-                case 'center'
-                    dx = obj.CurrentPosition(1) - bbox(1)+bbox(3)/2;
-                case 'top'
-                    dy = obj.CurrentPosition(2) - bbox(2)+bbox(4);
-                case 'bottom'
-                    dy = obj.CurrentPosition(2) - bbox(2);
-                case 'middle'
-                    dy = obj.CurrentPosition(2) - bbox(2)+bbox(4)/2;
+                case {'left', 'center', 'right'}
+                    anchor = uim.graphics.internal.boundingBoxAnchor(...
+                        bbox, newAlignment, 'bottom');
+                    shift(1) = obj.CurrentPosition(1) - anchor(1);
+                case {'bottom', 'middle', 'top'}
+                    anchor = uim.graphics.internal.boundingBoxAnchor(...
+                        bbox, 'left', newAlignment);
+                    shift(2) = obj.CurrentPosition(2) - anchor(2);
+                otherwise
+                    error("uim:graphics:InvalidAlignment", ...
+                        "Unknown alignment ""%s"".", newAlignment)
             end
 
-            obj.translate([dx, dy]);
+            position = obj.CurrentPosition;
+            obj.translate(shift);
+            obj.CurrentPosition = position;
+        end
+    end
+
+    methods (Access = private)
+
+        function updateAnchorPosition(obj)
+        %updateAnchorPosition Set Position to the alignment anchor of the current box
+            obj.CurrentPosition = uim.graphics.internal.boundingBoxAnchor(...
+                obj.BoundingBox, obj.HorizontalAlignment, obj.VerticalAlignment);
         end
     end
 
@@ -336,32 +360,13 @@ classdef ImageVector < handle
 
         function set.Position(obj, value)
 
-            bbox = obj.BoundingBox;
-            anchorPosition = [0,0];
-
-            switch obj.VerticalAlignment
-                case 'top'
-                    anchorPosition(2) = bbox(2)+bbox(4);
-                case 'bottom'
-                    anchorPosition(2) = bbox(2);
-                case 'middle'
-                    anchorPosition(2) = bbox(2)+bbox(4)/2;
-            end
-
-            switch obj.HorizontalAlignment
-
-                case 'left'
-                    anchorPosition(1) = bbox(1);
-                case 'right'
-                    anchorPosition(1) = bbox(1)+bbox(3);
-                case 'center'
-                    anchorPosition(1) = bbox(1)+bbox(3)/2;
-            end
+            anchorPosition = uim.graphics.internal.boundingBoxAnchor(...
+                obj.BoundingBox, obj.HorizontalAlignment, obj.VerticalAlignment);
 
             shift = value - anchorPosition;
             obj.translate(shift);
 
-            obj.CurrentPosition = obj.BoundingBox(1:2) + obj.BoundingBox(3:4)/2;
+            obj.CurrentPosition = value;
         end
 
         function position = get.Position(obj)

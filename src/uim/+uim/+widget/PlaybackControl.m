@@ -594,7 +594,9 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         function drawRangeButtons(obj)
 
             for i = 1:2
-                X = obj.getSliderXposition(obj.ActiveRange(i));
+                % Offset from Minimum, like the knob and the indicator bar,
+                % so a handle lines up with the edge of the range bar.
+                X = obj.getSliderXposition(obj.ActiveRange(i) - obj.Minimum);
 
                 if numel(obj.RangeButtons) == 2
                     set(obj.RangeButtons(i), 'XData', X);
@@ -624,7 +626,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                     barRange = max(obj.ActiveRange) - min(obj.ActiveRange);
 
                     l = obj.getSliderXposition( barRange );
-                    dx = obj.getSliderXposition( min(obj.ActiveRange) - 1 );
+                    dx = obj.getSliderXposition( min(obj.ActiveRange) - obj.Minimum );
                 case 'SliderBar'
                     l = obj.getSliderXposition( obj.Maximum - obj.Minimum );
                 case 'IndicatorBar'

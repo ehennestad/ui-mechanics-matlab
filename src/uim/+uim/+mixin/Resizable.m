@@ -205,28 +205,9 @@ classdef Resizable < uim.Handle
             %fcn = makeConstrainToRectFcn('imrect', xLim, yLim);
 
             for i = 1:numel(obj.Children)
-
-                % setPositionConstraintFcn(obj.Children(i), fcn);
-                iPosition = obj.Children(i).Position;
-
-                % Calculate new position for object
-                newPosTmp = iPosition;
-                newPosTmp(3) = newPosTmp(3) + dW*newPosTmp(3);
-                if dx == 0
-                    newPosTmp(1) = newPosTmp(1) + dW*(newPosTmp(1)-newPosition(1));
-                else
-                    newPosTmp(1) = newPosTmp(1) + dx + dW*(newPosTmp(1)+dx-newPosition(1));
-                end
-
-                newPosTmp(4) = newPosTmp(4) + dH*newPosTmp(4);
-
-                if dy == 0
-                    newPosTmp(2) = newPosTmp(2) + dH*(newPosTmp(2)-newPosition(2));
-                else
-                    newPosTmp(2) = newPosTmp(2) + dy + dH*(newPosTmp(2)+dy-newPosition(2));
-                end
-
-                obj.Children(i).setPosition(newPosTmp, 'unconstrained')
+                childPosition = uim.mixin.internal.rescaleChildPosition(...
+                    obj.Children(i).Position, oldPosition, newPosition);
+                obj.Children(i).setPosition(childPosition, 'unconstrained')
             end
         end
     end

@@ -6,6 +6,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed — Widget-layer arithmetic lives in `internal` namespaces
+
+- `uim.control.internal`: `contentOffsetInBox` (button text and icon
+  placement), `fittedIconDimension` (icon sizing).
+- `uim.widget.internal`: `alignRunStart` (toolbar button runs),
+  `wrapMessageLines` (message box folding).
+- `uim.graphics.internal`: `boundingBoxAnchor` (vector-image
+  positioning), `cropImageToContent` (icon rasters).
+- `uim.mixin.internal`: `rescaleChildPosition` (resizable children).
+
+### Fixed
+
+- `uim.graphics.ImageVector`: `Position` is the point named by the
+  alignment pair, also after a resize or rotation, and changing
+  `HorizontalAlignment` or `VerticalAlignment` keeps it and moves the
+  image around it. The alignment change used to move the image by the
+  wrong amount, and `Position` read back the box centre or, after a
+  resize, a point the image had left.
+- `uim.widget.ChannelIndicator`: assigning a `ChannelColors` list shorter
+  than the previous one errored; the update now covers the indicators
+  the new list describes.
+- `uim.widget.MessageBox`: a word longer than the per-line budget made
+  the rest of the message disappear; such a word now takes a line of
+  its own. Lines also hold as many words as fit, where the old length
+  estimate over-counted the spaces.
+- `uim.widget.FrameMarker`: a marker constructed with a `Value` was drawn
+  at x = 1 instead, and assigning `Visible` did nothing. Both properties
+  now reach the graphics.
+- `uim.widget.PlaybackControl`: the active-range handles offset a value
+  from zero and the range bar offset it from 1, so the handles sat one
+  step right of the bar, and with `Minimum` above 1 both were shifted.
+  Both now offset from `Minimum`.
+
 ### Changed — Pointer-tool arithmetic lives in `uim.interface.internal`
 
 The zoom, pan, axis-drag, selection-rectangle and crop arithmetic of the

@@ -55,6 +55,12 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
             obj.parseInputs(varargin{:})
             obj.drawFrameMarker()
             obj.IsConstructed = true;
+
+            % drawFrameMarker lays the parts out at x = 1 and always
+            % visible; apply the Value and Visible the caller asked for
+            % (both setters skip drawing until IsConstructed is set).
+            obj.updateFrameMarker()
+            obj.onVisibleChanged()
         end
     end
 
@@ -62,6 +68,11 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
         function set.Value(obj, newValue)
             obj.Value = newValue;
             obj.updateFrameMarker()
+        end
+
+        function set.Visible(obj, newValue)
+            obj.Visible = newValue;
+            obj.onVisibleChanged()
         end
     end
 
@@ -121,6 +132,15 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
             uim.utility.setPointerBehavior(h, pointerBehavior)
+        end
+
+        function onVisibleChanged(obj)
+        %onVisibleChanged Show or hide the marker line and both knobs
+
+            if ~obj.IsConstructed; return; end
+
+            allHandles = [obj.LineHandle, obj.TopButtonHandle, obj.BottomButtonHandle];
+            set(allHandles(isvalid(allHandles)), 'Visible', obj.Visible)
         end
 
         function updateFrameMarker(obj, ~)
