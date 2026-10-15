@@ -44,5 +44,9 @@ jobs:
       matlab_products: >
         Image_Processing_Toolbox
 
+      # The README shows this workflow's status badge, so no tests badge is
+      # generated from the test results
+      create_test_badge: false
+
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
