@@ -1,9 +1,19 @@
 function [screenSize, screenNumber] = getCurrentScreenSize(hFig)
-%GETCURRENTSCREENSIZE Summary of this function goes here
+%getCurrentScreenSize Position and index of the monitor a figure is on
 %
-%   [screenSize, screenNumber] = getCurrentScreenSize(hFig) returns the
-%   posision coordinates (screenSize) and number of the monitor where a
-%   figure is located.
+%   screenSize = uim.utility.getCurrentScreenSize(hFig) returns the
+%   [x, y, width, height] pixel rectangle of the monitor that holds the
+%   figure's upper-left corner, or its upper-right corner when the left
+%   one is off every monitor. hFig.Position must be in pixels.
+%
+%   [screenSize, screenNumber] = uim.utility.getCurrentScreenSize(hFig)
+%   also returns the row of that monitor in the root MonitorPositions.
+%
+%   With a single monitor, that monitor is returned. When neither corner
+%   is on a monitor, the function warns and returns the root ScreenSize
+%   and screenNumber 1.
+%
+%   See also uim.utility.centerFigureOnScreen, uim.utility.layout.place
 
     MP = get(0, 'MonitorPosition');
     if size(MP, 1) == 1

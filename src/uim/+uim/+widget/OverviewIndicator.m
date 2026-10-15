@@ -1,10 +1,14 @@
 classdef OverviewIndicator < uim.abstract.Control
 %OverviewIndicator An interactive zoom outline for a zoomable view
 %
-%   indicator = uim.widget.OverviewIndicator(hParent, Name, Value, ...)
-%   creates a small overview chip (typically corner-anchored inside a
-%   data axes via the overlay canvas) showing the full data extent as a
+%   indicator = uim.widget.OverviewIndicator(hParent, Name=Value)
+%   creates a small overview chip showing the full data extent as a
 %   frame and the currently visible region as a draggable rectangle.
+%   hParent is typically a data axes, in which case the chip is drawn in
+%   the overlay canvas over that axes; a uim.UIComponentCanvas also
+%   works. Name-value arguments set public properties, including the
+%   layout properties inherited from uim.abstract.Component such as
+%   Location, Margin and Size.
 %
 %   The host pushes state in:
 %       DataLimits - [xMin, xMax; yMin, yMax] full extent of the data
@@ -22,21 +26,23 @@ classdef OverviewIndicator < uim.abstract.Control
 %   without firing the callback (push model). The host owns the axes:
 %   apply evt.XLim/evt.YLim to the target axes in ViewChangedFcn.
 %
-%   Use YDir = 'reverse' when the target axes displays images, so the
+%   Use YDir="reverse" when the target axes displays images, so the
 %   outline is oriented like the image.
 %
-%   The widget box hugs the data-extent frame: Size acts as a maximum,
-%   and the box shrinks along one dimension when the data aspect ratio
-%   differs from the box aspect ratio.
+%   The widget box hugs the data-extent frame: Size (default [120, 90]
+%   pixels) acts as a maximum, and the box shrinks along one dimension
+%   when the data aspect ratio differs from the box aspect ratio.
 %
 %   Example:
 %       imagesc(hAxes, imageData)
 %       indicator = uim.widget.OverviewIndicator(hAxes, ...
-%           'Location', 'southeast', 'YDir', 'reverse', ...
-%           'DataLimits', [hAxes.XLim; hAxes.YLim], ...
-%           'ViewLimits', [hAxes.XLim; hAxes.YLim], ...
-%           'ViewChangedFcn', @(src, evt) set(hAxes, ...
-%               'XLim', evt.XLim, 'YLim', evt.YLim));
+%           Location="southeast", YDir="reverse", ...
+%           DataLimits=[hAxes.XLim; hAxes.YLim], ...
+%           ViewLimits=[hAxes.XLim; hAxes.YLim], ...
+%           ViewChangedFcn=@(src, evt) set(hAxes, ...
+%               XLim=evt.XLim, YLim=evt.YLim));
+%
+%   See also uim.UIComponentCanvas, uim.abstract.Control
 
     properties (Constant) % Inherited from Component
         Type = 'OverviewIndicator'
@@ -46,10 +52,14 @@ classdef OverviewIndicator < uim.abstract.Control
         DataLimits (2,2) double = [0, 1; 0, 1]  % Full extent: [xMin, xMax; yMin, yMax]
         ViewLimits (2,2) double = [0, 1; 0, 1]  % Visible region: [xMin, xMax; yMin, yMax]
 
+        % "normal" draws y upwards; "reverse" draws y downwards, as in an
+        % axes showing an image
         YDir (1,:) char {mustBeMember(YDir, {'normal', 'reverse'})} = 'normal'
 
         ViewChangedFcn = []     % Fired when the user moves the view. (src, uim.event.EventData with XLim/YLim)
 
+        % Colors are applied when the outlines are created and whenever a
+        % style property such as BackgroundColor changes.
         FrameColor = 'w'        % Edge color of the data-extent frame
         ViewRectColor = 'w'     % Edge/fill color of the view rectangle
     end
@@ -80,6 +90,9 @@ classdef OverviewIndicator < uim.abstract.Control
     methods % Structors
 
         function obj = OverviewIndicator(hParent, varargin)
+        %OverviewIndicator Create the overview chip in an axes, canvas or container
+        %
+        %   indicator = uim.widget.OverviewIndicator(hParent, Name=Value)
 
             obj@uim.abstract.Control(hParent, varargin{:})
 
@@ -110,6 +123,11 @@ classdef OverviewIndicator < uim.abstract.Control
 
         function centerViewOn(obj, x, y)
         %centerViewOn Center the view on a data point and notify the host
+        %
+        %   indicator.centerViewOn(x, y) moves ViewLimits so the view, at
+        %   its current size, is centered on (x, y) in data units, then
+        %   shifts it to stay inside DataLimits. When the limits change it
+        %   calls ViewChangedFcn, like a click in the frame does.
 
             viewSize = diff(obj.ViewLimits, 1, 2);
             newLimits = uim.geometry.centeredLimits([x, y], viewSize');
@@ -334,6 +352,13 @@ classdef OverviewIndicator < uim.abstract.Control
     methods (Static)
 
         function S = getTypeDefaults()
+        %getTypeDefaults Default property values for this component type
+        %
+        %   S = uim.widget.OverviewIndicator.getTypeDefaults() returns a
+        %   struct of property values used at construction: a fixed size
+        %   of [120, 90] pixels, 6 pixel padding and a translucent black
+        %   background. A name-value pair for the same property replaces
+        %   the default.
             S.IsFixedSize = [true, true];
             S.Size = [120, 90];
             S.Padding = [6, 6, 6, 6];

@@ -1,29 +1,84 @@
 classdef PageIndicator < uim.abstract.Control
-%PageIndicator Widget to switch between pages / views.
+%PageIndicator Row of dots for switching between pages or views
 %
-%   Creates a "button group" where each button has a label, and pressing
-%   the button will invoke a callback with the index of the selected
-%   button. Can be used for multi tab views or similar.
+%   A page indicator draws one round dot per page on a component canvas.
+%   The dot of the current page is filled with BarColor; the others use
+%   IndicatorColor. A horizontal bar runs above the dots, a vertical tick
+%   joins it to the current dot, and the current page's name is shown as
+%   a label. Clicking a dot switches page and calls ChangePageFcn, so the
+%   host can show the matching view, as in a wizard or a set of image
+%   tabs. Hovering over a dot shows that page's name.
+%
+%   pages = uim.widget.PageIndicator(parent, pageNames) creates an
+%   indicator with one dot per entry in pageNames, a cell array of
+%   character vectors or strings, with the first page current. parent is
+%   a uim.UIComponentCanvas, a uim container, an axes (an overlay canvas
+%   is created or reused), or a graphics container such as a uipanel.
+%
+%   pages = uim.widget.PageIndicator(parent, pageNames, Name=Value) also
+%   sets public properties, including the layout properties inherited
+%   from uim.abstract.Component (Location, Margin, Size, ...). Example:
+%
+%       pages = uim.widget.PageIndicator(canvas, {"One", "Two", "Three"}, ...
+%           TextVisibility="hit", BarVisibility="off");
+%       pages.ChangePageFcn = @(src, evt) disp(evt.NewPageNumber);
+%
+%   Change the page from code with changePage. PageNames and IndicatorSize
+%   are read only when the dots are created; CurrentPage passed at
+%   construction does not move the filled dot (see changePage). Setting
+%   Visible to 'on' shows the bar, the current tick and the current label
+%   even when BarVisibility or TextVisibility hides them.
+%
+%   See also uim.UIComponentCanvas, uim.event.EventData
 
     % Todo: generalize so that it can be used as tab header for tabgroups
 
     properties (Constant)
-        Type = 'PageIndicator'
+        Type = 'PageIndicator' % Component type name
     end
 
     properties
-       PageNames = {''}
+       PageNames = {''} % Cell array of page names, one dot per name; read when the dots are created
+
+       % CurrentPage - Index of the current page. Change it with changePage;
+       % assigning it directly does not update the graphics.
        CurrentPage = 1;
-       FontColor = 'k'
-       FontSize = 12
-       IndicatorSize = 10
-       IndicatorColor = ones(1,3) * 0.5
+
+       FontColor = 'k' % Colour of the page name labels
+       FontSize = 12 % Font size of the page name labels, in pixels
+       IndicatorSize = 10 % Dot diameter in pixels; read when the dots are created
+       IndicatorColor = ones(1,3) * 0.5 % Fill colour of the dots of pages other than the current one
+
+       % BarColor - Colour of the bar, the tick, the current page's dot and
+       % the outline of a hovered dot
        BarColor = 'k'
+
+       % BarVisibility - 'on' or 'off' (true or false is accepted). With
+       % 'off', the bar and tick are hidden and labels are centred
+       % vertically on their position instead of sitting above it.
        BarVisibility = 'on'
-       TextVisibility = 'on'; % 'on', 'hit', 'off'
+
+       % TextVisibility - When page names are shown: 'on' shows the current
+       % page's name, or the hovered page's name while a dot is hovered;
+       % 'hit' shows a name only while its dot is hovered; 'off' never
+       % shows names. true or false is accepted for 'on' or 'off'.
+       TextVisibility = 'on';
+
+       % HorizontalTextAlignment - 'left', 'center' or 'right': the labels
+       % are aligned to the left end, middle or right end of the bar
        HorizontalTextAlignment = 'center';
-       Spacing = 8
+
+       Spacing = 8 % Not used; the gap between dots is 3/8 of IndicatorSize
+
+       % ChangePageFcn - Function called as ChangePageFcn(pages, evtData)
+       % when the user clicks a dot, also when BlockChangePage is true.
+       % evtData is a uim.event.EventData with fields OldPageNumber and
+       % NewPageNumber.
        ChangePageFcn = [];
+
+       % BlockChangePage - If true, clicking a dot does not change the page;
+       % ChangePageFcn is still called, so the host can decide and call
+       % changePage itself
        BlockChangePage = false;
     end
 
@@ -37,7 +92,11 @@ classdef PageIndicator < uim.abstract.Control
     methods
 
         function obj = PageIndicator(hParent, pageNames, varargin)
-        %PageIndicator Construct instance of page indicator widget.
+        %PageIndicator Create a page indicator
+        %
+        %   pages = uim.widget.PageIndicator(parent, pageNames, Name=Value)
+        %
+        %   See the class help for the accepted parents and options.
 
             obj@uim.abstract.Control(hParent, varargin{:})
 
@@ -215,9 +274,15 @@ classdef PageIndicator < uim.abstract.Control
     methods
 
         function restyle(obj)
+        %restyle Not implemented; does nothing
         end
 
         function updateBarVisibility(obj)
+        %updateBarVisibility Show or hide the bar and tick from BarVisibility
+        %
+        %   pages.updateBarVisibility() hides the bar and all ticks when
+        %   BarVisibility is 'off', and otherwise shows the bar and the
+        %   tick of the current page only.
 
             if strcmp(obj.BarVisibility, 'off')
                 set([obj.HorizontalBar, obj.VerticalBars], 'Visible', obj.BarVisibility)
@@ -229,6 +294,12 @@ classdef PageIndicator < uim.abstract.Control
         end
 
         function updateTextVisibility(obj)
+        %updateTextVisibility Show or hide page labels from TextVisibility
+        %
+        %   pages.updateTextVisibility() shows only the current page's
+        %   label when TextVisibility is 'on', and hides all labels when it
+        %   is 'hit' or 'off'.
+
             if strcmp(obj.TextVisibility, 'off')
                 set(obj.PageLabels, 'Visible', 'off')
 
@@ -242,6 +313,19 @@ classdef PageIndicator < uim.abstract.Control
         end
 
         function changePage(obj, newPageNumber)
+        %changePage Make another page the current page
+        %
+        %   pages.changePage(pageNumber) makes page pageNumber current: its
+        %   dot is filled with BarColor, and the tick and label follow the
+        %   TextVisibility and BarVisibility settings.
+        %
+        %   pages.changePage("next") and pages.changePage("previous") step
+        %   one page forward or back.
+        %
+        %   A page number outside 1 to numel(PageNames) is ignored, so
+        %   "next" on the last page does nothing. changePage does not call
+        %   ChangePageFcn.
+
 
             switch newPageNumber
                 case 'next'
@@ -266,9 +350,14 @@ classdef PageIndicator < uim.abstract.Control
         end
 
         function onMouseOverIndicator(obj)
+        %onMouseOverIndicator Not implemented; does nothing
         end
 
         function onAppearanceChanged(obj)
+        %onAppearanceChanged Reapply the colour properties to the graphics
+        %
+        %   pages.onAppearanceChanged() applies IndicatorColor, FontColor
+        %   and BarColor. The set methods of these properties call it.
 
             if ~obj.IsConstructed; return; end
 
@@ -279,12 +368,20 @@ classdef PageIndicator < uim.abstract.Control
         end
 
         function onBarVisibilityChanged(obj)
+        %onBarVisibilityChanged Apply a new BarVisibility value
+        %
+        %   Called by the BarVisibility set method. Updates the vertical
+        %   label alignment and the bar and tick visibility.
             if ~obj.IsConstructed; return; end
             obj.placeTextVertical()
             obj.updateBarVisibility()
         end
 
         function onTextVisibilitySet(obj)
+        %onTextVisibilitySet Apply a new TextVisibility value
+        %
+        %   Called by the TextVisibility set method; see
+        %   updateTextVisibility.
             if ~obj.IsConstructed; return; end
             if strcmp(obj.TextVisibility, 'hit')
                 set(obj.PageLabels, 'Visible', 'off')
@@ -293,17 +390,29 @@ classdef PageIndicator < uim.abstract.Control
         end
 
         function onHorizontalTextAlignmentSet(obj)
+        %onHorizontalTextAlignmentSet Apply a new HorizontalTextAlignment value
+        %
+        %   Called by the HorizontalTextAlignment set method. Moves the
+        %   labels to the left end, middle or right end of the bar.
             if ~obj.IsConstructed; return; end
             obj.placeTextHorizontal()
         end
 
         function onSetFontSize(obj, newValue)
+        %onSetFontSize Apply a new font size to the page labels
+        %
+        %   pages.onSetFontSize(newValue) sets the label font size in
+        %   pixels. Called by the FontSize set method.
             if ~obj.IsConstructed; return; end
             set(obj.PageLabels, 'FontSize', newValue)
         end
 
         function setPointerBehavior(obj, h)
-        %setPointerBehavior Set pointer behavior of background.
+        %setPointerBehavior Attach hover callbacks to a page dot
+        %
+        %   pages.setPointerBehavior(h) makes the pointer entering and
+        %   leaving the graphics object h call the indicator's hover
+        %   handlers, which highlight the dot and show its label.
 
             pointerBehavior.enterFcn    = @(s,e) obj.onMouseEntered(s, h);
             pointerBehavior.exitFcn     = @(s,e) obj.onMouseExited(s, h);
@@ -313,6 +422,12 @@ classdef PageIndicator < uim.abstract.Control
         end
 
         function onPageButtonPressed(obj, src, ~)
+        %onPageButtonPressed Handle a click on a page dot
+        %
+        %   pages.onPageButtonPressed(src, ~) is the ButtonDownFcn of each
+        %   dot. It changes to the clicked page unless BlockChangePage is
+        %   true, then calls ChangePageFcn with the old and the requested
+        %   page number.
 
             oldPageNumber = obj.CurrentPage;
             newPageNumber = find( ismember(obj.PageButtons, src) );

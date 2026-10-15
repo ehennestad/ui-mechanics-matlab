@@ -11,7 +11,7 @@ classdef PointerToolBinding < handle
 %   modes is a string array of mode keys that must exist in the pointer
 %   manager's Pointers struct, e.g. ["zoomIn", "zoomOut", "pan"].
 %
-%   binding = uim.interface.PointerToolBinding(..., Name, Value) also
+%   binding = uim.interface.PointerToolBinding(..., Name=Value) also
 %   accepts:
 %     Icons      - struct mapping a mode key to an icon (any value the
 %                  Button Icon property accepts). Modes without an entry
@@ -28,21 +28,29 @@ classdef PointerToolBinding < handle
 %
 %   Example:
 %       manager = uim.interface.PointerManager(hFigure, hAxes, ...
-%           {'zoomIn', 'zoomOut', 'pan'});
-%       toolbar = uim.widget.Toolbar(hAxes, 'Location', 'northeast');
+%           {"zoomIn", "zoomOut", "pan"});
+%       toolbar = uim.widget.Toolbar(hAxes, Location="northeast");
 %       binding = uim.interface.PointerToolBinding(toolbar, manager, ...
 %           ["zoomIn", "zoomOut", "pan"]);
+%
+%   An unknown mode raises uim:PointerToolBinding:UnknownMode.
+%
+%   See also uim.interface.PointerManager, uim.widget.Toolbar
 
     properties (SetAccess = private)
-        Toolbar uim.widget.Toolbar
-        PointerManager uim.interface.PointerManager
-        Modes (1,:) string = string.empty
-        Buttons uim.control.Button
+        Toolbar uim.widget.Toolbar % Toolbar that holds the buttons
+        PointerManager uim.interface.PointerManager % Manager whose tools the buttons toggle
+        Modes (1,:) string = string.empty % Tool keys, one per button, in button order
+        Buttons uim.control.Button % Toggle buttons created by the binding, in Modes order
     end
 
     methods % Structors
 
         function obj = PointerToolBinding(hToolbar, hPointerManager, modes, options)
+        %PointerToolBinding Add toggle buttons for pointer tools to a toolbar
+        %
+        %   binding = uim.interface.PointerToolBinding(hToolbar,
+        %       hPointerManager, modes, Name=Value)
 
             arguments
                 hToolbar (1,1) uim.widget.Toolbar

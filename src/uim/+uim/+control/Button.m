@@ -1,4 +1,42 @@
 classdef Button < uim.abstract.Control
+%Button Push or toggle button drawn on a component canvas
+%
+%   A button with a text label, an icon, or both, drawn as graphics in a
+%   canvas axes rather than as a uicontrol. Its colours come from a
+%   uim.style.ButtonScheme and follow the button state: on or off, and
+%   whether the pointer is over it. Toolbars create their buttons with
+%   this class (see uim.widget.Toolbar.addButton).
+%
+%   button = uim.control.Button(parent) creates a button in parent: a
+%   uim.UIComponentCanvas, a uim container such as a toolbar, an axes
+%   (an overlay canvas is created or reused), or a graphics container
+%   such as a uipanel.
+%
+%   button = uim.control.Button(parent, Name=Value) also sets public
+%   properties, for example
+%
+%       button = uim.control.Button(canvas, Text="Run", ...
+%           Position=[10, 10, 80, 30], PositionMode="manual");
+%
+%   Behaviour:
+%       Mode and MechanicalAction decide when Value changes and when
+%       Callback runs. A push button ('pushbutton', the default) sets
+%       Value to true, runs Callback and resets Value to false. A toggle
+%       button ('togglebutton') flips Value and runs Callback. An action
+%       taken on release runs Callback only if the pointer is still over
+%       the button. Callback is called as Callback(button, eventData).
+%
+%   Main properties:
+%       Text, Icon, Value, Mode, MechanicalAction, Callback, Style,
+%       Tooltip, plus the layout and style properties inherited from
+%       uim.abstract.Component (Position, Margin, Padding, Location, ...).
+%
+%   Main methods:
+%       addToggleListener - Keep Value in sync with an event source
+%       toggleState       - Set Value from an event's Value field
+%
+%   See also uim.widget.Toolbar, uim.style.ButtonScheme,
+%   uim.style.getDefaultIcons
 
     % Todo:
     %   [x] How to best implement push and toggle buttons. Mech. action...
@@ -28,43 +66,69 @@ classdef Button < uim.abstract.Control
 
     properties
 
+        % Label text, a character vector or string scalar (stored as char).
         Text = ''
+
+        % Icon: a vector icon struct (a field of the struct returned by
+        % uim.style.getDefaultIcons), the path to a .mat file holding an
+        % imageVector variable, or one of the marker symbols 'x', 'o' or
+        % '>'. Empty for no icon.
         Icon = ''
+
+        % Button state: true when on. Setting it updates the appearance but
+        % does not run Callback.
         Value = false
 
+        % 'pushbutton' (Value returns to false after each action) or
+        % 'togglebutton' (Value stays flipped).
         Mode = 'pushbutton'
-        MechanicalAction = 'Switch when released' % Switch when pressed, Switch until released, Switch when released
+
+        % When Value changes: 'Switch when pressed', 'Switch when released'
+        % or 'Switch until released'. A push button applies the matching
+        % 'Latch ...' action instead; it has no 'until released' variant,
+        % so 'Switch until released' makes a push button do nothing.
+        MechanicalAction = 'Switch when released'
         % Switch = togglebutton, Latch = pushbutton
 
+        % A uim.style.ButtonScheme instance giving the colours per state.
+        % A new scheme is applied at the next appearance update (pointer
+        % enter or exit, press, or Value change).
         Style = uim.style.ButtonDarkMode
 
+        % Not used by the button.
         UseDefaultIcon = false %Todo: Rename or reconsider...
+        % When true, the constructor sets the width to fit Text.
         AutoWrapText = false % Similar to BarExtensionMode
-        IconAlignment = 'left';
-        IconSize = [nan, nan];
-        IconTextSpacing = 5;
+        IconAlignment = 'left'; % Icon position in the button: 'left', 'center' or 'right'.
+        IconSize = [nan, nan]; % Icon [width, height] in pixels; NaN fits the icon to the padded button.
+        IconTextSpacing = 5; % Gap in pixels between the icon and the text.
 
+        % Not used by the button.
         FixedAspectRatio = true; % Do I need this?? Maybe sometime...
 
         %ButtonDownFcn = []
         %ButtonReleasedFcn = []
 
         % These properties should be moved to another class?
-        HorizontalTextAlignment = 'left'
-        VerticalTextAlignment = 'middle'
+        HorizontalTextAlignment = 'left' % Text alignment: 'left', 'center' or 'right'.
+        VerticalTextAlignment = 'middle' % Text alignment: 'top', 'middle' or 'bottom'.
 
-        FontName = 'helvetica'
-        FontSize = 12
-        FontWeight = 'normal'
+        FontName = 'helvetica' % Font of the label text.
+        FontSize = 12 % Font size of the label text, in pixels.
+        FontWeight = 'normal' % 'normal' or 'bold'; a Style state with FontWeight overrides it.
 
+        % Listener created by addToggleListener. Deleted with the button.
         ToggleButtonListener event.listener = event.listener.empty
     end
 
     properties (Dependent)
-        String = ''
+        String = '' % Alias of Text.
     end
 
     properties (Dependent, Transient)
+        % [x, y, width, height] in pixels of the area covering the button
+        % and its text, at least the button size. Raises an error when the
+        % button has no text.
         Extent % Needed? Not internally. Does any outside function use it?
     end
 
@@ -84,6 +148,9 @@ classdef Button < uim.abstract.Control
     methods % Structors
 
         function obj = Button(varargin)
+        %Button Create a button
+        %
+        %   button = uim.control.Button(parent, Name=Value)
 
             obj@uim.abstract.Control( varargin{:} )
 
@@ -471,12 +538,24 @@ classdef Button < uim.abstract.Control
     methods % Public
 
         function addToggleListener(obj, handle, eventName)
+        %addToggleListener Keep Value in sync with an event source
+        %
+        %   button.addToggleListener(source, eventName) listens to
+        %   eventName on source and calls toggleState for each event, so
+        %   the event data must have a Value field. The listener replaces
+        %   any previous one and is stored in ToggleButtonListener. Callback
+        %   does not run. uim.interface.PointerToolBinding uses this to
+        %   follow a pointer tool's ToggledPointerTool event.
+
            el = listener(handle, eventName, @obj.toggleState);
            obj.ToggleButtonListener = el;
         end
 
         function toggleState(obj, ~, event)
-        %toggleState Toggle the state (value) of the button.
+        %toggleState Set Value from an event's Value field
+        %
+        %   button.toggleState(source, eventData) sets Value to
+        %   eventData.Value when they differ. Callback does not run.
 
         % Todo: make sure mechanical action is switch type...
 
@@ -608,6 +687,13 @@ classdef Button < uim.abstract.Control
     methods (Static)
 
         function S = getTypeDefaults()
+        %getTypeDefaults Default property values for a new button
+        %
+        %   S = uim.control.Button.getTypeDefaults() returns a struct of
+        %   property values used at construction: CornerRadius 3,
+        %   IsFixedSize [true, true] and a black BackgroundColor. A
+        %   name-value pair for the same property replaces the default.
+
             S.CornerRadius = 3;
             S.IsFixedSize = [true, true];
             %S.PositionMode = 'manual';

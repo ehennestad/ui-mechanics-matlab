@@ -1,15 +1,52 @@
 classdef PlaybackControl < uim.mixin.NameValueAssignable
-%PlaybackControl Widget with controls playing and scrolling through videos
+%PlaybackControl Play/pause and speed buttons with a frame slider
 %
-%     This widget provides 3 playback buttons (play/pause, increase speed
-%     and decrease speed), a slidebar for changing the current value and a
-%     optional rangebar used for selection of an interval of values.
+%   control = uim.widget.PlaybackControl(hParent, Name=Value) creates
+%   the widget in hParent, a figure, panel or tab. The widget draws into
+%   two axes it creates there: a button axes with the play/pause button,
+%   the speed buttons and a speed label, and a slider axes with the
+%   track and its knob. Both axes use pixel units and hide their rulers.
 %
-%     Added a channel radio button selector. Should be a separate class...
+%   control = uim.widget.PlaybackControl(hAxes, Name=Value) uses hAxes
+%   as the slider axes and creates the button axes in the parent of
+%   hAxes.
 %
-%     It should be parented in a figure, panel or tab and it will
-%     internally create two axes for drawing of the components. The axes
-%     are hidden, and for a reason, so don't mess with them:)
+%   Name-value arguments set the public properties of the same name.
+%   Names that are not public properties are ignored. ActiveRange can not
+%   be passed to the constructor; assign it after construction.
+%
+%   The widget does not play anything itself. It reports user actions
+%   through callback properties, each called as fcn(control, evt), and
+%   the host application pushes state back by assigning properties:
+%     - The play button switches to a pause icon and calls
+%       PlaybackStartedFcn; the pause button switches back and calls
+%       PlaybackStoppedFcn. Call switchPlayPauseIcon to sync the icon
+%       when playback stops for another reason.
+%     - The speed buttons double or halve PlaybackSpeed and call
+%       PlaybackSpeedChangedFcn. The label shows the speed, for example
+%       "2x" or "0.5x", and is empty at speed 1.
+%     - Dragging the knob or clicking the track sets Value to the
+%       nearest integer in [Minimum, Maximum] and calls ValueChangedFcn
+%       when the value changes.
+%     - With NumChannels > 1, a uim.widget.ChannelIndicator in the
+%       button axes selects channels (CurrentChannelsChangedFcn) and
+%       sets their colors (ChannelColorChangedFcn).
+%     - With NumPlanes > 1, a uim.widget.PlaneSwitcher in the button
+%       axes selects the plane (CurrentPlaneChangedFcn).
+%     - With RangeSelectorEnabled "on", a bar marks ActiveRange on the
+%       track, and dragging either end of the bar moves that end.
+%       Releasing it calls ActiveRangeChangedFcn.
+%   Assigning a property updates the display without calling any of
+%   these callbacks.
+%
+%   Example:
+%       hFigure = figure;
+%       control = uim.widget.PlaybackControl(hFigure, ...
+%           Position=[10, 10, 400, 30], Minimum=1, Maximum=100, ...
+%           ValueChangedFcn=@(src, evt) disp(evt.NewValue));
+%       control.Value = 50;
+%
+%   See also uim.widget.ChannelIndicator, uim.widget.PlaneSwitcher
 
     % Notes:
     % 1) Playback buttons are placed within one axes where units are in
@@ -27,54 +64,86 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 % - - - - - - - - - - PROPERTIES - - - - - - - - - -
 
     properties (Dependent)
+        % Pixel position [x, y, width, height] of the widget in its
+        % parent. The button axes is 80 pixels wide, more when the
+        % channel or plane selectors are shown. Normalized positions are
+        % not supported.
         Position (1,4) double
     end
 
     properties (Access = public)
-        Visible matlab.lang.OnOffSwitchState = 'on'
+        Visible matlab.lang.OnOffSwitchState = 'on'   % Show ("on") or hide ("off") both axes and their components
 
-        Value = 1
-        Minimum = 1
-        Maximum = 2;
+        Value = 1       % Current value, shown by the knob. Assigned values are not clamped to the range.
+        Minimum = 1     % Value at the start of the track
+        Maximum = 2;    % Value at the end of the track
 
-        PlaybackSpeed (1,1) double {mustBePositive} = 1
+        PlaybackSpeed (1,1) double {mustBePositive} = 1   % Speed factor shown by the speed label
 
-        NumChannels = 1;
-        NumPlanes = 1
+        NumChannels = 1;    % Number of channels; values above 1 show a channel selector
+        NumPlanes = 1       % Number of planes; values above 1 show a plane selector
 
+        % Show ("on") the range bar and its draggable ends
         RangeSelectorEnabled matlab.lang.OnOffSwitchState = 'off'
-        ActiveRange = [1, 1]            % For virtual vs memory stacks.
 
-        % Callbacks notifying the host application of user interactions.
-        % The host pushes state the other way by assigning the
-        % corresponding properties (Value, PlaybackSpeed, ...).
-        ValueChangedFcn = []            % User dragged the knob or clicked the slider bar. (src, uim.event.ValueChangedEventData)
-        PlaybackStartedFcn = []         % User pressed play. (src, uim.event.ToggleEvent)
-        PlaybackStoppedFcn = []         % User pressed pause. (src, uim.event.ToggleEvent)
-        PlaybackSpeedChangedFcn = []    % User pressed the speed buttons. (src, uim.event.ValueChangedEventData)
-        CurrentChannelsChangedFcn = []  % User changed channel selection. (src, uim.event.EventData with CurrentChannels)
-        CurrentPlaneChangedFcn = []     % User changed plane. (src, uim.event.EventData with CurrentPlane)
-        ChannelColorChangedFcn = []     % User changed a channel color. (src, uim.event.EventData with ChannelNumber/RgbColor)
-        ActiveRangeChangedFcn = []      % Callback for when active range changes.
+        % [start, end] values of the range bar, for example the frames
+        % held in memory
+        ActiveRange = [1, 1]
+
+        % Callbacks notifying the host application of user interactions,
+        % called as fcn(src, evt). The host pushes state the other way by
+        % assigning the corresponding properties (Value, PlaybackSpeed, ...).
+
+        % User dragged the knob or clicked the track.
+        % evt: uim.event.ValueChangedEventData (OldValue, NewValue)
+        ValueChangedFcn = []
+
+        % User pressed play. evt: uim.event.ToggleEvent with Value 1
+        PlaybackStartedFcn = []
+
+        % User pressed pause. evt: uim.event.ToggleEvent with Value 0
+        PlaybackStoppedFcn = []
+
+        % User pressed a speed button.
+        % evt: uim.event.ValueChangedEventData (OldValue, NewValue)
+        PlaybackSpeedChangedFcn = []
+
+        % User changed the channel selection.
+        % evt: uim.event.EventData with CurrentChannels
+        CurrentChannelsChangedFcn = []
+
+        % User changed the plane. evt: uim.event.EventData with CurrentPlane
+        CurrentPlaneChangedFcn = []
+
+        % User changed a channel color.
+        % evt: uim.event.EventData with ChannelNumber and RgbColor
+        ChannelColorChangedFcn = []
+
+        % User released an end of the range bar. evt: struct with NewRange
+        ActiveRangeChangedFcn = []
     end
 
     properties % Appearance
-        BackgroundColor = [0.94, 0.94, 0.94];
+        BackgroundColor = [0.94, 0.94, 0.94];   % Color of both axes
+        % Fill color of the playback buttons and the plane selector.
+        % Set at construction.
         ButtonColor = ones(1,3) * 0.6;
 
-        BarWidth = 4;
-        BarPadding = 10; % In length direction (pixel units)
+        BarWidth = 4;       % Thickness of the track in pixels. Set at construction.
+        BarPadding = 10;    % Pixels between each slider axes end and the track. Set at construction.
     end
 
     % Multi-channel related properties
     properties (Dependent, SetAccess = private)
-        ChannelIndicatorWidget
+        ChannelIndicatorWidget  % The uim.widget.ChannelIndicator, or empty when NumChannels is 1
     end
 
+    % Values assigned before the channel or plane selector exists are
+    % kept and passed on when the selector is created.
     properties (Dependent)
-        CurrentChannels
-        CurrentPlane
-        ChannelColors
+        CurrentChannels     % Indices of the selected channels
+        CurrentPlane        % Number of the selected plane
+        ChannelColors       % Cell array with one color (name or RGB triplet) per channel
     end
 
     properties (Access = private) % Widget components
@@ -122,6 +191,9 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
     methods % Structors
 
         function obj = PlaybackControl(parentHandle, varargin)
+        %PlaybackControl Create the widget in a figure, panel, tab or axes
+        %
+        %   control = uim.widget.PlaybackControl(hParent, Name=Value)
 
             obj.Figure = ancestor(parentHandle, 'figure');
             % Draggable parts read CurrentPoint from motion listeners; in
@@ -154,7 +226,13 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
     methods (Access = public)
 
         function switchPlayPauseIcon(obj, mode)
-        %switchPlayPauseIcon Switch icon of play button on play/pause
+        %switchPlayPauseIcon Show the play or the pause icon on the play button
+        %
+        %   control.switchPlayPauseIcon(mode) shows the play icon when
+        %   mode is "play" and the pause icon when mode is "pause". The
+        %   next press of the button then calls PlaybackStartedFcn or
+        %   PlaybackStoppedFcn accordingly; this method calls neither.
+        %   Other values of mode leave the button unchanged.
 
             buttonPosition = 10;
             if obj.NumPlanes > 1 && ~isempty(obj.PlaneSwitcher)
@@ -175,6 +253,10 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         end
 
         function resetRangeSelector(obj)
+        %resetRangeSelector Reset ActiveRange to [1, 1] and hide the range bar
+        %
+        %   control.resetRangeSelector() sets ActiveRange to [1, 1] and
+        %   RangeSelectorEnabled to "off".
             obj.ActiveRange = [1,1];
             obj.RangeSelectorEnabled = 'off';
         end

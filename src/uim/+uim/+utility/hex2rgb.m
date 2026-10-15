@@ -1,63 +1,30 @@
 function [ rgb ] = hex2rgb(hex,range)
-% hex2rgb converts hex color values to rgb arrays on the range 0 to 1.
+%hex2rgb Convert hexadecimal colour codes to RGB triplets
 %
+%   rgb = uim.utility.hex2rgb(hex) converts hex colour codes such as
+%   '#334D66' to an n-by-3 array of RGB values from 0 to 1. hex is a
+%   character vector, a character matrix with one code per row, or a
+%   cell vector of character vectors of equal length. The '#' is
+%   optional, and letters may be upper or lower case.
 %
-% * * * * * * * * * * * * * * * * * * * *
-% SYNTAX:
-% rgb = hex2rgb(hex) returns rgb color values in an n x 3 array. Values are
-%                    scaled from 0 to 1 by default.
+%   rgb = uim.utility.hex2rgb(hex, 256) returns values from 0 to 255
+%   instead; a range of 255 does the same.
 %
-% rgb = hex2rgb(hex,256) returns RGB values scaled from 0 to 255.
+%   Examples:
+%       uim.utility.hex2rgb('#334D66')       % [0.2000, 0.3020, 0.4000]
+%       uim.utility.hex2rgb('334D66', 256)   % [51, 77, 102]
+%       uim.utility.hex2rgb({'#334D66'; '#8099B3'})
 %
+%   Errors:
+%       uim:hex2rgb:InvalidNumberOfInputs - Not one or two inputs
+%       uim:hex2rgb:InvalidRange          - range is not 1, 255 or 256
+%       uim:hex2rgb:InvalidSize           - hex is a cell array that is
+%                                           not a vector
 %
-% * * * * * * * * * * * * * * * * * * * *
-% EXAMPLES:
+%   Original author: Chad A. Greene, 2014, with improvements suggested by
+%   Stephen Cobeldick.
 %
-% myrgbvalue = hex2rgb('#334D66')
-%    = 0.2000    0.3020    0.4000
-%
-%
-% myrgbvalue = hex2rgb('334D66')  % <-the # sign is optional
-%    = 0.2000    0.3020    0.4000
-%
-%
-% myRGBvalue = hex2rgb('#334D66',256)
-%    = 51    77   102
-%
-%
-% myhexvalues = ['#334D66';'#8099B3';'#CC9933';'#3333E6'];
-% myrgbvalues = hex2rgb(myhexvalues)
-%    =   0.2000    0.3020    0.4000
-%        0.5020    0.6000    0.7020
-%        0.8000    0.6000    0.2000
-%        0.2000    0.2000    0.9020
-%
-%
-% myhexvalues = ['#334D66';'#8099B3';'#CC9933';'#3333E6'];
-% myRGBvalues = hex2rgb(myhexvalues,256)
-%    =   51    77   102
-%       128   153   179
-%       204   153    51
-%        51    51   230
-%
-% HexValsAsACharacterArray = {'#334D66';'#8099B3';'#CC9933';'#3333E6'};
-% rgbvals = hex2rgb(HexValsAsACharacterArray)
-%
-% * * * * * * * * * * * * * * * * * * * *
-% Chad A. Greene, April 2014
-%
-% Updated August 2014: Functionality remains exactly the same, but it's a
-% little more efficient and more robust. Thanks to Stephen Cobeldick for
-% the improvement tips. In this update, the documentation now shows that
-% the range may be set to 256. This is more intuitive than the previous
-% style, which scaled values from 0 to 255 with range set to 255.  Now you
-% can enter 256 or 255 for the range, and the answer will be the same--rgb
-% values scaled from 0 to 255. Function now also accepts character arrays
-% as input.
-%
-% * * * * * * * * * * * * * * * * * * * *
-% See also rgb2hex, dec2hex, hex2num, and ColorSpec.
-%
+%   See also uim.utility.rgb2hex
 
 %% Input checks:
 

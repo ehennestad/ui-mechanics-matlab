@@ -1,6 +1,28 @@
 classdef AxisZoom < uim.interface.PointerTool
+%AxisZoom Pointer tool for stretching the x or y limits by dragging
 %
-%   Tool for changing limits of axis (XLim or YLim) by dragging the axis.
+%   tool = uim.interface.pointertools.AxisZoom(hAxes) creates the tool for
+%   hAxes. The axes limits at construction become XLimOrig and YLimOrig,
+%   which the stretched limits never exceed. A PointerManager creates the
+%   tool for the key "axisZoom".
+%
+%   The tool provides the stretch operations, and the host drives them:
+%     - A left press records the figure CurrentPoint in
+%       PreviousMouseClickPoint and PreviousMousePoint. The tool does not
+%       update PreviousMousePoint during the drag.
+%     - Each motion while the button is down calls the host's
+%       ButtonMotionFcn(shift), with shift the figure CurrentPoint minus
+%       PreviousPoint, the point of the last motion the tool handled.
+%       The press does not reset PreviousPoint. Without a
+%       ButtonMotionFcn a drag raises an error.
+%     - dragXLimits() and dragYLimits(location) stretch the limits by
+%       the pointer distance from PreviousMousePoint.
+%   CurrentAxis ('x' or 'y') selects the pointer symbol. Right-button
+%   presses are ignored.
+%
+%   ExitMode is 'previous'.
+%
+%   See also uim.interface.pointertools.Pan, uim.interface.PointerManager
 
 %   TODO:
 %       [ ] Options for constraining zoom to original limits (implement)
@@ -12,30 +34,37 @@ classdef AxisZoom < uim.interface.PointerTool
     end
 
     properties
-        XLimOrig
-        YLimOrig
+        XLimOrig % [min, max] x bounds for the stretched limits, taken from the axes at construction
+        YLimOrig % [min, max] y bounds for the stretched limits, taken from the axes at construction
 
-        ConstrainX = true;
-        ConstrainY = true;
+        ConstrainX = true; % Not used
+        ConstrainY = true; % Not used
 
+        % Axis being dragged: 'x' (pointer 'left'), 'y' (pointer 'top'),
+        % or '' (pointer unchanged)
         CurrentAxis = ''
 
+        % Figure CurrentPoint at the last motion handled during a drag
         PreviousPoint (1,2) double = [nan, nan] % Todo: Should be property of pointermanager, or at least super class...???
-        IsButtonDown (1,1) logical = false
+        IsButtonDown (1,1) logical = false % True between a left press and its release
 
         PreviousMouseClickPoint   % Point where mouse was last clicked
-        PreviousMousePoint
+        PreviousMousePoint % Reference point for dragXLimits and dragYLimits, in figure units
     end
 
     methods
 
         function obj = AxisZoom(hAxes)
+        %AxisZoom Create the tool for an axes
+        %
+        %   tool = uim.interface.pointertools.AxisZoom(hAxes)
             obj@uim.interface.PointerTool(hAxes)
             obj.XLimOrig = obj.Axes.XLim;
             obj.YLimOrig = obj.Axes.YLim;
         end
 
         function setPointerSymbol(obj)
+        %setPointerSymbol Set the figure pointer for the axis in CurrentAxis
             switch obj.CurrentAxis
                 case 'y'
                     obj.Figure.Pointer = 'top';
@@ -47,6 +76,7 @@ classdef AxisZoom < uim.interface.PointerTool
         end
 
         function onButtonDown(obj, ~, evt)
+        %onButtonDown Record the press point for a drag
 
             if evt.Button == 3; return; end
 
@@ -60,6 +90,7 @@ classdef AxisZoom < uim.interface.PointerTool
         end
 
         function onButtonMotion(obj, ~, ~)
+        %onButtonMotion Call ButtonMotionFcn(shift) while dragging
 
             persistent isBusy
             if isempty(isBusy); isBusy = false; end
@@ -87,12 +118,27 @@ classdef AxisZoom < uim.interface.PointerTool
         end
 
         function onButtonUp(obj, ~, ~)
+        %onButtonUp End the drag
             obj.IsButtonDown = false;
             obj.PreviousMouseClickPoint = [];
             obj.IsActive = false;
         end
 
         function dragYLimits(obj, location)
+        %dragYLimits Stretch YLim by the vertical pointer distance
+        %
+        %   tool.dragYLimits(location) moves both ends of YLim outwards by
+        %   the fraction dy/h of the current height, where dy is the
+        %   vertical distance from PreviousMousePoint to the figure
+        %   CurrentPoint and h is the axes height (Position(4)). Dragging
+        %   up widens the limits and dragging down narrows them. The
+        %   result is clipped to YLimOrig. dy is in the figure's Units and
+        %   h in the axes Units, so the stretch matches the drag only when
+        %   both are pixels.
+        %
+        %   location is 'left' or 'right'. When it differs from the axes
+        %   YAxisLocation, the method calls yyaxis(hAxes, location) first,
+        %   which gives a plain axes a second y-axis.
 
             currentPoint = obj.Figure.CurrentPoint;
 
@@ -115,6 +161,16 @@ classdef AxisZoom < uim.interface.PointerTool
         end
 
         function dragXLimits(obj)
+        %dragXLimits Stretch XLim by the horizontal pointer distance
+        %
+        %   tool.dragXLimits() moves both ends of XLim outwards by the
+        %   fraction dx/w of the current width, where dx is the horizontal
+        %   distance from PreviousMousePoint to the figure CurrentPoint and
+        %   w is the axes width (Position(3)). Dragging right widens the
+        %   limits and dragging left narrows them. The result is clipped
+        %   to XLimOrig. dx is in the figure's Units and w in the axes
+        %   Units, so the stretch matches the drag only when both are
+        %   pixels.
 
             currentPoint = obj.Figure.CurrentPoint;
             deltaX = currentPoint(1) - obj.PreviousMousePoint(1);

@@ -1,11 +1,20 @@
 function varargout = circle(radius, numCornerSegmentPoints)
-%uim.shape.circle Create edgecoordinates for outline of a circle
+%circle Outline coordinates of a circle
 %
-%   [edgeCoordinates] = uim.shape.circle(radius) creates
-%   edgeCoordinates for a circle with given radius.
+%   edgeCoordinates = uim.shape.circle(radius) returns the outline of a
+%   circle of the given radius (default 10) as an n-by-2 array of [x, y]
+%   points. The circle lies in the first quadrant, touching both axes,
+%   so its centre is at [radius, radius]. The outline starts near the top
+%   left, runs counterclockwise and ends on its first point.
 %
-%   [xCoords, yCoords] = uim.shape.rectangle(boxSize) returns xCoords and
-%   yCoords are separate vectors.
+%   [xCoords, yCoords] = uim.shape.circle(radius) returns the x and y
+%   coordinates as separate row vectors.
+%
+%   [...] = uim.shape.circle(radius, numCornerSegmentPoints) sets the
+%   number of points per quarter circle (default 25), so the outline has
+%   4*numCornerSegmentPoints + 1 points.
+%
+%   See also uim.shape.rectangle
 
 %   Written by Eivind Hennestad | Vervaeke Lab
 

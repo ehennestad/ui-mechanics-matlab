@@ -1,15 +1,20 @@
 classdef UIComponentCanvas < handle
-%UIComponentCanvas A class based canvas for drawing modern ui components
+%UIComponentCanvas Invisible axes that ui components are drawn on
 %
 %   canvas = uim.UIComponentCanvas(hParent) creates a canvas covering the
-%   content area of hParent (a figure, uifigure or panel).
+%   content area of hParent (a figure, uifigure, panel or tab).
+%
+%   canvas = uim.UIComponentCanvas() creates a new figure and a canvas
+%   covering it.
 %
 %   canvas = uim.UIComponentCanvas(hParent, Tag=tagValue) additionally
-%   assigns a custom tag to the canvas and its axes.
+%   assigns a custom tag to the canvas. The canvas axes gets the tag
+%   "<tagValue> Axes".
 %
 %   canvas = uim.UIComponentCanvas.getOrCreate(hParent) returns the
 %   canvas already attached to hParent, or creates one if none exists.
-%   A parent container holds at most one canvas.
+%   A parent container holds at most one canvas; constructing a second
+%   one raises uim:UIComponentCanvas:DuplicateCanvas.
 %
 %   canvas = uim.UIComponentCanvas(hAxes), where hAxes is an axes,
 %   creates an *overlay* canvas: instead of covering the whole
@@ -40,6 +45,19 @@ classdef UIComponentCanvas < handle
 %       The canvas always fills its parent's content area and tracks
 %       parent resize; it has no position of its own.
 %
+%       Components (uim.abstract.Component subclasses) created with the
+%       canvas, its container or its target axes as parent draw on the
+%       canvas. Their positions are in pixels, with [1, 1] at the bottom
+%       left of the canvas.
+%
+%   Main properties, methods and events:
+%       Axes         - The axes the components are plotted in.
+%       Size         - [width, height] of the canvas in pixels.
+%       Children     - All components drawn on the canvas.
+%       reparent     - Move the canvas to another container.
+%       SizeChanged  - Event raised when the covered area is resized.
+%
+%   See also uim.abstract.Component, uim.abstract.Container
 
 % Note: In general, it is better to parent the canvas in a panel than
 % directly in a figure. When resizing the figure window, if the canvas axes
@@ -64,15 +82,15 @@ classdef UIComponentCanvas < handle
 %       intermediate size.
 
     properties (SetAccess = private, Transient)
-        Parent matlab.graphics.Graphics             % Parent handle (figure/uifigure)
+        Parent matlab.graphics.Graphics             % Container holding the canvas axes (figure, panel or tab)
         Axes matlab.graphics.axis.Axes               % Handle to the axes which components are plotted in
         TargetAxes matlab.graphics.axis.Axes        % Overlay mode: the data axes this canvas covers (empty in classic mode)
         Children uim.abstract.Component % Flat list of all components drawn on this canvas
-        Tag (1,1) string = "UI Component Canvas" % A tag which is also applied to the axes.
+        Tag (1,1) string = "UI Component Canvas" % Canvas tag. The axes tag is this value followed by " Axes".
     end
 
     properties (Dependent, Transient)
-        Size (1,2) double
+        Size (1,2) double % [width, height] in pixels of the area the canvas covers
     end
 
     properties (Access = private, Transient, Hidden)
@@ -85,11 +103,17 @@ classdef UIComponentCanvas < handle
     end
 
     events
+        % The covered area was sized or resized. Data:
+        % uim.event.SizeChangedData with sizes in pixels.
         SizeChanged
     end
 
     methods % Structors
         function obj = UIComponentCanvas(hParent, options)
+        %UIComponentCanvas Create a canvas in a container or over an axes
+        %
+        %   canvas = uim.UIComponentCanvas(hParent, Tag=tagValue) See the
+        %   class help.
 
             arguments
                 hParent (1,1) matlab.graphics.Graphics = figure()
@@ -171,6 +195,18 @@ classdef UIComponentCanvas < handle
     methods
 
         function reparent(obj, newParent)
+        %reparent Move the canvas to another container
+        %
+        %   canvas.reparent(newParent) moves the canvas axes to newParent
+        %   (a figure, uifigure, panel or tab), resizes it to the new
+        %   content area and moves the canvas registration, listeners and
+        %   stacking hook with it.
+        %
+        %   Errors:
+        %       uim:UIComponentCanvas:OverlayReparentNotSupported - the
+        %           canvas is an overlay canvas.
+        %       uim:UIComponentCanvas:DuplicateCanvas - newParent already
+        %           has a canvas.
             if obj.isOverlay()
                 error('uim:UIComponentCanvas:OverlayReparentNotSupported', ...
                     ['An overlay canvas follows its target axes and can not ', ...
@@ -180,12 +216,19 @@ classdef UIComponentCanvas < handle
         end
 
         function showTooltip(obj, text, position)
+        %showTooltip Show a tooltip on the canvas
+        %
+        %   canvas.showTooltip(text, position) shows text at position, an
+        %   [x, y] point in canvas pixels.
             if ~isempty(obj.Tooltip) && isvalid(obj.Tooltip)
                 obj.Tooltip.showTooltip(text, position)
             end
         end
 
         function hideTooltip(obj)
+        %hideTooltip Hide the canvas tooltip
+        %
+        %   canvas.hideTooltip()
             if ~isempty(obj.Tooltip) && isvalid(obj.Tooltip)
                 obj.Tooltip.hideTooltip()
             end
@@ -516,6 +559,13 @@ classdef UIComponentCanvas < handle
         end
 
         function locationPoint = getLocationPoint(obj, locationKey)
+        %getLocationPoint Return the canvas point named by a location key
+        %
+        %   locationPoint = canvas.getLocationPoint(locationKey) returns
+        %   the [x, y] point in canvas pixels for locationKey (for example
+        %   'northeast' or 'center').
+        %
+        %   See also uim.abstract.Component.location2point
             locationPoint = uim.abstract.Component.location2point(obj.PixelSize, locationKey);
         end
     end
@@ -604,6 +654,8 @@ classdef UIComponentCanvas < handle
         function obj = getOrCreate(hParent)
         %getOrCreate Return the canvas attached to hParent, creating one if needed
         %
+        %   canvas = uim.UIComponentCanvas.getOrCreate(hParent)
+        %
         %   hParent can be a figure, uifigure, panel or tab (whole-container
         %   canvas) or an axes (overlay canvas covering that axes).
             obj = getappdata(hParent, 'UIComponentCanvas');
@@ -613,6 +665,14 @@ classdef UIComponentCanvas < handle
         end
 
         function hAxes = createComponentAxes(hParent)
+        %createComponentAxes Create an invisible axes for a component
+        %
+        %   hAxes = uim.UIComponentCanvas.createComponentAxes(hParent)
+        %   creates an axes in hParent for widgets that draw in their own
+        %   axes. The axes is invisible, has pixel units, equal axis
+        %   scaling, hold on, no ticks, HandleVisibility 'off', the tag
+        %   'Widget Container' and interactivity disabled. It is not a
+        %   canvas and is not registered with any canvas.
 
             args = uim.internal.getAxesToolbarArgs();
 

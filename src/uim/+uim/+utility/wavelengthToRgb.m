@@ -1,5 +1,14 @@
 function rgb = wavelengthToRgb(wavelength)
-%WAVELENGTHTORGB Approximate a visible-light wavelength as an RGB triplet.
+%wavelengthToRgb Approximate the colour of visible light of a wavelength
+%
+%   rgb = uim.utility.wavelengthToRgb(wavelength) returns a 1-by-3 RGB
+%   triplet (values from 0 to 1) for a wavelength in nanometres.
+%   Wavelengths are clamped to 380-780 nm, and the brightness falls off
+%   towards both ends of that range (below 420 nm and above 700 nm).
+%   wavelength must be a positive, finite scalar.
+%
+%   Example:
+%       uim.utility.wavelengthToRgb(545)   % [0.5, 1, 0]
 
     arguments
         wavelength (1,1) double {mustBeFinite, mustBePositive}

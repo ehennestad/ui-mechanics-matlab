@@ -38,6 +38,10 @@ classdef TabButtonLight < uim.style.ButtonScheme
 
     methods (Static)
         function rgb = getFocusColor
+        %getFocusColor Accent colour of the selected tab
+        %
+        %   rgb = uim.style.TabButtonLight.getFocusColor() returns the RGB
+        %   triplet [0, 0.447, 0.741] used as the selected tab fill.
             rgb = [0.0000, 0.4470, 0.7410];
         end
     end

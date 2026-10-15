@@ -1,6 +1,36 @@
 classdef MessageBox < uim.mixin.Resizable
-%uim.widget.MessageBox A class that implements a messagebox for showing
-% popupmessages within a figure window.
+%MessageBox Overlay box that shows text messages and progress in a figure
+%
+%   messageBox = uim.widget.MessageBox(hParent) creates a hidden message
+%   box over hParent, which is an axes, a panel or a figure. The box is
+%   drawn in an axes of its own:
+%     - over an axes, the box axes is created in the parent of that axes
+%       and centered on it;
+%     - in a figure, the box axes is centered in the figure;
+%     - in a panel, the box axes fills the panel, and the panel itself is
+%       made visible while a message shows and hidden when it is cleared.
+%   Over an axes or in a figure the box has the size MinSize, or less
+%   where the parent is smaller. Over an axes, construction also creates
+%   an imrect in that axes and needs the Image Processing Toolbox.
+%
+%   messageBox = uim.widget.MessageBox(hParent, Name, Value, ...) sets
+%   properties before the box is created. Names must be character
+%   vectors: string names, including Name=Value syntax, raise
+%   uim:MessageBox:InvalidPairs. A pair that can not be assigned is
+%   reported in the Command Window and skipped.
+%
+%   Use displayMessage and clearMessage to show and hide a message, and
+%   waitbar to show a progress bar along the bottom edge of the box. A
+%   long message wraps onto several lines, and the box grows in height
+%   to fit it until the message is cleared. The close button in the top
+%   right corner clears the message.
+%
+%   Example:
+%       hFigure = figure;
+%       messageBox = uim.widget.MessageBox(hFigure, 'FontSize', 12);
+%       messageBox.displayMessage("Loading data...", 2)
+%
+%   See also uim.widget.Waitbar
 
 % TODO:
 %   [ ] Remove dependence on uim.mixin.Resizable (imrect fucks up the axes configurations)
@@ -32,22 +62,33 @@ classdef MessageBox < uim.mixin.Resizable
 
     properties
         %Parent %Resizable property for which axes the imrect is plotted into
+
+        % Position of the box in the units of the parent, recorded when
+        % the box is created. Assigning it does not move the box.
         Position
-        BackgroundColor = ones(1,3) * 0.2
-        BackgroundAlpha = 0.7
-        BorderColor = ones(1,3) * 0.5
-        FontSize = 14
-        FontColor = ones(1,3)*0.8
+
+        BackgroundColor = ones(1,3) * 0.2   % Fill color of the box. Set at construction.
+        BackgroundAlpha = 0.7               % Opacity of the box fill, from 0 to 1
+        BorderColor = ones(1,3) * 0.5       % Edge color of the box. Set at construction.
+        FontSize = 14                       % Font size of the message. Set at construction.
+        FontColor = ones(1,3)*0.8           % Color of the message and close button. Set at construction.
     end % \properties Dependent?
 
     properties
-        Units = 'pixel'
+        Units = 'pixel'     % Units of the box axes and of MinSize. Set at construction.
+
+        % [width, height] of the box in Units. The box is smaller where
+        % the parent is smaller. In a panel the box fills the panel
+        % instead, until resetAxesPosition is called.
         MinSize = [300, 50] % Should be MaxSize....
     end % \properties
 
     methods
 
         function obj = MessageBox(hParent, varargin)
+        %MessageBox Create a hidden message box over an axes, panel or figure
+        %
+        %   messageBox = uim.widget.MessageBox(hParent, Name, Value, ...)
 
             msg = 'Invalid Sequence of Name, Value Parameters';
             assert(all(cellfun(@(arg) ischar(arg), varargin(1:2:end))), ...
@@ -460,10 +501,32 @@ classdef MessageBox < uim.mixin.Resizable
     methods (Access = public)
 
         function centerInWindow(obj, pos)
+        %centerInWindow Move the box to the center of a rectangle
+        %
+        %   messageBox.centerInWindow(pos) moves the box so its center is
+        %   the center of pos, an [x, y, width, height] rectangle in the
+        %   units of the box axes (Units). pos can also be a graphics
+        %   object, whose Position is used.
+        %
+        %   See also uim.utility.layout.centerObjectInRectangle
             uim.utility.layout.centerObjectInRectangle(obj.Axes, pos)
         end
 
         function activateGlobalMessageDisplay(obj, mode)
+        %activateGlobalMessageDisplay Route calls to a global fprintf to this box
+        %
+        %   messageBox.activateGlobalMessageDisplay(mode) assigns a
+        %   function handle to the global variable fprintf. Code that
+        %   declares global fprintf then calls this box instead of the
+        %   built-in fprintf.
+        %
+        %   With mode "update" (the default), every argument is passed on,
+        %   so fprintf(msg, duration, doFade) calls
+        %   displayMessage(msg, duration, doFade). Format arguments are
+        %   not applied. With mode "display", fprintf(msg) calls
+        %   displayMessage(msg). Other modes leave the global unchanged.
+        %
+        %   The global keeps its value after the box is deleted.
 
             if nargin < 2
                 mode = 'update';
@@ -480,11 +543,25 @@ classdef MessageBox < uim.mixin.Resizable
         end
 
         function activateGlobalWaitbar(obj)
+        %activateGlobalWaitbar Route calls to a global waitbar to this box
+        %
+        %   messageBox.activateGlobalWaitbar() assigns this box's waitbar
+        %   method to the global variable waitbar. Code that declares
+        %   global waitbar then calls waitbar(p, message, action) on this
+        %   box instead of the built-in waitbar.
+        %
+        %   See also deactivateGlobalWaitbar
             global waitbar
             waitbar = @obj.waitbar;
         end
 
         function deactivateGlobalWaitbar(obj)
+        %deactivateGlobalWaitbar Empty the global waitbar and close the progress bar
+        %
+        %   messageBox.deactivateGlobalWaitbar() sets the global variable
+        %   waitbar to [] and closes this box's progress bar.
+        %
+        %   See also activateGlobalWaitbar
          	global waitbar
             waitbar = [];
 
@@ -492,6 +569,22 @@ classdef MessageBox < uim.mixin.Resizable
         end
 
         function displayMessage(obj, msg, duration, doFade)
+        %displayMessage Show a message in the box
+        %
+        %   messageBox.displayMessage(msg) shows msg, a character vector or
+        %   string, until clearMessage is called or the close button is
+        %   pressed. Newline characters are removed, and a message too
+        %   long for one line wraps onto several lines.
+        %
+        %   messageBox.displayMessage(msg, duration) clears the message
+        %   after duration seconds, using a single-shot timer. An empty
+        %   duration keeps the message until it is cleared.
+        %
+        %   messageBox.displayMessage(msg, duration, doFade) fades the box
+        %   in when doFade is true and the box is hidden, and fades it out
+        %   when the timer clears it. The default is false.
+        %
+        %   Showing a one-line message that is already shown does nothing.
 
             if isempty(obj); return; end
 
@@ -550,6 +643,14 @@ classdef MessageBox < uim.mixin.Resizable
         end % \displayMessage
 
         function clearMessage(obj, doFade)
+        %clearMessage Hide the message and the box
+        %
+        %   messageBox.clearMessage() hides the message, restores the box
+        %   height and closes an active progress bar. A panel parent is
+        %   hidden as well.
+        %
+        %   messageBox.clearMessage(doFade) fades the box out first when
+        %   doFade is true. The default is false.
 
             if isempty(obj); return; end
 
@@ -600,10 +701,19 @@ classdef MessageBox < uim.mixin.Resizable
         end % \clearMessage
 
         function tf = isMessageDisplaying(obj)
+        %isMessageDisplaying True while a message is shown
+        %
+        %   tf = messageBox.isMessageDisplaying() returns true when the
+        %   message text is visible and not empty.
             tf = strcmp(obj.MessageText.Visible, 'on') && ~isempty(obj.MessageText.String);
         end
 
         function resetAxesPosition(obj)
+        %resetAxesPosition Restore the box to MinSize, centered on the parent
+        %
+        %   messageBox.resetAxesPosition() sizes the box to MinSize, or
+        %   less where the parent is smaller. Over an axes or in a figure
+        %   it centers the box on the parent.
 
              % Get parent position
             origParentUnits = obj.ReferenceAxes.Units;
@@ -629,6 +739,20 @@ classdef MessageBox < uim.mixin.Resizable
     methods (Access = public) % Waitbar
 
         function waitbar(obj, p, message, action)
+        %waitbar Show, update or close a progress bar along the bottom of the box
+        %
+        %   messageBox.waitbar(p) shows the progress bar with the fraction
+        %   p completed. Values of p above 1 are shown as 1, and values
+        %   below 0 raise an error.
+        %
+        %   messageBox.waitbar(p, message) also shows message with
+        %   displayMessage. An empty message leaves the text as it is.
+        %
+        %   messageBox.waitbar(p, message, "close") hides the progress bar
+        %   and resets it to 0, ignoring p and message. clearMessage also
+        %   closes it.
+        %
+        %   The progress bar is a uim.widget.Waitbar created on first use.
 
             if nargin < 3; message = ''; end
             if nargin < 4; action = 'set'; end

@@ -1,16 +1,47 @@
 classdef Container < uim.abstract.Component
-%Container A container for placing other components within.
+%Container Abstract base class for components that hold other components
 %
-%   A container's CanvasMode determines where it draws: 'shared' (the
-%   default) uses its parent's canvas; 'private' gives it its own
-%   dedicated axes, created via createPrivateCanvas.
+%   A container is a uim.abstract.Component that other components can
+%   use as their parent. A component created with a container as its
+%   parent is placed in the container's graphics container (see
+%   getGraphicsContainer) and positioned relative to it.
+%
+%   Construction (through a concrete subclass):
+%       obj = SubclassName(hParent, Name=Value)
+%   accepts the same parents and name-value arguments as
+%   uim.abstract.Component, plus CanvasMode:
+%       'shared'  - (default) draw on the parent's canvas.
+%       'private' - create a dedicated, invisible axes for the container
+%                   in the parent's graphics container, sized to
+%                   Position. Components created with the container as
+%                   parent draw in that axes. Use it when the shared
+%                   canvas is heavily used by other content. A
+%                   container on an overlay canvas (a canvas covering
+%                   an axes) can not use 'private' and raises
+%                   uim:Container:PrivateCanvasUnsupportedOnOverlay.
+%
+%   Subclass contract:
+%       - Fulfil the uim.abstract.Component contract.
+%       - Define the property Children (SetAccess = protected,
+%         Transient, class uim.abstract.Component).
+%       - Container also defines the protected methods onChildAdded,
+%         onChildRemoved, moveChildren and resizeChildren. They do
+%         nothing and Container does not call them; subclasses may
+%         override and call them.
+%
+%   See also uim.abstract.Component, uim.container.Panel,
+%   uim.container.TabGroup, uim.widget.Toolbar
 
     properties (Abstract, SetAccess = protected, Transient)
-        Children uim.abstract.Component
+        Children uim.abstract.Component % Components held by the container
     end
 
     methods
         function obj = Container(varargin)
+        %Container Construct the container part of a subclass instance
+        %
+        %   obj@uim.abstract.Container(hParent, Name, Value, ...) is called
+        %   from a subclass constructor. See the class help.
         	obj@uim.abstract.Component(varargin{:})
         end
     end

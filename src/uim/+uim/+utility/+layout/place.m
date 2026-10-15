@@ -1,12 +1,28 @@
 function place(hFigure, location, offset)
-%PLACE Place figure at specified screen location
+%place Move a figure to an edge, corner or the centre of its monitor
 %
-%   place(hFigure, location) places the figure in the specified location
-%   location can be: bottom, top, center, left, right, southeast, southwest
-%   northeast, northwest.
+%   uim.utility.layout.place(hFigure, location) moves the figure, keeping
+%   its size, on the monitor that uim.utility.getCurrentScreenSize reports
+%   for it. location is one of:
+%       'bottom', 'top'    - Align that edge; x is unchanged
+%       'left', 'right'    - Align that edge; y is unchanged
+%       'southwest', 'southeast', 'northwest', 'northeast'
+%                          - Align the matching corner
+%       'center'           - Centre the figure on the monitor
+%   Any other value leaves the figure where it is. hFigure.Position must
+%   be in pixels.
 %
-%   place(hFigure, location, offset) places the figure at a location with
-%   an offset. offset can be a scalar or a vector with x- and y-offset.
+%   uim.utility.layout.place(hFigure, location, offset) adds offset
+%   ([dx, dy], or a scalar for both) to the aligned position. The offset
+%   is added for every location, so a positive offset moves a figure
+%   placed at the top or right edge past that edge. 'center' ignores
+%   offset.
+%
+%   Example:
+%       uim.utility.layout.place(hFigure, "southwest", [3, 4])
+%
+%   See also uim.utility.centerFigureOnScreen,
+%   uim.utility.getCurrentScreenSize
 
     if nargin < 3; offset = [0, 0]; end
 

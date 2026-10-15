@@ -1,9 +1,15 @@
 classdef Location < handle
-%Location Enumeration of anchor locations used for component layout.
+%Location Enumeration of named layout locations
 %
-%   Each member carries the corresponding lowercase location key (Key)
-%   used by the string-based layout properties, e.g.
-%   uim.enum.Location.NORTHWEST.Key is 'northwest'.
+%   Each member carries its name as a lowercase character vector in the
+%   Key property, e.g. uim.enum.Location.NORTHWEST.Key is 'northwest'.
+%
+%   Layout properties in this toolbox take text, not members of this
+%   enumeration. Use Key to get the text: the keys 'center',
+%   'northeast', 'northwest', 'southeast' and 'southwest' are valid
+%   values of uim.abstract.Component's Location property.
+%
+%   See also uim.abstract.Component
 
     enumeration
         BOTTOM('bottom')

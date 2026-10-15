@@ -1,12 +1,15 @@
 function rootDir = toolboxdir()
-    % TOOLBOXDIR Return the root directory of the toolbox
-    %
-    %   ROOT_DIR = TOOLBOXDIR() returns the root directory of the toolbox.
-    %
-    %   Example:
-    %       rootDir = uim.toolboxdir()
-    %
-    %   See also uim.toolboxversion
+%toolboxdir Return the root folder of the toolbox
+%
+%   rootDir = uim.toolboxdir() returns the absolute path of the folder
+%   that contains the uim code folder, i.e. two levels above the +uim
+%   namespace folder. In a source checkout this is the repository's src
+%   folder. rootDir is a character vector.
+%
+%   Example:
+%       rootDir = uim.toolboxdir()
+%
+%   See also uim.toolboxversion
 
     % Get the location of this function
     functionPath = mfilename('fullpath');

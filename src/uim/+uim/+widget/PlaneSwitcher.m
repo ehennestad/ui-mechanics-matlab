@@ -1,20 +1,63 @@
 classdef PlaneSwitcher < uim.mixin.NameValueAssignable
+%PlaneSwitcher Toggle button with a pop-up slider for choosing a z-plane
+%
+%   A plane switcher draws a bold "Z" text button. Clicking it shows or
+%   hides a vertical uim.widget.Slider that runs from 1 to NumPlanes, and
+%   moving the slider calls Callback with the new value.
+%   uim.widget.PlaybackControl uses it to pick the plane of a volumetric
+%   image stack.
+%
+%   switcher = uim.widget.PlaneSwitcher(parent) creates a switcher for
+%   one plane. If parent is an axes, the button is drawn into it;
+%   otherwise the switcher creates its own invisible pixel-unit axes in
+%   parent, for example a figure or uipanel. The slider is created at
+%   construction, hidden, in the parent of that axes.
+%
+%   switcher = uim.widget.PlaneSwitcher(parent, Name=Value) also sets
+%   public properties, for example
+%
+%       switcher = uim.widget.PlaneSwitcher(hPanel, NumPlanes=5, ...
+%           CurrentPlane=2, Callback=@(plane) disp(plane));
+%
+%   Limitations:
+%       NumPlanes is read when the slider is created; changing it later
+%       does not update the slider. The button is placed from Position
+%       when it is drawn; changing Position(1:2) later does not move it.
+%       Visible, BackgroundColor and PlaneSwitcherToggleButtonSize have no
+%       effect on the graphics.
+%
+%   See also uim.widget.PlaybackControl, uim.widget.Slider,
+%   uim.widget.ChannelIndicator
 
     properties (Dependent)
+        % Position - [x, y, width, height] in pixels. Normalized values
+        % (width or height <= 1) are rejected. The button is drawn with
+        % its right edge at the horizontal centre of the position. With an
+        % internal axes, width and height set the axes size.
         Position (1,4) double
     end
 
     properties (Access = public)
-        Visible matlab.lang.OnOffSwitchState = 'on'
-        NumPlanes = 1
+        Visible matlab.lang.OnOffSwitchState = 'on' % Stored only; does not show or hide the switcher
+        NumPlanes = 1 % Number of planes, the slider's maximum; read when the slider is created
+
+        % CurrentPlane - Index of the current plane. Setting a scalar moves
+        % the slider. While it holds more than one index, the slider is not
+        % updated and the button does not open the slider.
         CurrentPlane = 1
     end
 
     properties % Appearance
-        BackgroundColor = [0.94, 0.94, 0.94];
-        ForegroundColor = ones(1,3) * 0.6
-        PlaneSwitcherToggleButtonSize = 12;
+        BackgroundColor = [0.94, 0.94, 0.94]; % Not used by the drawing
 
+        % ForegroundColor - RGB triplet for the "Z" button and the slider
+        % text. The button brightens by 0.15 per component while hovered.
+        ForegroundColor = ones(1,3) * 0.6
+
+        PlaneSwitcherToggleButtonSize = 12; % Not used by the drawing
+
+        % Callback - Function called as Callback(value) when the user moves
+        % the slider; value is the slider's Value
         Callback = []
     end
 
@@ -44,6 +87,11 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
     methods % Structor
 
         function obj = PlaneSwitcher(hParent, varargin)
+        %PlaneSwitcher Create a plane switcher
+        %
+        %   switcher = uim.widget.PlaneSwitcher(parent, Name=Value)
+        %
+        %   See the class help for the accepted parents and options.
 
             obj.Figure = ancestor(hParent, 'figure');
             % Draggable parts read CurrentPoint from motion listeners; in

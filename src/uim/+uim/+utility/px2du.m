@@ -1,7 +1,20 @@
 function varargout = px2du(ax, pixelCoords, recursive)
-%px2du Convert pixel coordinates to data unit coordinates
+%px2du Convert pixel coordinates to axes data coordinates
 %
-%   dataUnits = px2du(ax, pixelCoords)
+%   dataUnits = uim.utility.px2du(ax, pixelCoords) converts the n-by-2
+%   array of [x, y] points in pixels from the lower-left corner of axes
+%   ax to data units. The axes pixel position from getpixelposition is
+%   mapped onto XLim and YLim, and reversed axis directions (XDir or
+%   YDir 'reverse') are taken into account.
+%
+%   dataUnits = uim.utility.px2du(ax, pixelCoords, recursive) with
+%   recursive true reads pixelCoords as relative to the figure instead
+%   (default false).
+%
+%   [x, y] = uim.utility.px2du(...) returns the x and y coordinates as
+%   separate column vectors.
+%
+%   See also uim.utility.du2px
 
     if nargin < 3
         recursive = false; % See getpixelposition doc

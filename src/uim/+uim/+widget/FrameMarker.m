@@ -1,4 +1,26 @@
 classdef FrameMarker < uim.mixin.NameValueAssignable
+%FrameMarker Draggable vertical line marking the current frame in a plot
+%
+%   marker = uim.widget.FrameMarker(hAxes, Name=Value) draws a vertical
+%   line at x = Value in hAxes, with a downward triangle knob at its top
+%   and an upward triangle knob at its bottom. The line spans y = 0 to
+%   y = 1 in data units, so it reaches the edges of an axes with YLim
+%   [0, 1]. Name-value arguments set the public properties of the same
+%   name; other names are ignored.
+%
+%   Dragging either knob moves the line to the pointer x, clamped to
+%   [Minimum, Maximum] and not rounded, and calls ValueChangedFcn on
+%   every pointer move. Assigning Value moves the line without calling
+%   ValueChangedFcn.
+%
+%   The parts are primitive lines with HandleVisibility "off", excluded
+%   from data tips.
+%
+%   Example:
+%       hAxes = axes(figure, XLim=[1, 100], YLim=[0, 1]);
+%       marker = uim.widget.FrameMarker(hAxes, Minimum=1, Maximum=100, ...
+%           Value=20, ValueChangedFcn=@(src, evt) disp(evt.NewValue));
+%       marker.Value = 50;
 
     % Todo
     % [ ] Create Interactive frame marker
@@ -6,22 +28,27 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
     % [ ]
 
     properties
-        Value = 1
-        Minimum
-        Maximum
+        Value = 1       % x position of the line in data units
+        Minimum         % Lowest value a drag can set. Empty means no limit.
+        Maximum         % Highest value a drag can set. Empty means no limit.
+
+        % Called as fcn(src, evt) on every pointer move while a knob is
+        % dragged. evt: uim.event.ValueChangedEventData (OldValue, NewValue)
         ValueChangedFcn
     end
 
+    % The appearance properties are not used by the widget: the marker
+    % is drawn in grey with fixed line width, knob size and knob symbols.
     properties % Appearance
-        Color
-        EdgeColor
-        LineWidth = 1;
-        MarkerSize = 10; % In length direction (pixel units)
-        MarkerSymbol = 'v'
+        Color               % Not used by the widget
+        EdgeColor           % Not used by the widget
+        LineWidth = 1;      % Not used by the widget
+        MarkerSize = 10;    % Not used by the widget
+        MarkerSymbol = 'v'  % Not used by the widget
     end
 
     properties (Access = public)
-        Visible matlab.lang.OnOffSwitchState = 'on'
+        Visible matlab.lang.OnOffSwitchState = 'on'     % Show ("on") or hide ("off") the line and knobs
     end
 
     properties (Access = private)
@@ -47,6 +74,9 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
 
     methods
         function obj = FrameMarker(hAxes, varargin)
+        %FrameMarker Create a frame marker in an axes
+        %
+        %   marker = uim.widget.FrameMarker(hAxes, Name=Value)
             obj.Axes = hAxes;
             obj.ParentFigure = ancestor(hAxes, 'figure');
             % Knob drags read CurrentPoint from motion listeners; in
@@ -177,7 +207,10 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
     methods
 
         function onMouseEnterSlider(obj, h, varargin)
-        %onMouseEntered Callback for mouse entering button
+        %onMouseEnterSlider Enlarge a knob and show the hand pointer
+        %
+        %   marker.onMouseEnterSlider(h) is the pointer-enter callback the
+        %   widget installs on each knob h.
             if isgraphics(h, 'patch')
                 h.FaceColor = ones(1,3) * 0.8;
             elseif isgraphics(h, 'line') % Primitive or chart line
@@ -191,7 +224,11 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
         end
 
         function onMouseExitSlider(obj, h, varargin)
-        %onMouseEntered Callback for mouse leaving button
+        %onMouseExitSlider Restore a knob and the arrow pointer
+        %
+        %   marker.onMouseExitSlider(h) is the pointer-exit callback the
+        %   widget installs on each knob h. During a drag it leaves the
+        %   knob and the pointer as they are.
             if isgraphics(h, 'patch')
                 h.FaceColor = ones(1,3) * 0.6;
             elseif isgraphics(h, 'line') % Primitive or chart line
@@ -210,6 +247,10 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
         % % % Callbacks for the scroller knob
 
         function knobPressed(obj, ~, ~)
+        %knobPressed Start a drag of the marker
+        %
+        %   marker.knobPressed(src, evt) is the ButtonDownFcn of both
+        %   knobs. It listens to pointer motion and release in the figure.
 
             el = listener(obj.ParentFigure, 'WindowMouseMotion', @obj.knobMoving);
             obj.WindowMouseMotionListener = el;
@@ -221,6 +262,11 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
         end
 
         function knobMoving(obj, ~, ~)
+        %knobMoving Move the marker to the pointer and notify the host
+        %
+        %   marker.knobMoving(src, evt) is the pointer-motion callback
+        %   during a drag. It sets Value to the pointer x in the axes,
+        %   clamped to [Minimum, Maximum], and calls ValueChangedFcn.
 
             if obj.IsButtonDown % Just in case???
                 mousePoint = obj.Axes.CurrentPoint(1);
@@ -247,6 +293,11 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
         end
 
         function knobReleased(obj, ~, ~)
+        %knobReleased End a drag of the marker
+        %
+        %   marker.knobReleased(src, evt) is the pointer-release callback
+        %   during a drag. It removes the drag listeners and restores the
+        %   size and color of the top knob.
 
             obj.IsButtonDown = false;
 

@@ -1,4 +1,43 @@
 classdef ChannelIndicator < uim.mixin.NameValueAssignable
+%ChannelIndicator Row of clickable colour dots for selecting image channels
+%
+%   A channel indicator draws one round indicator per channel, filled with
+%   that channel's colour. Selected channels (CurrentChannels) are drawn
+%   nearly opaque; deselected channels are faded and crossed out. Clicking
+%   the indicators changes the selection, and a context menu changes a
+%   channel's colour. uim.widget.PlaybackControl uses it to pick which
+%   channels of a multichannel image stack to show.
+%
+%   indicator = uim.widget.ChannelIndicator(parent) creates an indicator
+%   for one channel. If parent is an axes, the indicators are drawn into
+%   it, and the axes must have hold on (NextPlot 'add'); otherwise the
+%   indicator creates its own invisible pixel-unit axes in parent, for
+%   example a figure or uipanel.
+%
+%   indicator = uim.widget.ChannelIndicator(parent, Name=Value) also sets
+%   public properties, for example
+%
+%       indicator = uim.widget.ChannelIndicator(hPanel, NumChannels=3, ...
+%           Callback=@(channels) disp(channels));
+%
+%   Mouse interaction:
+%       Click         - Select only the clicked channel
+%       Shift-click   - Add the clicked channel to the selection
+%       Double-click  - Select all channels, or only the clicked channel
+%                       when all are already selected
+%       Right-click   - Open the colour menu: preset colours, a colour
+%                       picker, a wavelength (nm) converted with
+%                       uim.utility.wavelengthToRgb, and "Make Current
+%                       Colors Default"
+%
+%   Limitations:
+%       NumChannels cannot exceed the number of entries in ChannelColors
+%       (six by default); drawing more indicators raises
+%       MATLAB:badsubscript. The indicators are placed from Position(1)
+%       when they are drawn; changing Position(1:2) later does not move
+%       them. Visible and BackgroundColor have no effect on the graphics.
+%
+%   See also uim.widget.PlaybackControl, uim.widget.PlaneSwitcher
 
     % Copied some properties and methods from PlaybackControl. Should make
     % a super class for simple widgets for placing in an axes, or
@@ -16,29 +55,49 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 % - - - - - - - - - - PROPERTIES - - - - - - - - - -
 
     properties (Dependent)
+        % Position - [x, y, width, height] in pixels. Normalized values
+        % (width or height <= 1) are rejected. The width follows from
+        % NumChannels, ChannelIndicatorSize and ChannelIndicatorSpacing.
+        % With an internal axes, width and height set the axes size.
         Position (1,4) double
     end
 
     properties (Access = public)
-        Visible matlab.lang.OnOffSwitchState = 'on'
-        NumChannels = 1
-        CurrentChannels = 1
+        Visible matlab.lang.OnOffSwitchState = 'on' % Stored only; does not show or hide the indicators
+        NumChannels = 1 % Number of channel indicators; at most numel(ChannelColors)
+        CurrentChannels = 1 % Indices of the selected channels; setting it updates the indicators
     end
 
     properties % Appearance
-        BackgroundColor = [0.94, 0.94, 0.94];
+        BackgroundColor = [0.94, 0.94, 0.94]; % Not used by the drawing
 
-        ChannelIndicatorSize = 12;
+        ChannelIndicatorSize = 12; % Diameter of each indicator in pixels, applied when the indicators are drawn
+
+        % ChannelIndicatorSpacing - Gap between indicators in pixels, used
+        % to compute the widget width. The drawing uses a fixed 3-pixel gap.
         ChannelIndicatorSpacing = 3;
+
+        % ChannelColors - Cell array with one colour per channel, each a
+        % colour name such as 'r' or an RGB triplet. Setting it recolours
+        % the indicators whose colour changed.
         ChannelColors = {'r', 'g', 'b', 'c', 'm', 'y'};
 
+        % Callback - Function called as Callback(currentChannels) after
+        % the user changes the selection by clicking an indicator
         Callback = []
+
+        % ChannelColorCallback - Function called as
+        % ChannelColorCallback(indicator, evtData) when the user picks a
+        % colour from the context menu, before ChannelColors is updated.
+        % evtData is a uim.event.EventData with fields ChannelNumber and
+        % RgbColor.
         ChannelColorCallback = []
-        % ChangeDefaultsCallback - Callback function that can be attached
-        % to respond to changes in default color selection. The function
-        % should take a single input, a cell array with numChannels
-        % element, where each element is one rgb value, i.e
-        %   changeDefaultFcn(cellArrayWithRgbPerChannel)
+
+        % ChangeDefaultsCallback - Function called as
+        % ChangeDefaultsCallback(channelColors) when the user chooses
+        % "Make Current Colors Default" in the context menu. channelColors
+        % is the current ChannelColors cell array: one entry per colour in
+        % the list (not per channel), each a colour name or RGB triplet.
         ChangeDefaultsCallback = []
     end
 
@@ -74,6 +133,11 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
     methods % Structor
 
         function obj = ChannelIndicator(hParent, varargin)
+        %ChannelIndicator Create a channel indicator
+        %
+        %   indicator = uim.widget.ChannelIndicator(parent, Name=Value)
+        %
+        %   See the class help for the accepted parents and options.
 
             obj.Figure = ancestor(hParent, 'figure');
             % Draggable parts read CurrentPoint from motion listeners; in
@@ -146,6 +210,13 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
             obj.postSetChannelColors(oldColors)
         end
         function postSetChannelColors(obj, oldColors)
+        %postSetChannelColors Recolour indicators after ChannelColors changes
+        %
+        %   indicator.postSetChannelColors(oldColors) recolours each drawn
+        %   indicator whose entry in ChannelColors differs from oldColors.
+        %   The ChannelColors set method calls it; indicators beyond the
+        %   new colour list keep their colour.
+
             if isempty(obj.ChannelIndicators); return; end
 
             % Compare against the previous list where it exists; entries
@@ -163,6 +234,16 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
     methods
         function changeChannelColor(obj, src, ~)
+        %changeChannelColor Apply a colour chosen in the context menu
+        %
+        %   indicator.changeChannelColor(src, ~) is the MenuSelectedFcn of
+        %   the colour menu items. src.Text selects a preset colour, opens
+        %   a colour picker ('Select Color...') or asks for a wavelength in
+        %   nm ('Enter Wavelength...'). The colour goes to the channel that
+        %   was last right-clicked: ChannelColorCallback is called first,
+        %   then ChannelColors is updated. Cancelling a dialog changes
+        %   nothing.
+
             chNum = obj.LastChannelPressed;
 
             [colorLabels, colorValues] = obj.getColorOptions();
@@ -195,6 +276,12 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         end
 
         function onChangeDefaultsMenuItemClicked(obj, ~, ~)
+        %onChangeDefaultsMenuItemClicked Pass the current colours to ChangeDefaultsCallback
+        %
+        %   indicator.onChangeDefaultsMenuItemClicked(~, ~) is the callback
+        %   of the "Make Current Colors Default" menu item. It calls
+        %   ChangeDefaultsCallback(ChannelColors) when the callback is set.
+
             if ~isempty(obj.ChangeDefaultsCallback)
                 channelColors = obj.ChannelColors;
                 obj.ChangeDefaultsCallback(channelColors)
@@ -202,6 +289,13 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         end
 
         function selectChannel(obj, channelNum)
+        %selectChannel Highlight the outline of one indicator
+        %
+        %   indicator.selectChannel(channelNum) gives indicator channelNum
+        %   a white outline with LineWidth 1 and the other indicators a
+        %   light grey outline. It does not change CurrentChannels, and
+        %   the other indicators keep their LineWidth.
+
             set(obj.ChannelIndicators, 'EdgeColor', ones(1,3)*0.8);
             set(obj.ChannelIndicators(channelNum), 'LineWidth', 0.5);
             set(obj.ChannelIndicators(channelNum), 'EdgeColor', ones(1,3));

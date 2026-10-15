@@ -1,54 +1,109 @@
 classdef Slider < handle
+%Slider A horizontal slider with a round knob, drawn in axes
+%
+%   slider = uim.widget.Slider(Name=Value) creates a slider. All options
+%   are name-value pairs naming public properties; there is no
+%   positional parent argument. Names are case-insensitive and may be
+%   abbreviated; unrecognized names are ignored. Step and FontSize
+%   cannot be set at construction.
+%
+%   The Parent option selects how the slider is drawn:
+%     - A figure or panel (default: the current figure). The slider
+%       creates its own hidden axes at Position, in Units, and the knob
+%       moves in data units between Min and Max. The track and tick
+%       geometry treat Position as pixels, so use Units="pixels"; with
+%       the default "normalized" units the track is drawn with almost
+%       no length.
+%     - An existing axes. The slider draws into it at Position, given
+%       in that axes' data units, and computes its geometry as if one
+%       data unit is one pixel. Use an axes whose limits match its
+%       pixel size. Deleting the slider leaves the axes in place.
+%
+%   Pressing the track moves the value to the pressed point; dragging
+%   the knob moves it continuously. Values from the pointer are rounded
+%   to the nearest multiple of Step and clamped to [Min, Max]. When a
+%   user interaction changes Value, the slider calls
+%   Callback(slider, newValue). Assigning Value programmatically moves
+%   the knob without calling Callback; values outside [Min, Max] are
+%   ignored. While the knob is pressed, a value label is shown above it
+%   (see ShowLabel, TooltipExpression, TooltipPrecision, TooltipUnits).
+%
+%   Name-value options are applied in alphabetical order, so Max is
+%   checked against the default Min of 0 before Min is assigned: a Max
+%   at or below 0 raises uim:Slider:InvalidLimits at construction. The
+%   default Value of 0.5 is kept when it lies outside [Min, Max], so
+%   pass Value whenever the range excludes 0.5.
+%
+%   Assigning Min at or above Max, or Max at or below Min, raises
+%   uim:Slider:InvalidLimits.
+%
+%   Example:
+%       hFigure = figure;
+%       slider = uim.widget.Slider(Parent=hFigure, Units="pixels", ...
+%           Position=[20, 20, 200, 20], Min=1, Max=10, Value=1, ...
+%           NumTicks=9, Callback=@(src, value) disp(value));
+%
+%   See also uim.widget.RangeSlider, uim.widget.ScrollBar
 
     % Todo: adapt to uim.widgets.
 
     % Todo: Allow vertical orientation...
 
     properties (Dependent = true)
-        Min                     % Minimum slider value
-        Max                     % Maximum slider value
+        Min                     % Minimum slider value (default 0); must stay below Max
+        Max                     % Maximum slider value (default 1); must stay above Min
     end
 
     properties
 
+        % Current value, within [Min, Max]. Assignments outside the range
+        % are ignored.
         Value = 0.5
 
+        % Number of value steps between Min and Max; sets Step. It does
+        % not change the number of tick marks drawn (always 9).
         NumTicks = 100
-        Parent = []
 
-        BarColor = ones(1,3)*0.75;
-        KnobEdgeColorInactive = ones(1,3)*0.7;
-        KnobEdgeColorActive = [0.1195    0.6095    0.5395]; % ones(1,3)*0.3; %;
-        KnobFaceColorInactive = ones(1,3)*0.95;
-        KnobFaceColorActive = ones(1,3)*0.8;
-        TextColor = ones(1,3)*0.2;
-        TextBackgroundColor = 'none';
+        Parent = []                 % Figure, panel or axes to draw in (default: current figure); used at construction
 
-        TickLength = 0;
-        TickWidth = 1;
-        TickMode = 'both' % 'over', 'under', 'both' or 'underx2' (case-insensitive)
+        BarColor = ones(1,3)*0.75;                  % Color of the track and tick marks
+        KnobEdgeColorInactive = ones(1,3)*0.7;      % Knob edge color while the knob is not pressed
+        KnobEdgeColorActive = [0.1195    0.6095    0.5395]; % Knob edge color while the knob is pressed
+        KnobFaceColorInactive = ones(1,3)*0.95;     % Knob fill color while the knob is not pressed
+        KnobFaceColorActive = ones(1,3)*0.8;        % Knob fill color while the knob is pressed
+        TextColor = ones(1,3)*0.2;                  % Color of the value label
+        TextBackgroundColor = 'none';               % Not applied to any graphics object
 
-        ValueChangedFcn
-        ValueChangingFcn
-        Callback
+        TickLength = 0;     % Length of tick marks in pixels; 0 at construction draws no ticks
+        TickWidth = 1;      % Line width of tick marks in points; used when the ticks are created
+        % Tick placement relative to the track: 'over', 'under', 'both'
+        % or 'underx2' (case-insensitive)
+        TickMode = 'both'
 
+        ValueChangedFcn     % Not called by Slider; use Callback
+        ValueChangingFcn    % Not called by Slider; use Callback
+        Callback            % Called as Callback(slider, newValue) when a user interaction changes Value
+
+        % [x, y, width, height]. With a figure or panel Parent, the
+        % position of the slider's own axes in Units; with an axes
+        % Parent, the slider's rectangle in that axes' data units.
         Position = [0, 0, 0.1, 0.3]
-        Units = 'normalized'
-        Padding = [0,9,3,9]; % padding in pixels...
+        Units = 'normalized'    % Units of Position for the slider's own axes; used at construction
+        Padding = [0,9,3,9];    % Track inset in pixels, [left, bottom, right, top]; only left and right are used
 
-        Visible = 'on'
-        ShowLabel = true;
-        TooltipPrecision = 2;
-        TooltipUnits = '';
-        TooltipExpression
+        Visible = 'on'          % 'on' or 'off'
+        ShowLabel = true;       % Show the value label while the knob is pressed
+        TooltipPrecision = 2;   % Number of decimals in the value label when TooltipExpression is empty
+        TooltipUnits = '';      % Text appended to the value label when TooltipExpression is empty
+        TooltipExpression       % sprintf format applied to Value for the value label, e.g. 'Z = %d'
 
-        Style = 'Slider'
-        Tag = ''
+        Style = 'Slider'        % Not applied to any graphics object
+        Tag = ''                % Free-form tag stored on the slider object
     end
 
     properties (Dependent = true)
-        Step
-        FontSize
+        Step        % Value step size, (Max - Min)/NumTicks (read-only)
+        FontSize    % Font size of the value label; NaN before the label exists
     end
 
     properties (Access = private)
@@ -74,6 +129,10 @@ classdef Slider < handle
     methods % Structor
 
         function obj = Slider(varargin)
+        %Slider Create a slider
+        %
+        %   slider = uim.widget.Slider(Name=Value) creates a slider. See
+        %   the class help for the options and drawing modes.
 
             obj.parsevarargin(varargin)
 
@@ -460,6 +519,10 @@ classdef Slider < handle
         end
 
         function tf = isValueInRange(obj, newValue)
+        %isValueInRange Test whether values lie within [Min, Max]
+        %
+        %   tf = slider.isValueInRange(newValue) returns a logical array
+        %   the size of newValue, true where Min <= newValue <= Max.
 
             tf = newValue >= obj.Min & newValue <= obj.Max;
         end
@@ -570,6 +633,12 @@ classdef Slider < handle
     methods % Slider Interaction Callbacks
 
         function activateSlider(obj)
+        %activateSlider Start a knob drag
+        %
+        %   slider.activateSlider() is the knob's ButtonDownFcn. It
+        %   listens to pointer motion and release in the figure, shows
+        %   the active knob colors and, when ShowLabel is true, the
+        %   value label.
 
             hFigure = ancestor(obj.Parent, 'figure');
             el1 = listener(hFigure, 'WindowMouseRelease', @(s,e) obj.deactivateSlider);
@@ -587,6 +656,13 @@ classdef Slider < handle
         end
 
         function moveSlider(obj, ~, ~)
+        %moveSlider Move the value to the pointer position
+        %
+        %   slider.moveSlider() reads the pointer position in the slider's
+        %   axes, rounds the matching value to a multiple of Step and
+        %   applies it through valueChangedCallback. It is the
+        %   ButtonDownFcn of the track and background, and the motion
+        %   callback during a knob drag.
 
             % CurrentPoint only follows the pointer while the figure has
             % a WindowButtonMotionFcn; the constructor guarantees one via
@@ -609,6 +685,10 @@ classdef Slider < handle
         end
 
         function deactivateSlider(obj)
+        %deactivateSlider End a knob drag
+        %
+        %   slider.deactivateSlider() removes the drag listeners, restores
+        %   the inactive knob colors and hides the value label.
 
             delete(obj.WindowButtonUpListener)
             delete(obj.WindowMouseMotionListener)
@@ -624,6 +704,11 @@ classdef Slider < handle
         end
 
         function valueChangedCallback(obj, newValue)
+        %valueChangedCallback Apply a value from user interaction
+        %
+        %   slider.valueChangedCallback(newValue) clamps newValue to
+        %   [Min, Max]. If the result differs from Value, it assigns
+        %   Value and calls Callback(slider, newValue).
 
             if newValue <= obj.Min; newValue = obj.Min; end
             if newValue >= obj.Max; newValue = obj.Max; end
@@ -639,6 +724,11 @@ classdef Slider < handle
         end
 
         function onValueChanging(obj, newValue)
+        %onValueChanging Apply a value from user interaction
+        %
+        %   slider.onValueChanging(newValue) behaves as
+        %   valueChangedCallback: it clamps newValue to [Min, Max] and,
+        %   if Value changes, calls Callback(slider, newValue).
             if newValue <= obj.Min; newValue = obj.Min; end
             if newValue >= obj.Max; newValue = obj.Max; end
 

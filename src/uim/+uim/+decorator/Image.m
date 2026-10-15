@@ -1,16 +1,39 @@
 classdef Image < uim.abstract.Component
+%Image Image component drawn on a component canvas
+%
+%   Shows a picture (for example a logo) as a component, so it is placed
+%   and resized with the same layout rules as other uim components. The
+%   component has no background or border.
+%
+%   img = uim.decorator.Image(parent, Name=Value) creates the image in
+%   parent (a uim.UIComponentCanvas, a uim container, an axes or a
+%   graphics container) and sets public properties, for example
+%
+%       img = uim.decorator.Image(canvas, CData=imread("logo.png"), ...
+%           Position=[10, 10, 64, 64], PositionMode="manual");
+%
+%   The image is stored flipped upside down, because the canvas y-axis
+%   points up. Reading CData or Alpha back therefore returns the flipped
+%   array, and assigning that value again flips the displayed image.
+%
+%   With LockAspectRatio true, the code that fits the image into the
+%   component compares the image height/width ratio with the component
+%   width/height ratio, so in a component that is not square the image
+%   can extend past the component.
+%
+%   See also uim.abstract.Component
 
     properties (Constant)
-        Type = 'image'
+        Type = 'image' % Component type name.
     end
 
     properties
-        CData = []
-        Alpha = []
+        CData = [] % Image data, an m-by-n or m-by-n-by-3 array as accepted by image.
+        Alpha = [] % Transparency, a scalar or an array the size of the image (AlphaData).
 
-        LockAspectRatio = true;
+        LockAspectRatio = true; % When true, keep the image aspect ratio inside the component.
 
-        ColorMap = []
+        ColorMap = [] % Not used by the component.
     end
 
     properties (Access = private)
@@ -18,11 +41,14 @@ classdef Image < uim.abstract.Component
     end
 
     properties (Transient, Dependent)
-        AspectRatio
+        AspectRatio % Image height divided by image width, from CData.
     end
 
     methods
         function obj = Image(hParent, varargin)
+        %Image Create an image component
+        %
+        %   img = uim.decorator.Image(parent, Name=Value)
 
             obj@uim.abstract.Component(hParent, varargin{:})
 

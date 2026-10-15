@@ -1,4 +1,49 @@
 classdef Toolbar < uim.abstract.Container
+%Toolbar Row of buttons and separators drawn on a component canvas
+%
+%   A toolbar lays out buttons (uim.control.Button) and separators
+%   (uim.decorator.Separator) in a row, one after the other, and draws a
+%   translucent background behind them. Use it to put tool buttons over
+%   an image or plot, for example to switch pointer tools (see
+%   uim.interface.PointerToolBinding).
+%
+%   toolbar = uim.widget.Toolbar(parent) creates an empty toolbar in
+%   parent: a uim.UIComponentCanvas, a uim container, an axes (an overlay
+%   canvas is created or reused), or a graphics container such as a
+%   uipanel. By default the toolbar is horizontal, anchored at the
+%   'northwest' location, 30 pixels high, and shrinks to fit its buttons.
+%
+%   toolbar = uim.widget.Toolbar(parent, Name=Value) also sets public
+%   properties, including those inherited from uim.abstract.Component
+%   (Location, Margin, Padding, BackgroundAlpha, ...). CanvasMode="private"
+%   draws the toolbar in its own axes instead of the parent's canvas; this
+%   is not supported when parent is an axes and raises
+%   uim:Container:PrivateCanvasUnsupportedOnOverlay.
+%
+%   Two options do not take full effect at construction, because the type
+%   defaults (see getTypeDefaults) are assigned after them: Orientation is
+%   overridden by the IsFixedSize default, and the background colours that
+%   DarkMode="off" sets are overridden by the BackgroundColor and
+%   BackgroundAlpha defaults. Set these two properties after
+%   construction, and set Orientation before adding buttons.
+%
+%   Example:
+%       toolbar = uim.widget.Toolbar(hAxes, Location="northeast");
+%       button = toolbar.addButton(Text="Run", Tag="RunButton");
+%       toolbar.addSeparator();
+%
+%   Main properties:
+%       Spacing, ComponentAlignment, DarkMode, BackgroundMode,
+%       BarExtensionMode, NewButtonSize, Orientation, NumButtons
+%
+%   Main methods:
+%       addButton    - Add a button at the end of the toolbar
+%       addSeparator - Add a separator at the end of the toolbar
+%       removeButton - Remove a button or separator
+%       getHandle    - Find buttons and separators by tag
+%
+%   See also uim.control.Button, uim.decorator.Separator,
+%   uim.interface.PointerToolBinding, uim.widget.TabBar
 
     % Check out dropbox paper toolbar.
 
@@ -23,25 +68,58 @@ classdef Toolbar < uim.abstract.Container
     %   [x] Resolve how to combine backgroundmode 'wrap' and canvasMode 'private'
 
     properties (Constant, Transient)
-        Type = 'Toolbar'
+        Type = 'Toolbar' % Component type name
     end
 
     properties (SetAccess = protected, Transient)
-        Children uim.abstract.Component
+        Children uim.abstract.Component % Buttons added with addButton (separators are not included)
     end
 
     properties
+        % Spacing - Gap between neighbouring buttons and separators, in pixels
         Spacing = 8 % move to widget container
+
+        % DarkMode - 'on' (dark translucent background, light buttons) or
+        % 'off' (white translucent background, dark buttons). Setting it
+        % restyles the background and gives existing buttons
+        % uim.style.ButtonDarkMode ('on') or
+        % uim.style.ButtonLightModeTranslucent ('off'); buttons added
+        % later get the Style value.
         DarkMode = 'on'
-        ComponentAlignment = 'left' % %center | 'right'
+
+        % ComponentAlignment - Where the buttons sit along the toolbar:
+        % 'left' (or 'top'), 'center' (or 'middle'), or 'right' (or 'bottom')
+        ComponentAlignment = 'left'
+
+        % Style - Button style for buttons added with addButton. Reading it
+        % returns uim.style.ButtonDarkMode when DarkMode is 'on' and
+        % uim.style.ButtonLightMode when it is 'off'; assigned values are
+        % not used.
         Style = []
-        BackgroundMode = 'wrap' % vs full...
-        BarExtensionMode = 'tight' % vs expanded % Determines if the bar is tight around the buttons or if it is expanded to fill the available length of the container
+
+        % BackgroundMode - 'wrap' draws the background only around the
+        % buttons; 'full' fills the whole toolbar position
+        BackgroundMode = 'wrap'
+
+        % BarExtensionMode - 'tight' sizes the toolbar to fit its buttons;
+        % 'expanded' lets the toolbar take the size computed by the layout
+        % along its length
+        BarExtensionMode = 'tight'
     end
 
     properties (Dependent)
+        % Height - Toolbar height in pixels (Size(2)); setting it switches
+        % SizeMode to 'manual'
         Height % move to widget container
+
+        % Width - Toolbar width in pixels (Size(1)); setting it switches
+        % SizeMode to 'manual'
         Width % move to widget container
+
+        % Orientation - 'horizontal' or 'vertical'. Derived from IsFixedSize:
+        % a horizontal toolbar has a fixed height, a vertical one a fixed
+        % width. Set it before adding buttons; existing buttons are not
+        % moved.
         Orientation
     end
 
@@ -51,7 +129,7 @@ classdef Toolbar < uim.abstract.Container
     end
 
     properties (Access = public)
-        NewButtonSize double = 25; % Size of new buttons in pixels (default=40)
+        NewButtonSize double = 25; % Width and height in pixels of buttons added next, unless addButton is given a Size
     end
 
     properties (Access = protected)
@@ -60,7 +138,7 @@ classdef Toolbar < uim.abstract.Container
     end
 
     properties (SetAccess = protected)
-        NumButtons (1,1) double = 0
+        NumButtons (1,1) double = 0 % Number of buttons and separators in the toolbar
     end
 
     properties (Access = protected, Transient)
@@ -71,6 +149,12 @@ classdef Toolbar < uim.abstract.Container
     methods % Structors
 
         function obj = Toolbar(hParent, varargin)
+        %Toolbar Create an empty toolbar
+        %
+        %   toolbar = uim.widget.Toolbar(parent)
+        %   toolbar = uim.widget.Toolbar(parent, Name=Value)
+        %
+        %   See the class help for the accepted parents and options.
 
             obj@uim.abstract.Container(hParent, varargin{:})
 
@@ -91,7 +175,19 @@ classdef Toolbar < uim.abstract.Container
     methods % Methods to add toolbar objects
 
         function hSep = addSeparator(obj, varargin)
-        %addSeparator Add separator between buttons
+        %addSeparator Add a separator at the end of the toolbar
+        %
+        %   toolbar.addSeparator() adds a uim.decorator.Separator after the
+        %   last button. The separator has zero width and the height of a
+        %   new button (NewButtonSize), and is followed by the usual
+        %   Spacing.
+        %
+        %   hSep = toolbar.addSeparator(Name=Value) passes the options to
+        %   uim.decorator.Separator (for example Color or LineWidth) and
+        %   returns the separator. Its Visible value always follows the
+        %   toolbar.
+        %
+        %   See also uim.decorator.Separator
 
             separatorPosition = obj.NextButtonPosition;
 
@@ -130,6 +226,27 @@ classdef Toolbar < uim.abstract.Container
         end
 
         function hButton = addButton(obj, varargin)
+        %addButton Add a button at the end of the toolbar
+        %
+        %   hButton = toolbar.addButton(Name=Value) creates a
+        %   uim.control.Button after the last button and returns it. The
+        %   options are passed to uim.control.Button, for example Text,
+        %   Icon, Tag, Tooltip, Mode or Callback.
+        %
+        %   The toolbar supplies these defaults, which the options can
+        %   override: Position at the next free slot, Size of
+        %   [NewButtonSize, NewButtonSize] pixels, Padding [3, 3, 3, 3],
+        %   Style from the toolbar's Style property, and Visible from the
+        %   toolbar. PositionMode is always 'manual': the toolbar places
+        %   its buttons. With BarExtensionMode 'tight' the toolbar grows
+        %   to fit the new button.
+        %
+        %   Example:
+        %       icons = uim.style.getDefaultIcons();
+        %       button = toolbar.addButton(Icon=icons.zoomIn, ...
+        %           Mode="togglebutton", Tooltip="Zoom in");
+        %
+        %   See also uim.control.Button
 
             % Specify some toolbar defaults for toolbar button.
             varargin = [{'Position', obj.NextButtonPosition, ...
@@ -173,6 +290,12 @@ classdef Toolbar < uim.abstract.Container
         end
 
         function h = getHandle(obj, tagValue)
+        %getHandle Find buttons and separators by tag
+        %
+        %   h = toolbar.getHandle(tagValue) returns the buttons and
+        %   separators whose Tag contains tagValue. The match is a
+        %   case-sensitive substring match, so h can hold several handles
+        %   ("zoomIn" also matches "zoomInFast") or none.
 
             tags = {obj.Buttons.Tag};
             ind = contains(tags, tagValue);
@@ -616,6 +739,16 @@ classdef Toolbar < uim.abstract.Container
 
     methods (Static)
         function S = getTypeDefaults()
+        %getTypeDefaults Default layout and style values for a new toolbar
+        %
+        %   S = uim.widget.Toolbar.getTypeDefaults() returns a struct of
+        %   property values used at construction; a name-value option for
+        %   the same property replaces the default. The defaults describe
+        %   a horizontal bar (IsFixedSize
+        %   [false, true]) of 30 by 30 pixels at the 'northwest' location,
+        %   Padding [10, 3, 10, 3], and a black background with
+        %   BackgroundAlpha 0.2.
+
             S.PositionMode = 'auto';
             S.Location = 'northwest';
             S.Margin = [0, 0, 0, 0];

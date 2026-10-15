@@ -1,43 +1,28 @@
 function [ hex ] = rgb2hex(rgb)
-% rgb2hex converts rgb color values to hex color format.
+%rgb2hex Convert RGB triplets to hexadecimal colour codes
 %
-% This function assumes rgb values are in [r g b] format on the 0 to 1
-% scale.  If, however, any value r, g, or b exceed 1, the function assumes
-% [r g b] are scaled between 0 and 255.
+%   hex = uim.utility.rgb2hex(rgb) converts the n-by-3 array of RGB
+%   values to an n-by-7 character array of codes such as '#00FF00', one
+%   per row, with upper-case letters. Values are read on the 0 to 1
+%   scale, unless any value exceeds 1, in which case all values are read
+%   on the 0 to 255 scale. Values are rounded to whole steps of 1/255.
 %
-% * * * * * * * * * * * * * * * * * * * *
-% SYNTAX:
-% hex = rgb2hex(rgb) returns the hexadecimal color value of the n x 3 rgb
-%                    values. rgb can be an array.
+%   Examples:
+%       uim.utility.rgb2hex([0, 1, 0])       % '#00FF00'
+%       uim.utility.rgb2hex([0, 255, 0])     % '#00FF00'
+%       uim.utility.rgb2hex([0.2, 0.3, 0.4; 0.5, 0.6, 0.7])
 %
-% * * * * * * * * * * * * * * * * * * * *
-% EXAMPLES:
+%   Errors:
+%       uim:rgb2hex:InvalidNumberOfInputs - Not exactly one input
+%       uim:rgb2hex:InvalidType           - rgb is not numeric
+%       uim:rgb2hex:InvalidSize           - rgb does not have 3 columns
+%       uim:rgb2hex:ValueOutOfRange       - A value is below 0 or
+%                                           above 255
 %
-% myhexvalue = rgb2hex([0 1 0])
-%    = #00FF00
+%   Original author: Chad A. Greene, 2014, with improvements suggested by
+%   Stephen Cobeldick.
 %
-% myhexvalue = rgb2hex([0 255 0])
-%    = #00FF00
-%
-% myrgbvalues = [.2 .3 .4;
-%                .5 .6 .7;
-%                .8 .6 .2;
-%                .2 .2 .9];
-% myhexvalues = rgb2hex(myrgbvalues)
-%    = #334D66
-%      #8099B3
-%      #CC9933
-%      #3333E6
-%
-% * * * * * * * * * * * * * * * * * * * *
-% Chad A. Greene, April 2014
-%
-% Updated August 2014: Functionality remains exactly the same, but it's a
-% little more efficient and more robust. Thanks to Stephen Cobeldick for
-% his suggestions.
-%
-% * * * * * * * * * * * * * * * * * * * *
-% See also hex2rgb, dec2hex, hex2num, and ColorSpec.
+%   See also uim.utility.hex2rgb
 
 %% Check inputs:
 

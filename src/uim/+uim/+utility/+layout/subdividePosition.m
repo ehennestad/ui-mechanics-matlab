@@ -1,28 +1,39 @@
 function [pos, siz] = subdividePosition(posInit, lengthInit, componentLengths, spacing, alignment)
-%subdividePosition Get divided positions for multiple components along dim
+%subdividePosition Lay out components along one dimension of a container
 %
-%   [pos, siz] = subdividePosition(posInit, lengthInit, sizeSpecs)
-%   calculates a vector of pixel locations and lengths for a set of
-%   components that should be distributed within a container.
+%   [pos, siz] = uim.utility.layout.subdividePosition(posInit,
+%   lengthInit, componentLengths) distributes components along one
+%   dimension of a container and returns the start position (pos) and
+%   length (siz) of each, in pixels, as row vectors.
 %
-%   [pos, siz] = subdividePosition(..., spacing, alignment) additionally
-%   specifies the optional inputs for controlling component spacing and
-%   alignments.
+%   [pos, siz] = uim.utility.layout.subdividePosition(..., spacing,
+%   alignment) also sets the gap between components and their alignment.
 %
 %   Input arguments:
-%       posInit          - The initial position (offset) to for calculating
-%                          positions (in pixels)
-%       lengthInit       - The available length for calculating positions
-%                          (in pixels)
-%       componentLengths - The length specification for each component
-%                          Note: Units can be pixel or normalized. See
-%                          below for example
-%       spacing          - (Optional) How much spacing to insert between
-%                          components. Default = 10
-%       alignment        - (Optional) How to align components. Default =
-%                          left. Options: 'left', 'center', 'right'.
+%       posInit          - Position of the container start, in pixels.
+%                          With 'left' alignment the first component
+%                          starts at posInit + 1.
+%       lengthInit       - Length available in the container, in pixels
+%       componentLengths - Length of each component. A value above 1 is
+%                          a length in pixels; a value of 1 or less is a
+%                          fraction of the length left after the pixel
+%                          lengths and the spacing are taken.
+%       spacing          - (Optional) Gap between components in pixels.
+%                          Default 10.
+%       alignment        - (Optional) 'left' (default), 'center' or
+%                          'right'. Moves the whole group. With 'right',
+%                          pos(end) + siz(end) equals posInit +
+%                          lengthInit, one pixel short of where a
+%                          left-aligned group that fills the length ends
+%                          (posInit + lengthInit + 1).
+%
+%   Lengths are rounded down to whole pixels. When fractional lengths are
+%   present and the rounding leaves pixels unused, one pixel each is
+%   added to the leading components so the group fills the length.
 %
 %   Example:
+%       [pos, siz] = uim.utility.layout.subdividePosition(0, 100, [30, 1], 10)
+%       % pos = [1, 41], siz = [30, 60]
 
     if nargin < 5; alignment = 'left'; end  % 'left', 'center', 'right'
     if nargin < 4; spacing = 10; end

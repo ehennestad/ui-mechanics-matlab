@@ -1,5 +1,11 @@
 function centerFigureOnScreen(hFig)
-%centerFigureOnScreen Center figure on the monitor it is located
+%centerFigureOnScreen Move a figure to the centre of the monitor it is on
+%
+%   uim.utility.centerFigureOnScreen(hFig) keeps the figure size and moves
+%   it so it is centred on the monitor that uim.utility.getCurrentScreenSize
+%   reports for it.
+%
+%   See also uim.utility.getCurrentScreenSize, uim.utility.layout.place
 
     screenSize = uim.utility.getCurrentScreenSize(hFig);
 
