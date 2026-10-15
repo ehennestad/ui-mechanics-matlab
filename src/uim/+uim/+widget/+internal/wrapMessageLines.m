@@ -3,9 +3,10 @@ function messageLines = wrapMessageLines(message, maxCharsPerLine)
 %
 %   messageLines = uim.widget.internal.wrapMessageLines(message, maxCharsPerLine)
 %   returns a column cell array of lines, each at most maxCharsPerLine
-%   characters where a break point allows it. Breaks happen after
-%   spaces and after file separators, so long paths wrap too. A single
-%   token longer than the limit is placed on its own line unbroken.
+%   characters where a break point allows it, not counting a space that
+%   ends the line. Breaks happen after spaces and after file separators,
+%   so long paths wrap too. A single token longer than the limit is
+%   placed on its own line unbroken.
 
     arguments
         message {mustBeTextScalar}
@@ -29,11 +30,17 @@ function messageLines = wrapMessageLines(message, maxCharsPerLine)
     tokens = tokens(~cellfun(@isempty, tokens));
 
     tokenLengths = cellfun(@numel, tokens);
+
+    % A space that ends a line is not visible, so it does not count
+    % against the limit; a file separator is visible, so it does.
+    endsInSpace = cellfun(@(token) token(end) == ' ', tokens);
+
     firstToken = 1;
 
     while firstToken <= numel(tokens)
         cumulativeLength = cumsum(tokenLengths(firstToken:end));
-        tokensThatFit = find(cumulativeLength <= maxCharsPerLine, 1, 'last');
+        visibleLength = cumulativeLength - endsInSpace(firstToken:end);
+        tokensThatFit = find(visibleLength <= maxCharsPerLine, 1, 'last');
 
         % A single token longer than the limit gets a line to itself:
         % without this the loop would never consume it.

@@ -67,6 +67,10 @@ classdef TestWidgetLayerHelpers < matlab.unittest.TestCase
         function messageWrapsAtSpacesWithinTheLimit(testCase)
             messageLines = uim.widget.internal.wrapMessageLines('one two three four', 9);
             testCase.verifyEqual(messageLines, {'one two '; 'three '; 'four'});
+
+            messageLines = uim.widget.internal.wrapMessageLines('ab cd ef', 5);
+            testCase.verifyEqual(messageLines, {'ab cd '; 'ef'}, ...
+                "The space that ends a line does not count against the limit.");
         end
 
         function messageWrapsAfterPathSeparators(testCase)

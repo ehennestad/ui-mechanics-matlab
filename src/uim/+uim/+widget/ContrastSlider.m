@@ -361,9 +361,8 @@ classdef ContrastSlider < uim.widget.RangeSlider
             hIcon.Width = 12;
             hIcon.Color = obj.TextColor;
 
-            % Anchor at the bottom-left corner (like uim.control.Button
-            % does): these are the reliable alignment code paths, and
-            % they make the location math explicit.
+            % Anchor at the bottom-left corner, like uim.control.Button
+            % does, so the location math below is explicit.
             hIcon.HorizontalAlignment = 'left';
             hIcon.VerticalAlignment = 'bottom';
 
