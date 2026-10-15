@@ -73,6 +73,19 @@ classdef TestTileLayout < matlab.unittest.TestCase
             testCase.verifyEqual(uim.graphics.internal.tileAtPoint(map, 2, 0.5, [2, 2]), 2, ...
                 "Scale factor converts axes units to map pixel (4, 1).");
         end
+
+        function tileHelpersReadScaleFactorAsXThenY(testCase)
+            % Two 2-by-2 tiles side by side: map columns 3-4 are tile 2.
+            layout = uim.graphics.internal.computeTileLayout([1, 2], [2, 2], 0, 'rowwise');
+            testCase.verifyEqual(uim.graphics.internal.tileAtPoint(...
+                layout.TileIndexMap, 1.6, 1, [2, 1]), 2, ...
+                "x scales by scaleFactor(1): column round(3.2) = 3.");
+
+            % 10-by-20 tiles with x scaled by 2: each tile is 10 by 10
+            % axes units.
+            center = uim.graphics.internal.tileCenter(2, 3, [10, 20], 0, [2, 1]);
+            testCase.verifyEqual(center, [15.5, 5.5]);
+        end
     end
 
     methods (Test) % TiledImageAxes
@@ -103,6 +116,34 @@ classdef TestTileLayout < matlab.unittest.TestCase
                 tiledAxes.getTileCenterAxesCoords(4), true);
             hFigure.CurrentPoint = pointerPixel;
             testCase.verifyEqual(tiledAxes.hittest(), 4);
+        end
+
+        function scaledTilesAgreeWhenImagesAreRescaledUnevenly(testCase)
+            hFigure = figure("Visible", "off", "Position", [100, 100, 400, 300]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            tiledAxes = uim.graphics.TiledImageAxes(hFigure, "GridSize", [2, 3], ...
+                "ImageSize", [16, 24], "TileUnits", "scaled", "NormalizedPadding", 0.05);
+            testCase.addTeardown(@deleteValid, tiledAxes);
+
+            % 32-by-24 originals shown in 16-by-24 tiles: y is halved and
+            % x is unchanged, so the axes span the original pixels.
+            tiledAxes.setOriginalImageSize([32, 24])
+            pixelPadding = round(2 * 16 * 0.05);
+            testCase.verifyEqual(tiledAxes.Axes.XLim, [0, 3*24 + 2*pixelPadding] + 0.5);
+            testCase.verifyEqual(tiledAxes.Axes.YLim, [0, (2*16 + pixelPadding) * 2] + 0.5);
+
+            % Hit-testing, tile centres and the drawn outlines agree.
+            for tileNum = 1:tiledAxes.NumTiles
+                hOutline = findobj(tiledAxes.Axes, "Type", "patch", "Tag", num2str(tileNum));
+                outlineCenter = [min(hOutline.XData) + max(hOutline.XData), ...
+                    min(hOutline.YData) + max(hOutline.YData)] / 2;
+
+                testCase.verifyEqual(tiledAxes.hittest(outlineCenter(1), outlineCenter(2)), ...
+                    tileNum, sprintf("Tile %d is hit at the centre of its outline.", tileNum));
+                testCase.verifyEqual(tiledAxes.getTileCenterAxesCoords(tileNum), ...
+                    outlineCenter, "AbsTol", 1, ...
+                    sprintf("Tile %d's centre is inside its outline.", tileNum));
+            end
         end
 
         function tiledAxesShowsImagesAndTextPerTile(testCase)

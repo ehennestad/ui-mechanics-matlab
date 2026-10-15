@@ -79,7 +79,7 @@ properties (Access = private, Hidden)
     TileIndexMap
 
     ImageSize_ = [128, 128]     % Original size of images that are plotted. % Todo. Set this on construction?
-    ScaleFactor = [1, 1]        % Internal scalefactor (convert pixel to coord)
+    ScaleFactor = [1, 1]        % [x, y] scale from axes units to composite-image pixels
 
     TilePixelSize
     TileLineWidth = 2
@@ -958,7 +958,8 @@ methods (Access = private) % Internal gui management
 
         switch obj.TileUnits
             case 'scaled'
-                newScaleFactor = obj.ImageSize ./ obj.ImageSize_;
+                % ImageSize is [height, width]; the scale factor is [x, y]
+                newScaleFactor = fliplr(obj.ImageSize ./ obj.ImageSize_);
             case 'pixel'
                 newScaleFactor = [1, 1];
         end

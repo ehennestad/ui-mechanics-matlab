@@ -3,10 +3,10 @@ function tileNum = tileAtPoint(tileIndexMap, x, y, scaleFactor)
 %
 %   tileNum = uim.graphics.internal.tileAtPoint(tileIndexMap, x, y, ...
 %       scaleFactor) looks up the tile at axes coordinate (x, y) in the
-%   TileIndexMap produced by computeTileLayout. scaleFactor ([height,
-%   width], as TiledImageAxes computes it) converts axes units to
-%   composite-image pixels. Points outside the composite image, and
-%   points in the gaps between tiles, return NaN.
+%   TileIndexMap produced by computeTileLayout. scaleFactor ([x, y], as
+%   TiledImageAxes computes it) converts axes units to composite-image
+%   pixels. Points outside the composite image, and points in the gaps
+%   between tiles, return NaN.
 
     arguments
         tileIndexMap (:,:) double
@@ -15,8 +15,8 @@ function tileNum = tileAtPoint(tileIndexMap, x, y, scaleFactor)
         scaleFactor (1,2) double {mustBePositive}
     end
 
-    column = round(x .* scaleFactor(2));
-    row = round(y .* scaleFactor(1));
+    column = round(x .* scaleFactor(1));
+    row = round(y .* scaleFactor(2));
 
     [numRows, numColumns] = size(tileIndexMap);
 

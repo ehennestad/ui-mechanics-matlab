@@ -41,9 +41,12 @@ only serve one package live in that package's `internal` sub-namespace;
   width instead of the padded knob track.
 - `uim.utility.getCurrentScreenSize`: a point on the last pixel column
   or row of a monitor counted as outside that monitor.
-- `uim.graphics.TiledImageAxes`: tile hit-testing and tile centres read
-  the height and width scale factors in swapped order, which mattered
-  only when images were rescaled non-uniformly.
+- `uim.graphics.TiledImageAxes` with `TileUnits = 'scaled'`: the axes
+  limits, tile outlines, tile centres and hit-testing read the scale
+  factor in different orders ([height, width] and [x, y]). With images
+  rescaled unevenly the axes did not span the original pixels, and
+  `hittest` and `getTileCenterAxesCoords` disagreed with the drawn
+  tiles. The scale factor is now [x, y] throughout.
 
 ### Tests
 
