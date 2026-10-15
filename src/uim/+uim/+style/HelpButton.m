@@ -1,7 +1,8 @@
 classdef HelpButton < uim.style.ButtonScheme
 %HelpButton Styling for a help glyph with no fill or border
 %
-%   A blue glyph that darkens when pressed and lightens on hover.
+%   A blue glyph that darkens when pressed or on, and lightens under the
+%   pointer while it is off.
 
     properties (Constant)
 

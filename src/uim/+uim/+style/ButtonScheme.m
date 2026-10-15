@@ -3,12 +3,14 @@ classdef ButtonScheme < handle
 %
 %   A button scheme supplies one struct per state — On, Off,
 %   HighlightedOn and HighlightedOff — where "highlighted" means the
-%   pointer is over the button. Each struct carries ForegroundColor,
+%   pointer is over the button. A button that is off shows HighlightedOn
+%   while it is pressed. Each struct carries ForegroundColor,
 %   BackgroundColor, BackgroundAlpha, BorderColor and BorderWidth, and
 %   may carry FontWeight.
 %
-%   Subclass this to define a new look, and assign the subclass to a
-%   control's Style property.
+%   Subclass this to define a new look, and assign an instance of the
+%   subclass to a control's Style property, for example
+%   'Style', uim.style.TabButton.
 
     % Todo: Add disabled on and off
 
