@@ -65,23 +65,25 @@ classdef TestWidgetLayerHelpers < matlab.unittest.TestCase
         end
 
         function messageWrapsAtSpacesWithinTheLimit(testCase)
-            lines = uim.widget.internal.wrapMessageLines('one two three four', 9);
-            testCase.verifyEqual(lines, {'one two '; 'three '; 'four'});
+            messageLines = uim.widget.internal.wrapMessageLines('one two three four', 9);
+            testCase.verifyEqual(messageLines, {'one two '; 'three '; 'four'});
         end
 
         function messageWrapsAfterPathSeparators(testCase)
             message = ['a', filesep, 'bb', filesep, 'ccc'];
-            lines = uim.widget.internal.wrapMessageLines(message, 6);
-            testCase.verifyEqual(lines, {['a', filesep, 'bb', filesep]; 'ccc'}, ...
+            messageLines = uim.widget.internal.wrapMessageLines(message, 6);
+            testCase.verifyEqual(messageLines, {['a', filesep, 'bb', filesep]; 'ccc'}, ...
                 "Two tokens fit in six characters, the third does not.");
 
-            lines = uim.widget.internal.wrapMessageLines(message, 4);
-            testCase.verifyEqual(lines, {['a', filesep]; ['bb', filesep]; 'ccc'});
+            messageLines = uim.widget.internal.wrapMessageLines(message, 4);
+            testCase.verifyEqual(messageLines, {['a', filesep]; ['bb', filesep]; 'ccc'});
         end
 
         function overlongTokenGetsItsOwnLine(testCase)
-            lines = uim.widget.internal.wrapMessageLines('short averyveryverylongword end', 8);
-            testCase.verifyEqual(lines, {'short '; 'averyveryverylongword '; 'end'});
+            messageLines = uim.widget.internal.wrapMessageLines('short averyveryverylongword end', 8);
+            testCase.verifyEqual(messageLines, {'short '; 'averyveryverylongword '; 'end'});
+            testCase.verifyEqual(uim.widget.internal.wrapMessageLines('short averyveryverylongword ', 8), ...
+                {'short '; 'averyveryverylongword '}, "A trailing separator adds no empty line.");
             testCase.verifyEmpty(uim.widget.internal.wrapMessageLines('', 8));
             testCase.verifyEqual(uim.widget.internal.wrapMessageLines("fits", 8), {'fits'});
         end

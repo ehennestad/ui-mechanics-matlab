@@ -18,24 +18,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-- `uim.graphics.ImageVector`: changing the alignment to 'right',
-  'center', 'top' or 'middle' moved the image by the wrong amount (a
-  sign error in the anchor shift); all anchors now go through
-  `boundingBoxAnchor`.
+- `uim.graphics.ImageVector`: `Position` is the point named by the
+  alignment pair, and changing `HorizontalAlignment` or
+  `VerticalAlignment` keeps it and moves the image around it. The
+  alignment change used to move the image by the wrong amount, and
+  `Position` read back the box centre.
 - `uim.widget.ChannelIndicator`: assigning a `ChannelColors` list shorter
   than the previous one errored; the update now covers the indicators
   the new list describes.
-- `uim.widget.MessageBox`: a message with no break point inside the
-  per-line budget could loop forever while folding; such a token now
-  takes a line of its own.
+- `uim.widget.MessageBox`: a word longer than the per-line budget made
+  the rest of the message disappear; such a word now takes a line of
+  its own. Lines also hold as many words as fit, where the old length
+  estimate over-counted the spaces.
 - `uim.widget.FrameMarker`: a marker constructed with a `Value` was drawn
-  at the axes origin instead, and assigning `Visible` did nothing. Both
-  properties now reach the graphics.
-- `uim.widget.RangeSlider`: hovering a knob raised "Not enough input
-  arguments" because the pointer behaviour passes only the knob handle.
-- `uim.widget.PlaybackControl`: the active-range handles were drawn one
-  step to the right of the range bar they bound (the bar offset from
-  `Minimum`, the handles from zero).
+  at x = 1 instead, and assigning `Visible` did nothing. Both properties
+  now reach the graphics.
+- `uim.widget.PlaybackControl`: the active-range handles offset a value
+  from zero and the range bar offset it from 1, so the handles sat one
+  step right of the bar, and with `Minimum` above 1 both were shifted.
+  Both now offset from `Minimum`.
 
 ### Changed — Pointer-tool arithmetic lives in `uim.interface.internal`
 

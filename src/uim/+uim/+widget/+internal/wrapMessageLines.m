@@ -1,7 +1,7 @@
-function lines = wrapMessageLines(message, maxCharsPerLine)
+function messageLines = wrapMessageLines(message, maxCharsPerLine)
 %wrapMessageLines Split a message into lines at spaces and path separators
 %
-%   lines = uim.widget.internal.wrapMessageLines(message, maxCharsPerLine)
+%   messageLines = uim.widget.internal.wrapMessageLines(message, maxCharsPerLine)
 %   returns a column cell array of lines, each at most maxCharsPerLine
 %   characters where a break point allows it. Breaks happen after
 %   spaces and after file separators, so long paths wrap too. A single
@@ -13,7 +13,7 @@ function lines = wrapMessageLines(message, maxCharsPerLine)
     end
 
     message = char(message);
-    lines = cell(0, 1);
+    messageLines = cell(0, 1);
     if isempty(message)
         return
     end
@@ -23,6 +23,10 @@ function lines = wrapMessageLines(message, maxCharsPerLine)
     [tokens, separators] = strsplit(message, {filesep, ' '});
     separators{end+1} = '';
     tokens = strcat(tokens, separators);
+
+    % A message ending in a separator leaves an empty last token, which
+    % would otherwise become an empty line after a long token.
+    tokens = tokens(~cellfun(@isempty, tokens));
 
     tokenLengths = cellfun(@numel, tokens);
     firstToken = 1;
@@ -36,7 +40,7 @@ function lines = wrapMessageLines(message, maxCharsPerLine)
         if isempty(tokensThatFit); tokensThatFit = 1; end
 
         lastToken = firstToken - 1 + tokensThatFit;
-        lines{end+1, 1} = [tokens{firstToken:lastToken}]; %#ok<AGROW>
+        messageLines{end+1, 1} = [tokens{firstToken:lastToken}]; %#ok<AGROW>
         firstToken = lastToken + 1;
     end
 end

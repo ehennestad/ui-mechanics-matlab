@@ -46,6 +46,18 @@ classdef TestDecoratorsAndMarkers < matlab.unittest.TestCase
 
     methods (Test) % uim.widget.FrameMarker
 
+        function frameMarkerStartsHiddenWhenAsked(testCase)
+            [~, hAxes] = createDataAxes(testCase);
+            marker = uim.widget.FrameMarker(hAxes, "Minimum", 1, "Maximum", 100, ...
+                "Value", 20, "Visible", "off");
+            testCase.addTeardown(@deleteValid, marker);
+
+            handles = findall(hAxes, "Tag", "FrameMarker");
+            testCase.assertNumElements(handles, 3);
+            testCase.verifyTrue(all(strcmp(get(handles, "Visible"), 'off')));
+            testCase.verifyTrue(all(arrayfun(@(h) all(h.XData == 20), handles)));
+        end
+
         function frameMarkerFollowsItsValue(testCase)
             [~, hAxes] = createDataAxes(testCase);
             marker = uim.widget.FrameMarker(hAxes, "Minimum", 1, "Maximum", 100, "Value", 20);
@@ -109,7 +121,7 @@ classdef TestDecoratorsAndMarkers < matlab.unittest.TestCase
             behavior = buttonPointerBehavior(canvas.Axes);
             testCase.assertNotEmpty(behavior, "Controls install hover behaviour.");
 
-            behavior.enterFcn([], [])
+            behavior.enterFcn(hFigure, [0, 0])
             hTooltip = findall(hFigure, "Type", "text", "String", "Do the thing");
             testCase.assertNumElements(hTooltip, 1);
             testCase.verifyEqual(char(hTooltip.Visible), 'on');
@@ -119,7 +131,7 @@ classdef TestDecoratorsAndMarkers < matlab.unittest.TestCase
             testCase.verifyNotEmpty(findall(hFigure, "Type", "text", ...
                 "String", "Do something else"));
 
-            behavior.exitFcn([], [])
+            behavior.exitFcn(hFigure, [0, 0])
             hTooltip = findall(hFigure, "Type", "text", "String", "Do something else");
             testCase.verifyTrue(isempty(hTooltip) || strcmp(hTooltip.Visible, 'off'), ...
                 "Leaving the control hides its tooltip.");
@@ -127,19 +139,19 @@ classdef TestDecoratorsAndMarkers < matlab.unittest.TestCase
         end
 
         function tooltipPositionTracksTheControl(testCase)
-            [~, canvas] = createCanvas(testCase);
+            [hFigure, canvas] = createCanvas(testCase);
             toolbar = uim.widget.Toolbar(canvas, "Location", "northwest");
             testCase.addTeardown(@deleteValid, toolbar);
             button = toolbar.addButton("Text", "A", "Tooltip", "Tip");
 
             behavior = buttonPointerBehavior(canvas.Axes);
-            behavior.enterFcn([], [])
-            hTooltip = findall(ancestor(canvas.Axes, "figure"), "Type", "text", "String", "Tip");
+            behavior.enterFcn(hFigure, [0, 0])
+            hTooltip = findall(hFigure, "Type", "text", "String", "Tip");
             testCase.assertNumElements(hTooltip, 1);
             positionBefore = hTooltip.Position(1);
 
             toolbar.Position(1:2) = toolbar.Position(1:2) + [40, 0];
-            behavior.enterFcn([], [])
+            behavior.enterFcn(hFigure, [0, 0])
             testCase.verifyEqual(hTooltip.Position(1), positionBefore + 40, "AbsTol", 1e-6, ...
                 "The tooltip follows the control it belongs to.");
             testCase.verifyTrue(isvalid(button));

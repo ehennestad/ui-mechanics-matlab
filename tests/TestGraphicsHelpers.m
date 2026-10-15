@@ -129,6 +129,32 @@ classdef TestGraphicsHelpers < matlab.unittest.TestCase
             testCase.verifyEqual(bbox(1:2) + bbox(3:4)/2, [10, 20], "AbsTol", 1e-6);
         end
 
+        function alignmentChangeKeepsPosition(testCase)
+            [~, hAxes] = createAxes(testCase);
+            vectorImage = uim.graphics.ImageVector(hAxes, testCase.Icons.zoomIn);
+            testCase.addTeardown(@deleteValid, vectorImage);
+            vectorImage.HorizontalAlignment = 'left';
+            vectorImage.VerticalAlignment = 'bottom';
+            vectorImage.Position = [100, 50];
+
+            % Changing an alignment moves the image so the newly named
+            % point of its box lands on the unchanged Position.
+            vectorImage.HorizontalAlignment = 'right';
+            bbox = vectorImage.BoundingBox;
+            testCase.verifyEqual(bbox(1) + bbox(3), 100, "AbsTol", 1e-6);
+
+            vectorImage.HorizontalAlignment = 'center';
+            vectorImage.VerticalAlignment = 'top';
+            bbox = vectorImage.BoundingBox;
+            testCase.verifyEqual(bbox(1:2) + [bbox(3)/2, bbox(4)], [100, 50], "AbsTol", 1e-6);
+
+            vectorImage.VerticalAlignment = 'middle';
+            vectorImage.HorizontalAlignment = 'left';
+            bbox = vectorImage.BoundingBox;
+            testCase.verifyEqual(bbox(1:2) + [0, bbox(4)/2], [100, 50], "AbsTol", 1e-6);
+            testCase.verifyEqual(vectorImage.Position, [100, 50], "AbsTol", 1e-6);
+        end
+
         function stylePropertiesReachEveryPolygon(testCase)
             [~, hAxes] = createAxes(testCase);
             vectorImage = uim.graphics.ImageVector(hAxes, testCase.Icons.zoomIn);

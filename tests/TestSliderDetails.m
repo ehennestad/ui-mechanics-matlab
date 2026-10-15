@@ -57,7 +57,7 @@ classdef TestSliderDetails < matlab.unittest.TestCase
         end
 
         function rangeSliderKnobHoverChangesAppearance(testCase)
-            [~, canvas] = createCanvas(testCase);
+            [hFigure, canvas] = createCanvas(testCase);
             slider = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 100, ...
                 "Low", 20, "High", 80);
             testCase.addTeardown(@deleteValid, slider);
@@ -65,10 +65,10 @@ classdef TestSliderDetails < matlab.unittest.TestCase
 
             behavior = iptGetPointerBehavior(hLow);
             testCase.assertNotEmpty(behavior);
-            behavior.enterFcn([], [], [])
+            behavior.enterFcn(hFigure, [0, 0])
             testCase.verifyEqual(hLow.FaceColor, ones(1, 3)*0.95, ...
                 "Hovering lightens the knob.");
-            behavior.exitFcn([], [], [])
+            behavior.exitFcn(hFigure, [0, 0])
             testCase.verifyEqual(hLow.FaceColor, ones(1, 3)*0.8);
         end
 

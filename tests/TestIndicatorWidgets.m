@@ -104,11 +104,17 @@ classdef TestIndicatorWidgets < matlab.unittest.TestCase
             testCase.verifyTrue(isappdata(hFigure, "Channels"));
             testCase.verifyEqual(indicator.CurrentChannels, getappdata(hFigure, "Channels"));
 
+            % Indicators sit left to right in channel order.
+            [~, channelOrder] = sort(arrayfun(@(h) mean(h.XData), hIndicators));
+            indicatorsByChannel = hIndicators(channelOrder);
+            thirdColourBefore = indicatorsByChannel(3).FaceColor;
+
             indicator.ChannelColors = {[0, 0, 1], [0, 1, 0]};
-            colours = arrayfun(@(h) h.FaceColor, ...
-                findall(hPanel, "Tag", "ChannelIndicator"), "UniformOutput", false);
-            testCase.verifyTrue(any(cellfun(@(c) isequal(c, [0, 0, 1]), colours)), ...
+            testCase.verifyEqual(indicatorsByChannel(1).FaceColor, [0, 0, 1], ...
                 "A shorter colour list updates the indicators it covers.");
+            testCase.verifyEqual(indicatorsByChannel(2).FaceColor, [0, 1, 0]);
+            testCase.verifyEqual(indicatorsByChannel(3).FaceColor, thirdColourBefore, ...
+                "An indicator beyond the list keeps its colour.");
 
             indicator.selectChannel(2)
             indicator.ChangeDefaultsCallback = @(colours) setappdata(hFigure, "Defaults", colours);

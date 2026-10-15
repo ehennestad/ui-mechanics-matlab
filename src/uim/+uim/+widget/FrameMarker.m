@@ -58,7 +58,7 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
 
             % drawFrameMarker lays the parts out at x = 1 and always
             % visible; apply the Value and Visible the caller asked for
-            % (both setters were no-ops before IsConstructed was set).
+            % (both setters skip drawing until IsConstructed is set).
             obj.updateFrameMarker()
             obj.onVisibleChanged()
         end

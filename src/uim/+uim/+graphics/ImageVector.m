@@ -1,11 +1,10 @@
 classdef ImageVector < handle
 %ImageVector Plot a set of polygons as one object.
 %
-%   Methods for placing and scaling all polygons belonging to the group
-
-    % NB: setting position and alignment of image has some bugs. setting
-    % alignment first and then position works, but not always the other
-    % way around?
+%   Methods for placing and scaling all polygons belonging to the group.
+%   Position is the point named by HorizontalAlignment and
+%   VerticalAlignment (for example the bottom-left corner); changing an
+%   alignment keeps Position and moves the image around it.
 
     properties
 
@@ -85,6 +84,9 @@ classdef ImageVector < handle
             else
                 hParent.UserData.Handles = obj;
             end
+
+            obj.CurrentPosition = uim.graphics.internal.boundingBoxAnchor(...
+                obj.BoundingBox, obj.HorizontalAlignment, obj.VerticalAlignment);
         end
 
         function delete(obj)
@@ -129,6 +131,8 @@ classdef ImageVector < handle
 
             warning('off', 'MATLAB:polyshape:repairedBySimplify')
 
+            currentPositionKeep = obj.CurrentPosition;
+
             origBBox = obj.BoundingBox;
 
             dx = -origBBox(1);
@@ -144,6 +148,8 @@ classdef ImageVector < handle
             obj.translate([dx, 0]);
 
             warning('on', 'MATLAB:polyshape:repairedBySimplify')
+
+            obj.CurrentPosition = currentPositionKeep;
         end
 
         function flipud(obj)
@@ -203,7 +209,7 @@ classdef ImageVector < handle
         %
         %   newAlignment is one horizontal ('left', 'center', 'right') or
         %   vertical ('bottom', 'middle', 'top') alignment; only that
-        %   coordinate moves.
+        %   coordinate of the image moves, and Position stays put.
 
             bbox = obj.BoundingBox;
             shift = [0, 0];
@@ -218,11 +224,13 @@ classdef ImageVector < handle
                         bbox, 'left', newAlignment);
                     shift(2) = obj.CurrentPosition(2) - anchor(2);
                 otherwise
-                    error('uim:graphics:InvalidAlignment', ...
-                        'Unknown alignment "%s".', newAlignment)
+                    error("uim:graphics:InvalidAlignment", ...
+                        "Unknown alignment ""%s"".", newAlignment)
             end
 
+            position = obj.CurrentPosition;
             obj.translate(shift);
+            obj.CurrentPosition = position;
         end
     end
 
@@ -345,7 +353,7 @@ classdef ImageVector < handle
             shift = value - anchorPosition;
             obj.translate(shift);
 
-            obj.CurrentPosition = obj.BoundingBox(1:2) + obj.BoundingBox(3:4)/2;
+            obj.CurrentPosition = value;
         end
 
         function position = get.Position(obj)

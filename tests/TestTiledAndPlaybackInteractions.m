@@ -86,7 +86,7 @@ classdef TestTiledAndPlaybackInteractions < matlab.unittest.TestCase
         end
 
         function mouseOverHighlightingCanBeEnabled(testCase)
-            [~, tiledAxes] = createTiledAxes(testCase, [1, 2], [8, 8]);
+            [hFigure, tiledAxes] = createTiledAxes(testCase, [1, 2], [8, 8]);
             outlines = tileOutlines(tiledAxes.Axes);
             originalColor = outlines(1).EdgeColor;
 
@@ -94,10 +94,10 @@ classdef TestTiledAndPlaybackInteractions < matlab.unittest.TestCase
             behavior = iptGetPointerBehavior(outlines(1));
             testCase.assertNotEmpty(behavior, "Enabling installs pointer behaviour.");
 
-            behavior.enterFcn([], [], [])
+            behavior.enterFcn(hFigure, [0, 0])
             testCase.verifyGreaterThan(sum(outlines(1).EdgeColor), sum(originalColor), ...
                 "Entering a tile lightens its outline.");
-            behavior.exitFcn([], [], [])
+            behavior.exitFcn(hFigure, [0, 0])
             testCase.verifyEqual(outlines(1).EdgeColor, originalColor);
 
             tiledAxes.HighlightTileOnMouseOver = false;
@@ -167,6 +167,27 @@ classdef TestTiledAndPlaybackInteractions < matlab.unittest.TestCase
             testCase.verifyGreaterThanOrEqual(newValue, widget.Minimum);
             testCase.verifyLessThanOrEqual(newValue, widget.Maximum);
             testCase.verifyEqual(widget.Value, newValue);
+        end
+
+        function activeRangeHandlesAndBarAgreeAboveMinimum(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 500, 200]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            widget = uim.widget.PlaybackControl(hFigure, "Position", [10, 10, 400, 30], ...
+                "Minimum", 11, "Maximum", 60, "Value", 20);
+            testCase.addTeardown(@deleteValid, widget);
+            hSliderAxes = findall(hFigure, "Tag", "Playback Widget (Slider Axes)");
+            xFor = @(value) trackPosition(widget, hSliderAxes, value);
+
+            % With Minimum above 1, the handles and the bar both offset
+            % from Minimum, so they mark the same interval.
+            widget.RangeSelectorEnabled = 'on';
+            widget.ActiveRange = [15, 30];
+
+            hRangeButtons = findobj(hSliderAxes, "Type", "line", "Marker", "o");
+            testCase.verifyEqual(sort([hRangeButtons.XData]), [xFor(15), xFor(30)], "AbsTol", 1e-6);
+            hRangeBar = findobj(hSliderAxes, "Type", "patch", "FaceColor", [0, 1, 0]);
+            testCase.verifyEqual(min(hRangeBar.XData), xFor(15), "AbsTol", 1);
+            testCase.verifyEqual(max(hRangeBar.XData), xFor(30), "AbsTol", 1);
         end
 
         function activeRangeSelectorDrawsAndResets(testCase)

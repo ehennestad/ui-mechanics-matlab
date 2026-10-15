@@ -7,8 +7,7 @@ function offset = contentOffsetInBox(boxSize, contentSize, padding, horizontalAl
 %   lower-left corner. padding is [left, bottom, right, top] in pixels.
 %   horizontalAlignment is 'left', 'center' or 'right';
 %   verticalAlignment is 'bottom', 'middle' or 'top'. Centred content
-%   ignores the padding, matching how buttons have always laid out
-%   their text.
+%   ignores the padding.
 
     arguments
         boxSize (1,2) double
@@ -26,8 +25,8 @@ function offset = contentOffsetInBox(boxSize, contentSize, padding, horizontalAl
         case 'right'
             dx = boxSize(1) - padding(3) - contentSize(1);
         otherwise
-            error('uim:control:InvalidAlignment', ...
-                'Horizontal alignment must be ''left'', ''center'' or ''right''; got "%s".', ...
+            error("uim:control:InvalidAlignment", ...
+                "Horizontal alignment must be 'left', 'center' or 'right'; got ""%s"".", ...
                 char(horizontalAlignment))
     end
 
@@ -39,8 +38,8 @@ function offset = contentOffsetInBox(boxSize, contentSize, padding, horizontalAl
         case 'top'
             dy = boxSize(2) - padding(4) - contentSize(2);
         otherwise
-            error('uim:control:InvalidAlignment', ...
-                'Vertical alignment must be ''bottom'', ''middle'' or ''top''; got "%s".', ...
+            error("uim:control:InvalidAlignment", ...
+                "Vertical alignment must be 'bottom', 'middle' or 'top'; got ""%s"".", ...
                 char(verticalAlignment))
     end
 
