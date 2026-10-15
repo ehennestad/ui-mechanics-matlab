@@ -159,9 +159,16 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
             hTrack = findobj(canvas.Axes, "Tag", "Range Slider Track");
             hTrack.ButtonDownFcn(hTrack, [])
 
+            % The press goes through the figure's pointer position and is
+            % snapped to a step of (Max - Min)/NumTicks, so allow one pixel
+            % of track plus half a step.
+            valueRange = slider.Max - slider.Min;
+            trackLength = slider.Position(3) - sum(slider.Padding([1, 3]));
+            tolerance = valueRange/trackLength + valueRange/slider.NumTicks/2;
+
             testCase.assertTrue(isappdata(hFigure, "Range"), "Callback fired.");
             reported = getappdata(hFigure, "Range");
-            testCase.verifyEqual(reported, [30, 80], "AbsTol", 0.5);
+            testCase.verifyEqual(reported, [30, 80], "AbsTol", tolerance);
             testCase.verifyEqual(reported, [slider.Low, slider.High]);
         end
     end
