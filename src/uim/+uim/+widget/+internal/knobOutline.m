@@ -3,9 +3,10 @@ function [xCoords, yCoords] = knobOutline(center, radii, numPoints)
 %
 %   [xCoords, yCoords] = uim.widget.internal.knobOutline(center, radii)
 %   returns the vertices of an ellipse centred on center ([x, y]) with the
-%   given radii ([rx, ry]). A scalar radii draws a circle. Sliders that
-%   draw into a caller-supplied data axes pass different radii per axis so
-%   the knob stays round on screen.
+%   given radii ([rx, ry]). A scalar radii draws a circle. A slider that
+%   owns its axes passes different radii per axis, so the knob stays round
+%   on screen whatever the axes limits are; one drawn into a caller's
+%   pixel axes passes a scalar.
 %
 %   [...] = knobOutline(center, radii, numPoints) sets the number of
 %   vertices (default 200).

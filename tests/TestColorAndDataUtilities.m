@@ -98,7 +98,7 @@ classdef TestColorAndDataUtilities < matlab.unittest.TestCase
 
         function rangeWorksPerColumn(testCase)
             testCase.verifyEqual(uim.utility.range([1, 5; 4, 2]), [3, 3]);
-            testCase.verifyError(@() uim.utility.range("abc"), ?MException);
+            testCase.verifyError(@() uim.utility.range("abc"), "MATLAB:validators:mustBeNumeric");
         end
     end
 end

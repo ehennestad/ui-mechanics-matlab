@@ -91,7 +91,8 @@ classdef TestTileLayout < matlab.unittest.TestCase
     methods (Test) % TiledImageAxes
 
         function tiledAxesGeometryMatchesLayoutHelpers(testCase)
-            [hFigure, tiledAxes] = createTiledAxes(testCase, [2, 3], [16, 24]);
+            [hFigure, tiledAxes] = createTiledAxes(testCase, [2, 3], [16, 24], ...
+                "NormalizedPadding", 0.05);
 
             testCase.verifyEqual(tiledAxes.NumTiles, 6);
             testCase.verifyEqual(tiledAxes.NumRows, 2);
@@ -101,7 +102,8 @@ classdef TestTileLayout < matlab.unittest.TestCase
             % Tile 5 is row 2, column 2 of 16-by-24 tiles: one tile and one
             % padding along each axis, plus half a tile and the half-pixel
             % offset.
-            expectedPadding = round(2 * 16 * tiledAxes.NormalizedPadding);
+            expectedPadding = round(2 * 16 * 0.05);
+            testCase.assertGreaterThan(expectedPadding, 0);
             expectedCenter = [24 + 12, 16 + 8] + expectedPadding + 0.5;
             testCase.verifyEqual(tiledAxes.getTileCenterAxesCoords(5), expectedCenter);
 
@@ -179,11 +181,19 @@ classdef TestTileLayout < matlab.unittest.TestCase
     end
 end
 
-function [hFigure, tiledAxes] = createTiledAxes(testCase, gridSize, imageSize)
+function [hFigure, tiledAxes] = createTiledAxes(testCase, gridSize, imageSize, options)
+    arguments
+        testCase
+        gridSize
+        imageSize
+        options.NormalizedPadding
+    end
+
     hFigure = figure("Visible", "off", "Position", [100, 100, 400, 300]);
     testCase.addTeardown(@deleteValid, hFigure);
+    optionArgs = namedargs2cell(options);
     tiledAxes = uim.graphics.TiledImageAxes(hFigure, ...
-        "GridSize", gridSize, "ImageSize", imageSize);
+        "GridSize", gridSize, "ImageSize", imageSize, optionArgs{:});
     testCase.addTeardown(@deleteValid, tiledAxes);
 end
 
