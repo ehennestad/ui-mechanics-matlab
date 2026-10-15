@@ -204,7 +204,6 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         end
 
         function set.ChannelColors(obj, value)
-            % Todo: Validate input
             oldColors = obj.ChannelColors;
             obj.ChannelColors = value;
             obj.postSetChannelColors(oldColors)

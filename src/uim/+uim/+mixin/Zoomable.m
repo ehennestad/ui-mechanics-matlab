@@ -169,7 +169,6 @@ classdef Zoomable < handle
                 newLimits = obj.XLimOrig;
             end
 
-            % Todo: Make sure XLim2 > XLim1
             newLimits = uim.geometry.intersectRanges(newLimits, obj.XLimOrig);
             set(obj.Axes, 'XLim', newLimits);
 

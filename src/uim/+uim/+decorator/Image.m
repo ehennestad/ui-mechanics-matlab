@@ -84,8 +84,6 @@ classdef Image < uim.abstract.Component
         end
 
         function set.Alpha(obj, newValue)
-            % Todo: Validate size (same size as image)
-
             obj.Alpha = flipud(newValue);
             obj.onAlphaSet()
         end

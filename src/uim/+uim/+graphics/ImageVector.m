@@ -358,8 +358,6 @@ classdef ImageVector < handle
         end
 
         function set.HorizontalAlignment(obj, value)
-            % Todo validatestring ('left', 'center', 'right');
-
             oldValue = obj.HorizontalAlignment;
 
             if ~strcmp(oldValue, value)
@@ -369,8 +367,6 @@ classdef ImageVector < handle
         end
 
         function set.VerticalAlignment(obj, value)
-            % Todo validatestring ('top', 'middle', 'bottom');
-
             oldValue = obj.VerticalAlignment;
             obj.VerticalAlignment = value;
 

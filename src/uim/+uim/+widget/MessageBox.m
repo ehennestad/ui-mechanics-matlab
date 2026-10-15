@@ -32,9 +32,6 @@ classdef MessageBox < uim.mixin.Resizable
 %
 %   See also uim.widget.Waitbar
 
-% TODO:
-%   [ ] Remove dependence on uim.mixin.Resizable (imrect fucks up the axes configurations)
-
     properties (Access = private)
 
         ReferenceAxes % Axes the message box axes is plotted relative to. Not a real parent (see the inherited Parent property).

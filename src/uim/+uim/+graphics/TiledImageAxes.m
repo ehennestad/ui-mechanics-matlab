@@ -62,7 +62,7 @@ end
 properties % Properties to configure axes layout (Default values are preset)
     GridSize = [3, 5]           % [nRows, nCols]
     ImageSize = [128, 128]      % [imHeight, imWidth] Size (Reso) in px per tile
-    Padding = 10                % Not used; see NormalizedPadding. Todo: Rename to spacing.
+    Padding = 10                % Not used; see NormalizedPadding.
     NumChannels = 1;            % Color channels per tile: 1 (colormapped) or 3 (RGB). Set at construction.
 
     % Gap between tiles as a fraction of the grid height in pixels
@@ -364,7 +364,7 @@ methods (Access = private) % Methods for setting up gui
     %   and handles for adding lines or text to the interior of each tile.
     %
     %   NOTE! This function will reset any tilecallback functions that are
-    %   assigned externally. % Todo: Should fix this...
+    %   assigned externally.
 
         if isempty(obj.Axes_); return; end % Skip during initialization
 
@@ -1098,13 +1098,10 @@ methods (Access = private) % Internal gui management
                 newScaleFactor = [1, 1];
         end
 
-        % This is a trainwreck solution. Calling change grid size will call
-        % updateGraphicsObjects which will reset any tileCallback assigned
-        % from external interface. Need to fix. BIG Todo!
+        % changeGridSize calls updateGraphicsObjects, which resets any tile
+        % callback assigned from an external interface.
         if any(obj.ScaleFactor ~= newScaleFactor)
             obj.ScaleFactor = newScaleFactor;
-            % Todo: Change this. Dont need to change the whole grid, just axes
-            % limits and update graphics object
             obj.changeGridSize()
         end
     end

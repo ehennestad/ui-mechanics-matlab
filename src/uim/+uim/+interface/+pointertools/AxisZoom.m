@@ -25,7 +25,6 @@ classdef AxisZoom < uim.interface.PointerTool
 %   See also uim.interface.pointertools.Pan, uim.interface.PointerManager
 
 %   TODO:
-%       [ ] Options for constraining zoom to original limits (implement)
 %       [ ] Options for syncing two axis (if axes has dual axis along the
 %           dimensions)
 

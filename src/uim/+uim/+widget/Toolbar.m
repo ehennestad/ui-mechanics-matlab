@@ -208,7 +208,6 @@ classdef Toolbar < uim.abstract.Container
 
             obj.AllButtonPosition(end+1, :) = hSep.Position;
 
-            % Todo: Fix this!
             try
                 obj.Buttons(end+1) = hSep;
             catch

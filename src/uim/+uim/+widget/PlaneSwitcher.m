@@ -299,7 +299,6 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
         end
 
         function onNumPlanesChanged(obj)
-            % Todo: Update sliderbar max value
         end
 
         function onCurrentPlaneChanged(obj)

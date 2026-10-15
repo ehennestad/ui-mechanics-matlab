@@ -40,9 +40,6 @@ classdef Button < uim.abstract.Control
 
     % Todo:
     %   [x] How to best implement push and toggle buttons. Mech. action...
-    %   [ ] Setting Location prop at construction does not work.
-    %   [ ] Need to update mouseover effect if button is moved when
-    %   pressed.
     %   [x] Plot both icon and text
     %   [x] Implement extra appearances for when mouse is pressed and
     %       released. Should not depend on value...
@@ -50,9 +47,6 @@ classdef Button < uim.abstract.Control
     %   [ ] Work more on icon/text placement
     %   [ ] Implement stylechange on button text & icon
     %   [ ] implement togglebuttonlistener.... What was that about.
-    %   [ ] Why does margin not work when button is places south or
-    %       north...
-    %   [ ] Fix horizontal and vertical text aligning.
 
     % Should icon resize when button resizes? yes...
     % Should there be property to scale icon to fit within button?
@@ -132,7 +126,7 @@ classdef Button < uim.abstract.Control
 
     properties (Access = protected, Transient)
 
-        Foreground % Todo: remove
+        Foreground
 
         ButtonIcon = gobjects(0,1)
         ButtonText = gobjects(0,1)
@@ -663,7 +657,6 @@ classdef Button < uim.abstract.Control
         end
 
         function set.IconTextSpacing(obj, value)
-            % Todo: Validate number (integer)...
             obj.IconTextSpacing = value;
             obj.updateTextLocation()
         end

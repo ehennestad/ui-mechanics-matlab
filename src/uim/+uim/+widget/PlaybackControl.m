@@ -961,7 +961,6 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             % Activate callback function for when active range changed
             if ~isempty(obj.ActiveRangeChangedFcn)
                 newRange = obj.ActiveRange;
-                % Todo. make real eventdata...
                 evtData = struct('NewRange', newRange);
                 obj.ActiveRangeChangedFcn(obj, evtData)
             end
