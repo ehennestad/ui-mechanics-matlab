@@ -1,8 +1,9 @@
 classdef TabButton < uim.style.ButtonScheme
-%TabButton Tab styling for a light background
+%TabButton Tab styling for a dark bar, with a light selected tab
 %
-%   Black labels on an opaque light grey fill when the tab is selected,
-%   and a transparent fill when it is not.
+%   The selected tab has black labels on an opaque light grey fill.
+%   Unselected tabs have light grey labels on a transparent fill, which
+%   suits a dark bar such as the one uim.TabGroup draws.
 %
 %   See also uim.style.TabButtonDark, uim.style.TabButtonLight
 

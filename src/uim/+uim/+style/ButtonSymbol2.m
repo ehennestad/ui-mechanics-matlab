@@ -3,7 +3,7 @@ classdef ButtonSymbol2 < uim.style.ButtonScheme
 %
 %   This differs from uim.style.ButtonSymbol only in BorderWidth, and
 %   both set BorderColor to 'none', so the two render identically.
-%   Prefer uim.style.ButtonSymbol; this class is a deletion candidate.
+%   Prefer uim.style.ButtonSymbol.
 
     properties (Constant)
 

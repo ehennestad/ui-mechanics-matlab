@@ -33,7 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - Every class in `uim.style` now has help text saying what it looks like
-  and when to reach for it; sixteen of them had none at all.
+  and when to reach for it.
 - Renamed style classes whose numeric suffixes said nothing about what they
   look like: `ButtonDarkMode3` -> `ButtonDarkModeBold`, `ButtonLightMode2`
   -> `ButtonLightModeTranslucent`, `TabButton2` -> `TabButtonDark`. Each

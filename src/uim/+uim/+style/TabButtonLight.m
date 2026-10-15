@@ -2,7 +2,9 @@ classdef TabButtonLight < uim.style.ButtonScheme
 %TabButtonLight Tab styling that marks the selected tab with the accent colour
 %
 %   The selected tab takes the accent colour returned by getFocusColor
-%   with a white label; unselected tabs are light grey.
+%   with a white label. Unselected tabs have dark grey labels on a
+%   transparent fill and turn light grey under the pointer, so the style
+%   suits a light background.
 %
 %   See also uim.style.TabButton, uim.style.TabButtonDark
 
