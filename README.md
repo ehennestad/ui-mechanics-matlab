@@ -1,7 +1,7 @@
 # UI Mechanics for MATLAB
 
 [![Version Number](https://img.shields.io/github/v/release/ehennestad/ui-mechanics-matlab?label=version)](https://github.com/ehennestad/ui-mechanics-matlab/releases/latest)
-[![MATLAB Tests](.github/badges/tests.svg)](https://github.com/ehennestad/ui-mechanics-matlab/actions/workflows/test-code.yml)
+[![Test code](https://github.com/ehennestad/ui-mechanics-matlab/actions/workflows/test-code.yml/badge.svg)](https://github.com/ehennestad/ui-mechanics-matlab/actions/workflows/test-code.yml)
 [![codecov](https://codecov.io/gh/ehennestad/ui-mechanics-matlab/graph/badge.svg?token=MA49YNA54J)](https://codecov.io/gh/ehennestad/ui-mechanics-matlab)
 [![MATLAB Code Issues](.github/badges/code_issues.svg)](https://github.com/ehennestad/ui-mechanics-matlab/security/code-scanning)
 [![Run Codespell](https://github.com/ehennestad/ui-mechanics-matlab/actions/workflows/run-codespell.yml/badge.svg)](https://github.com/ehennestad/ui-mechanics-matlab/actions/workflows/run-codespell.yml)
