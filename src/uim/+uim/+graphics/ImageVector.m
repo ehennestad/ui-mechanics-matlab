@@ -4,7 +4,9 @@ classdef ImageVector < handle
 %   Methods for placing and scaling all polygons belonging to the group.
 %   Position is the point named by HorizontalAlignment and
 %   VerticalAlignment (for example the bottom-left corner); changing an
-%   alignment keeps Position and moves the image around it.
+%   alignment keeps Position and moves the image around it. scale (and
+%   Width and Height) resizes about the axes origin and rotate turns about
+%   the box centre; both leave Position at the anchor's new location.
 
     properties
 
@@ -125,6 +127,7 @@ classdef ImageVector < handle
 
             obj.CurrentAngle = obj.CurrentAngle + angle;
             obj.translate(offset);
+            obj.updateAnchorPosition()
         end
 
         function fliplr(obj)
@@ -202,6 +205,7 @@ classdef ImageVector < handle
             for i = 1:obj.NumShapes
                 obj.Polygons(i).Shape = scale(obj.Polygons(i).Shape, scaleFactor);
             end
+            obj.updateAnchorPosition()
         end
 
         function reposition(obj, newAlignment)
@@ -231,6 +235,15 @@ classdef ImageVector < handle
             position = obj.CurrentPosition;
             obj.translate(shift);
             obj.CurrentPosition = position;
+        end
+    end
+
+    methods (Access = private)
+
+        function updateAnchorPosition(obj)
+        %updateAnchorPosition Set Position to the alignment anchor of the current box
+            obj.CurrentPosition = uim.graphics.internal.boundingBoxAnchor(...
+                obj.BoundingBox, obj.HorizontalAlignment, obj.VerticalAlignment);
         end
     end
 

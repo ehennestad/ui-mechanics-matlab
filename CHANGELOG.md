@@ -19,10 +19,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - `uim.graphics.ImageVector`: `Position` is the point named by the
-  alignment pair, and changing `HorizontalAlignment` or
-  `VerticalAlignment` keeps it and moves the image around it. The
-  alignment change used to move the image by the wrong amount, and
-  `Position` read back the box centre.
+  alignment pair, also after a resize or rotation, and changing
+  `HorizontalAlignment` or `VerticalAlignment` keeps it and moves the
+  image around it. The alignment change used to move the image by the
+  wrong amount, and `Position` read back the box centre or, after a
+  resize, a point the image had left.
 - `uim.widget.ChannelIndicator`: assigning a `ChannelColors` list shorter
   than the previous one errored; the update now covers the indicators
   the new list describes.

@@ -155,6 +155,32 @@ classdef TestGraphicsHelpers < matlab.unittest.TestCase
             testCase.verifyEqual(vectorImage.Position, [100, 50], "AbsTol", 1e-6);
         end
 
+        function positionFollowsTheAnchorAfterResizeAndRotation(testCase)
+            [~, hAxes] = createAxes(testCase);
+            vectorImage = uim.graphics.ImageVector(hAxes, testCase.Icons.zoomIn);
+            testCase.addTeardown(@deleteValid, vectorImage);
+            vectorImage.HorizontalAlignment = 'left';
+            vectorImage.VerticalAlignment = 'bottom';
+            vectorImage.Position = [100, 50];
+
+            % Resizing scales about the axes origin, so the bottom-left
+            % corner moves; Position reports where it is now.
+            vectorImage.Width = 2 * vectorImage.Width;
+            bbox = vectorImage.BoundingBox;
+            testCase.verifyEqual(vectorImage.Position, bbox(1:2), "AbsTol", 1e-6);
+            testCase.verifyEqual(vectorImage.Position, [200, 100], "AbsTol", 1e-6);
+
+            vectorImage.rotate(45)
+            bbox = vectorImage.BoundingBox;
+            testCase.verifyEqual(vectorImage.Position, bbox(1:2), "AbsTol", 1e-6);
+
+            % An alignment change then lands the new anchor on that point.
+            positionBefore = vectorImage.Position;
+            vectorImage.HorizontalAlignment = 'right';
+            bbox = vectorImage.BoundingBox;
+            testCase.verifyEqual(bbox(1) + bbox(3), positionBefore(1), "AbsTol", 1e-6);
+        end
+
         function stylePropertiesReachEveryPolygon(testCase)
             [~, hAxes] = createAxes(testCase);
             vectorImage = uim.graphics.ImageVector(hAxes, testCase.Icons.zoomIn);
