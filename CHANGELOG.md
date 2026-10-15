@@ -26,10 +26,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `ButtonSymbol` only in `BorderWidth` while both set `BorderColor` to
   `none`, so it has no visible difference to name it after, and it is a
   deletion candidate rather than a rename candidate.
-- Renamed two run-on lowercase functions to the lowerCamelCase the rest of
-  the toolbox uses: `uim.utility.setpixelpositionnonscalar` ->
-  `uim.utility.setPixelPositions` and `uim.utility.layout.findgridsize` ->
-  `uim.utility.layout.findGridSize`.
+- Renamed `uim.utility.layout.findgridsize` to
+  `uim.utility.layout.findGridSize`, the lowerCamelCase the rest of the
+  toolbox uses.
 - New `uim.geometry` package for axis-limit, range and rectangle
   arithmetic that hosts can use too: `scaleLimits`, `intersectRanges`,
   `fitRangeInside`, `isPointInsideLimits`, `fitLimitsToAspectRatio`,
@@ -56,15 +55,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `uim.shape.getIcon`, which returned play/pause glyph coordinates. It was
   unreferenced — `uim.widget.PlaybackControl` defines its own glyphs — and
   it was not a shape.
+- `uim.utility.setpixelpositionnonscalar`, an adaptation of MATLAB's
+  `setpixelposition` that the MATLAB licence does not allow
+  redistributing. Nothing called it; call `setpixelposition` for each
+  handle instead.
 
 ### Fixed
 
-- `uim.utility.setPixelPositions` raised `MATLAB:builtins:MessageCatalogLoadFailed`
-  instead of reporting a wrongly sized position, because it referenced a
-  MATLAB message identifier that does not exist
-  (`MATLAB:setpixelpositionnonscalar:InvalidPosition`). It now raises
-  `uim:utility:setPixelPositions:InvalidPosition` and says what shape is
-  expected.
 - `uim.graphics.ImageVector`: `Position` is the point named by the
   alignment pair, also after a resize or rotation, and changing
   `HorizontalAlignment` or `VerticalAlignment` keeps it and moves the
@@ -337,7 +334,7 @@ see git history for the complete list):
 | `uim.style.buttonLightMode2` | `uim.style.ButtonLightModeTranslucent` |
 | `uim.style.tabButton2` | `uim.style.TabButtonDark` |
 | `uim.style.*` (other classes) | PascalCase (`uim.style.ButtonScheme`, `uim.style.TableTheme`, etc.) |
-| `uim.utility.setpixelpositionnonscalar` | `uim.utility.setPixelPositions` |
+| `uim.utility.setpixelpositionnonscalar` | Removed; call `setpixelposition` for each handle |
 | `uim.utility.layout.findgridsize` | `uim.utility.layout.findGridSize` |
 | `uim.decorator.box/image` | `uim.decorator.Box/Image` |
 | `uim.graphics.imageVector/tiledImageAxes` | `uim.graphics.ImageVector/TiledImageAxes` |

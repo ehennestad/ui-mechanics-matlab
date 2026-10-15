@@ -158,41 +158,6 @@ classdef TestLayoutUtilities < matlab.unittest.TestCase
             uim.utility.layout.centerObjectInRectangle(hFigure, screen - [10000, 10000, 0, 0])
             testCase.verifyGreaterThanOrEqual(hFigure.Position(1:2), screen(1:2));
         end
-
-        function setPixelPositionsPlacesEachHandle(testCase)
-            hFigure = createHiddenFigure(testCase, [100, 100, 400, 300]);
-            hControls = gobjects(1, 2);
-            hControls(1) = uicontrol(hFigure, "Style", "text", "Units", "normalized");
-            hControls(2) = uicontrol(hFigure, "Style", "text", "Units", "normalized");
-
-            positions = [10, 20, 30, 40; 50, 60, 70, 80];
-            uim.utility.setPixelPositions(hControls, positions)
-
-            testCase.verifyEqual(getpixelposition(hControls(1)), positions(1, :), "AbsTol", 1);
-            testCase.verifyEqual(getpixelposition(hControls(2)), positions(2, :), "AbsTol", 1);
-            testCase.verifyEqual(get(hControls, "Units"), {'normalized'; 'normalized'}, ...
-                "Original units are restored.");
-
-            uim.utility.setPixelPositions(hControls(1), [1, 2, 30, 40])
-            testCase.verifyEqual(getpixelposition(hControls(1)), [1, 2, 30, 40], "AbsTol", 1);
-        end
-
-        function setPixelPositionsSupportsRecursiveAndRejectsBadInput(testCase)
-            hFigure = createHiddenFigure(testCase, [100, 100, 400, 300]);
-            hPanel = uipanel(hFigure, "Units", "pixels", "Position", [50, 50, 300, 200]);
-            hControls = [uicontrol(hPanel, "Style", "text"), uicontrol(hPanel, "Style", "text")];
-
-            uim.utility.setPixelPositions(hControls, [60, 70, 20, 10; 80, 90, 20, 10], true)
-            testCase.verifyEqual(getpixelposition(hControls(1), true), [60, 70, 20, 10], "AbsTol", 1);
-            testCase.verifyEqual(getpixelposition(hControls(2)), [30, 40, 20, 10], "AbsTol", 1);
-
-            testCase.verifyError(...
-                @() uim.utility.setPixelPositions(hControls, [1, 2, 3, 4]), ...
-                "uim:utility:setPixelPositions:InvalidPosition");
-            testCase.verifyError(...
-                @() uim.utility.setPixelPositions(42, [1, 2, 3, 4]), ...
-                "uim:utility:setPixelPositions:InvalidHandle");
-        end
     end
 end
 
