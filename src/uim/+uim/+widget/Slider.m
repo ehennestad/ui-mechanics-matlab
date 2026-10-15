@@ -4,10 +4,13 @@ classdef Slider < handle
 
     % Todo: Allow vertical orientation...
 
+    properties (Dependent = true)
+        Min                     % Minimum slider value
+        Max                     % Maximum slider value
+    end
+
     properties
 
-        Min = 0                 % Minimum slider value
-        Max = 1                 % Maximum slider value
         Value = 0.5
 
         NumTicks = 100
@@ -49,6 +52,11 @@ classdef Slider < handle
     end
 
     properties (Access = private)
+        % Values behind the Dependent Min and Max, so that each limit's
+        % set method can check the new value against the other limit.
+        Min_ = 0
+        Max_ = 1
+
         Axes
         OwnsAxes = false;
 
@@ -99,7 +107,9 @@ classdef Slider < handle
 
             propNames = properties(obj);
 
-            dependentProps = uim.utility.findProperties(obj, 'Dependent');
+            % Min and Max are Dependent only to have backing values; they
+            % are still name-value options.
+            dependentProps = setdiff(uim.utility.findProperties(obj, 'Dependent'), {'Min', 'Max'});
             propNames = setdiff(propNames, dependentProps);
 
             defaultValues = cellfun(@(name) obj.(name), propNames, 'uni', 0);
@@ -459,23 +469,31 @@ classdef Slider < handle
 %
 
         function set.Min(obj, newMin)
-            assert(newMin < obj.Max, "uim:Slider:InvalidLimits", ...
+            assert(newMin < obj.Max_, "uim:Slider:InvalidLimits", ...
                 'Slider lower limit must be smaller than slider upper limit')
-            obj.Min = newMin;
+            obj.Min_ = newMin;
 
             if ~isempty(obj.Axes) && obj.OwnsAxes
                 obj.onPositionChanged();
             end
         end
 
+        function minValue = get.Min(obj)
+            minValue = obj.Min_;
+        end
+
         function set.Max(obj, newMax)
-            assert(newMax > obj.Min, "uim:Slider:InvalidLimits", ...
+            assert(newMax > obj.Min_, "uim:Slider:InvalidLimits", ...
                 'Slider upper limit must be larger than slider lower limit')
-            obj.Max = newMax;
+            obj.Max_ = newMax;
 
             if ~isempty(obj.Axes) && obj.OwnsAxes
                 obj.onPositionChanged();
             end
+        end
+
+        function maxValue = get.Max(obj)
+            maxValue = obj.Max_;
         end
 
 %         function set.Step(obj, newValue)
