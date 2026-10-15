@@ -286,3 +286,4 @@ sites (verified by a full-repository search, not assumption):
 - `uim.widget.DropDown` accepts `Value = ""` as "no selection" with any
   `Items`. To switch to an `Items` list that lacks the current `Value`,
   set `Value` to `""` first.
+- MATLAB R2020b is the minimum supported release.

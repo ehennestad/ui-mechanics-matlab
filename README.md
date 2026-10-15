@@ -14,7 +14,7 @@ Composable controls and interactions for MATLAB figures.
 UI Mechanics (uim) provides reusable interface components and interaction infrastructure for programmatic MATLAB applications. It is designed for scientific viewers, image tools and other graphics-heavy apps that need controls and pointer interactions tightly integrated with plotted data. The toolbox includes composable controls, toolbars, message overlays, layout utilities, styling, and tools for zooming, panning, selection and data interaction. Its core is designed to work across traditional MATLAB figures and modern UI figures without depending on a larger application framework.
 
 ## Requirements and installation
-It is recommended to use **MATLAB R2019b** or later.
+It is recommended to use **MATLAB R2020b** or later.
 
 Required MathWorks products:
 - MATLAB
