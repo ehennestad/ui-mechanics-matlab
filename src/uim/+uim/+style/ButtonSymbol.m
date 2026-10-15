@@ -1,4 +1,9 @@
 classdef ButtonSymbol < uim.style.ButtonScheme
+%ButtonSymbol Icon-only button styling with no fill or border
+%
+%   Draws the glyph alone, so the button does not obscure the content it
+%   sits on. The glyph is light grey when off, brighter under the
+%   pointer, and white when on.
 
     properties (Constant)
 

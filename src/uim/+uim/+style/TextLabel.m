@@ -1,4 +1,10 @@
 classdef TextLabel < uim.style.ButtonScheme
+%TextLabel Text-only button styling: grey when off, blue when on
+%
+%   No fill and no border in any state. The label is grey when the
+%   button is off, turns blue under the pointer, and is bold blue when
+%   the button is on, so a row of toggle buttons reads as a list of
+%   selectable words.
 
     properties (Constant)
 

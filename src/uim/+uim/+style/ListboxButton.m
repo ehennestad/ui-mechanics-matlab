@@ -1,4 +1,9 @@
 classdef ListboxButton < uim.style.ButtonScheme
+%ListboxButton Styling for a row in a list
+%
+%   Grey labels on a translucent dark fill, turning white on a
+%   translucent blue fill when the row is selected. No border, so
+%   adjacent rows read as one list.
 
     properties (Constant)
 

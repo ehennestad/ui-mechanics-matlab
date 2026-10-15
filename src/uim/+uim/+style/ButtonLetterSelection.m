@@ -1,4 +1,8 @@
 classdef ButtonLetterSelection < uim.style.ButtonScheme
+%ButtonLetterSelection Button styling for a letter or index picker
+%
+%   White fill when unselected and a translucent green fill when
+%   selected, so the chosen letter stands out in a row of them.
 
     properties (Constant)
 
