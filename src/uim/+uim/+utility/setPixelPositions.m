@@ -1,23 +1,21 @@
-function setPixelPositions(h,position,recursive)
-% SETPIXELPOSITION Set position HG object in pixels.
-%   SETPIXELPOSITION(HANDLE, POSITION) sets the position of the object specified by
-%   HANDLE in pixel units to the specified POSITION.
+function setPixelPositions(h, position, recursive)
+%setPixelPositions Set the pixel positions of one or more graphics objects
 %
-%   SETPIXELPOSITION(HANDLE, POSITION, RECURSIVE) sets the position as above. If
-%   RECURSIVE is true, the position is set relative to the parent
-%   figure of HANDLE.
+%   uim.utility.setPixelPositions(h, position) sets the position of each
+%   object in the handle array h in pixel units. position has one
+%   [x, y, width, height] row per handle. Each object's Units are restored
+%   afterwards.
+%
+%   uim.utility.setPixelPositions(h, position, recursive) with recursive
+%   true reads the positions relative to the figure instead of the parent.
+%   All objects in h must then share a parent.
 %
 %   Example:
 %       f = figure;
-%       p = uipanel('Position', [.2 .2 .6 .6]);
-%       h1 = uicontrol(p, 'Units', 'normalized', 'Position', [.1 .1 .5 .2]);
-%       % Get pixel position w.r.t the parent uipanel
-%       pos1 = getpixelposition(h1);
-%       % Set pixel position on the uicontrol
-%       pause(1);
-%       setpixelposition(h1, pos1 + [10 10 20 20]);
+%       h = [uicontrol(f), uicontrol(f)];
+%       uim.utility.setPixelPositions(h, [10, 10, 80, 20; 10, 40, 80, 20])
 %
-%   See also GETPIXELPOSITION, UICONTROL, UIPANEL
+%   See also getpixelposition, setpixelposition
 
 % Copyright 1984-2006 The MathWorks, Inc.
 
@@ -27,18 +25,19 @@ function setPixelPositions(h,position,recursive)
 narginchk(2,3)
 
 % Verify that "h" is a handle
-if ~ishghandle(h)
-    error(message('MATLAB:setpixelposition:InvalidHandle'))
+if ~all(ishghandle(h))
+    error("uim:utility:setPixelPositions:InvalidHandle", ...
+        "h must contain only graphics object handles.")
 end
 
 numHandles = numel(h);
 
 % Verify that if "position" does exist it is a 1x4 numerical matrix
 if ~(size(position,2) == 4 && size(position,1) == numHandles && isnumeric(position))
-        error('uim:utility:InvalidPosition', ...
-            ['Position must be a %d-by-4 matrix, one row per handle. ', ...
-             'Supply one [x, y, width, height] row for each of the %d ', ...
-             'handles in h.'], numHandles, numHandles)
+        error("uim:utility:setPixelPositions:InvalidPosition", ...
+            "position is %d-by-%d. Supply one [x, y, width, height] row per " + ...
+            "handle in h, a %d-by-4 numeric matrix.", ...
+            size(position, 1), size(position, 2), numHandles)
 end
 
 if nargin < 3

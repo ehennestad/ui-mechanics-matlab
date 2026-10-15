@@ -159,7 +159,7 @@ classdef TestLayoutUtilities < matlab.unittest.TestCase
             testCase.verifyGreaterThanOrEqual(hFigure.Position(1:2), screen(1:2));
         end
 
-        function setPixelPositionNonScalarPositionsEachHandle(testCase)
+        function setPixelPositionsPlacesEachHandle(testCase)
             hFigure = createHiddenFigure(testCase, [100, 100, 400, 300]);
             hControls = gobjects(1, 2);
             hControls(1) = uicontrol(hFigure, "Style", "text", "Units", "normalized");
@@ -177,7 +177,7 @@ classdef TestLayoutUtilities < matlab.unittest.TestCase
             testCase.verifyEqual(getpixelposition(hControls(1)), [1, 2, 30, 40], "AbsTol", 1);
         end
 
-        function setPixelPositionNonScalarSupportsRecursiveAndRejectsBadShape(testCase)
+        function setPixelPositionsSupportsRecursiveAndRejectsBadInput(testCase)
             hFigure = createHiddenFigure(testCase, [100, 100, 400, 300]);
             hPanel = uipanel(hFigure, "Units", "pixels", "Position", [50, 50, 300, 200]);
             hControls = [uicontrol(hPanel, "Style", "text"), uicontrol(hPanel, "Style", "text")];
@@ -187,9 +187,11 @@ classdef TestLayoutUtilities < matlab.unittest.TestCase
             testCase.verifyEqual(getpixelposition(hControls(2)), [30, 40, 20, 10], "AbsTol", 1);
 
             testCase.verifyError(...
-                @() uim.utility.setPixelPositions(hControls, [1, 2, 3, 4]), ?MException);
+                @() uim.utility.setPixelPositions(hControls, [1, 2, 3, 4]), ...
+                "uim:utility:setPixelPositions:InvalidPosition");
             testCase.verifyError(...
-                @() uim.utility.setPixelPositions(42, [1, 2, 3, 4]), ?MException);
+                @() uim.utility.setPixelPositions(42, [1, 2, 3, 4]), ...
+                "uim:utility:setPixelPositions:InvalidHandle");
         end
     end
 end

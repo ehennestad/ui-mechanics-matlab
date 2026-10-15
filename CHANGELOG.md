@@ -51,14 +51,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `uim.menu` package is gone — `createColormapList` now lives in
   `uim.graphics.internal` beside its only caller.
 
-### Fixed
-
-- `uim.utility.setPixelPositions` raised `MATLAB:builtins:MessageCatalogLoadFailed`
-  instead of reporting a wrongly sized position, because it referenced a
-  MATLAB message identifier that does not exist
-  (`MATLAB:setpixelpositionnonscalar:InvalidPosition`). It now raises
-  `uim:utility:InvalidPosition` and says what shape is expected.
-
 ### Removed
 
 - `uim.shape.getIcon`, which returned play/pause glyph coordinates. It was
@@ -67,6 +59,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- `uim.utility.setPixelPositions` raised `MATLAB:builtins:MessageCatalogLoadFailed`
+  instead of reporting a wrongly sized position, because it referenced a
+  MATLAB message identifier that does not exist
+  (`MATLAB:setpixelpositionnonscalar:InvalidPosition`). It now raises
+  `uim:utility:setPixelPositions:InvalidPosition` and says what shape is
+  expected.
 - `uim.graphics.ImageVector`: `Position` is the point named by the
   alignment pair, also after a resize or rotation, and changing
   `HorizontalAlignment` or `VerticalAlignment` keeps it and moves the
@@ -335,7 +333,12 @@ see git history for the complete list):
 | `uim.widget.messageBox` | `uim.widget.MessageBox` |
 | `uim.widget.toolbar` | `uim.widget.Toolbar` |
 | `uim.widget.tabbar` | `uim.widget.TabBar` |
-| `uim.style.*` (18 classes) | PascalCase (`uim.style.ButtonScheme`, `uim.style.TableTheme`, etc.) |
+| `uim.style.buttonDarkMode3` | `uim.style.ButtonDarkModeBold` |
+| `uim.style.buttonLightMode2` | `uim.style.ButtonLightModeTranslucent` |
+| `uim.style.tabButton2` | `uim.style.TabButtonDark` |
+| `uim.style.*` (other classes) | PascalCase (`uim.style.ButtonScheme`, `uim.style.TableTheme`, etc.) |
+| `uim.utility.setpixelpositionnonscalar` | `uim.utility.setPixelPositions` |
+| `uim.utility.layout.findgridsize` | `uim.utility.layout.findGridSize` |
 | `uim.decorator.box/image` | `uim.decorator.Box/Image` |
 | `uim.graphics.imageVector/tiledImageAxes` | `uim.graphics.ImageVector/TiledImageAxes` |
 | `uim.abstract.toolbarComponent` | `uim.mixin.ToolbarComponent` |

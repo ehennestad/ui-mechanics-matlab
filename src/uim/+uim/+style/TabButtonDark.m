@@ -1,8 +1,10 @@
 classdef TabButtonDark < uim.style.ButtonScheme
-%TabButtonDark Tab button styling for a dark background
+%TabButtonDark Tab styling for a dark bar, with a dark selected tab
 %
-%   White labels on a dark slate tab. Compare uim.style.TabButton (dark
-%   labels on light grey) and uim.style.TabButtonLight.
+%   The selected tab has white labels on a slate fill. Unselected tabs
+%   have light grey labels on a transparent fill, as in
+%   uim.style.TabButton, which marks the selected tab with a light grey
+%   fill instead. For a light background, use uim.style.TabButtonLight.
 
     properties (Constant)
 

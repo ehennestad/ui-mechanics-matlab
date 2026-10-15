@@ -1,8 +1,8 @@
 classdef ButtonDarkModeBold < uim.style.ButtonScheme
 %ButtonDarkModeBold Dark button styling with bold labels
 %
-%   As uim.style.ButtonDarkMode, but selected states use a bold font and
-%   grey borders rather than black.
+%   As uim.style.ButtonDarkMode, but selected labels are bold, and every
+%   state has a grey border rather than a black one.
 
     properties (Constant)
 
