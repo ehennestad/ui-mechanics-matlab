@@ -11,7 +11,8 @@ function centerObjectInRectangle(hContainer, position)
         try
             position = position.Position;
         catch
-            error('Second argument should be a position or a graphical object with a Position property.')
+            error("uim:centerObjectInRectangle:InvalidPosition", ...
+                'Second argument should be a position or a graphical object with a Position property.')
         end
     end
 

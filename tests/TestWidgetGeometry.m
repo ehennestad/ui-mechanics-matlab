@@ -34,10 +34,10 @@ classdef TestWidgetGeometry < matlab.unittest.TestCase
         function valueMappingRejectsNonIncreasingLimits(testCase)
             testCase.verifyError(...
                 @() uim.widget.internal.mapValueToPixel(1, [3, 3], 0, 10), ...
-                "uim:widget:InvalidLimits");
+                "uim:mapValueToPixel:InvalidLimits");
             testCase.verifyError(...
                 @() uim.widget.internal.mapValueToPixel(1, [5, 3], 0, 10), ...
-                "uim:widget:InvalidLimits");
+                "uim:mapValueToPixel:InvalidLimits");
         end
 
         function pixelMappingInvertsValueMapping(testCase)
@@ -122,7 +122,7 @@ classdef TestWidgetGeometry < matlab.unittest.TestCase
         function tickMarksRejectUnknownMode(testCase)
             testCase.verifyError(...
                 @() uim.widget.internal.tickMarkCoordinates([0, 100], 0, 4, 'sideways', 3), ...
-                "uim:widget:InvalidTickMode");
+                "uim:tickMarkCoordinates:InvalidTickMode");
         end
 
         function knobOutlineIsClosedCircleOfGivenRadius(testCase)
@@ -190,7 +190,7 @@ classdef TestWidgetGeometry < matlab.unittest.TestCase
         function scrollBarSizeRejectsUnknownOrientation(testCase)
             testCase.verifyError(...
                 @() uim.widget.internal.scrollBarSize([10, 200], 'diagonal', 0.5, 1, 6), ...
-                "uim:widget:InvalidOrientation");
+                "uim:scrollBarSize:InvalidOrientation");
         end
     end
 

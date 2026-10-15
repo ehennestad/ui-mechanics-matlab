@@ -117,11 +117,11 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
                 obj.High_ = obj.Max_;
             end
 
-            assert(obj.Min_ < obj.Max_, ...
+            assert(obj.Min_ < obj.Max_, "uim:RangeSlider:InvalidLimits", ...
                 'Slider lower limit must be smaller than slider upper limit')
-            assert(obj.Low_ >= obj.Min_ && obj.Low_ <= obj.High_, ...
+            assert(obj.Low_ >= obj.Min_ && obj.Low_ <= obj.High_, "uim:RangeSlider:InvalidLow", ...
                 'Slider lower value must be within the selected range')
-            assert(obj.High_ <= obj.Max_, ...
+            assert(obj.High_ <= obj.Max_, "uim:RangeSlider:InvalidHigh", ...
                 'Slider upper value must be within the selected range')
         end
 
@@ -579,7 +579,8 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
     methods % Set/get methods
 
         function set.Min(obj, newMin)
-            assert(newMin < obj.Max_, 'Slider lower limit must be smaller than slider upper limit')
+            assert(newMin < obj.Max_, "uim:RangeSlider:InvalidLimits", ...
+                'Slider lower limit must be smaller than slider upper limit')
             oldValues = [obj.Low_, obj.High_];
             obj.Min_ = newMin;
             obj.Low_ = max(obj.Low_, obj.Min_);
@@ -599,7 +600,8 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         end
 
         function set.Max(obj, newMax)
-            assert(newMax > obj.Min_, 'Slider upper limit must be larger than slider lower limit')
+            assert(newMax > obj.Min_, "uim:RangeSlider:InvalidLimits", ...
+                'Slider upper limit must be larger than slider lower limit')
             oldValues = [obj.Low_, obj.High_];
             obj.Max_ = newMax;
             obj.High_ = min(obj.High_, obj.Max_);
@@ -620,8 +622,10 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
         function set.Low(obj, newLow)
             %newLow = obj.Min_;
-            assert(newLow >= obj.Min_, 'Slider lower value must be greater than slider lower limit')
-            assert(newLow <= obj.High_, 'Slider lower value must be smaller than slider upper value')
+            assert(newLow >= obj.Min_, "uim:RangeSlider:InvalidLow", ...
+                'Slider lower value must be greater than slider lower limit')
+            assert(newLow <= obj.High_, "uim:RangeSlider:InvalidLow", ...
+                'Slider lower value must be smaller than slider upper value')
 
             if newLow ~= obj.Low_
                 obj.Low_ = newLow;
@@ -634,8 +638,10 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         end
 
         function set.High(obj, newHigh)
-            assert(newHigh <= obj.Max_, 'Slider upper value must be smaller than slider upper limit')
-            assert(newHigh >= obj.Low_, 'Slider upper value must be larger than slider lower value')
+            assert(newHigh <= obj.Max_, "uim:RangeSlider:InvalidHigh", ...
+                'Slider upper value must be smaller than slider upper limit')
+            assert(newHigh >= obj.Low_, "uim:RangeSlider:InvalidHigh", ...
+                'Slider upper value must be larger than slider lower value')
 
             if newHigh ~= obj.High_
                 obj.High_ = newHigh;

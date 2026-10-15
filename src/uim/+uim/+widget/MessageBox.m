@@ -50,7 +50,8 @@ classdef MessageBox < uim.mixin.Resizable
         function obj = MessageBox(hParent, varargin)
 
             msg = 'Invalid Sequence of Name, Value Parameters';
-            assert(all(cellfun(@(arg) ischar(arg), varargin(1:2:end))), msg)
+            assert(all(cellfun(@(arg) ischar(arg), varargin(1:2:end))), ...
+                "uim:MessageBox:InvalidPairs", msg)
 
             for i = 1:2:numel(varargin)
                 try

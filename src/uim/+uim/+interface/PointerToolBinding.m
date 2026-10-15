@@ -94,7 +94,7 @@ classdef PointerToolBinding < handle
             catch ME
                 % Without the shipped icon library the buttons fall back
                 % to text labels; any other failure is a real error.
-                if ~strcmp(ME.identifier, 'uim:style:IconLibraryNotFound')
+                if ~strcmp(ME.identifier, 'uim:getDefaultIcons:IconLibraryNotFound')
                     rethrow(ME)
                 end
                 defaultIcons = struct();

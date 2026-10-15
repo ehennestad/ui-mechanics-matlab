@@ -40,8 +40,8 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
 
             slider.Max = 3;
             testCase.verifyEqual(slider.Step, 0.2, "AbsTol", 1e-12);
-            testCase.verifyError(@() assign(slider, "Min", 4), ?MException);
-            testCase.verifyError(@() assign(slider, "Max", -2), ?MException);
+            testCase.verifyError(@() assign(slider, "Min", 4), "uim:Slider:InvalidLimits");
+            testCase.verifyError(@() assign(slider, "Max", -2), "uim:Slider:InvalidLimits");
         end
 
         function sliderTrackPressMovesValueAndNotifies(testCase)
@@ -151,12 +151,12 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
             testCase.verifyEqual([slider.Low, slider.High], [10, 10], ...
                 "Lowering Max below Low collapses the range.");
 
-            testCase.verifyError(@() assign(slider, "Low", 60), ?MException);
-            testCase.verifyError(@() assign(slider, "High", 5), ?MException);
-            testCase.verifyError(@() assign(slider, "Max", 0), ?MException, ...
+            testCase.verifyError(@() assign(slider, "Low", 60), "uim:RangeSlider:InvalidLow");
+            testCase.verifyError(@() assign(slider, "High", 5), "uim:RangeSlider:InvalidHigh");
+            testCase.verifyError(@() assign(slider, "Max", 0), "uim:RangeSlider:InvalidLimits", ...
                 "Max must stay above Min.");
-            testCase.verifyError(@() assign(slider, "Min", 200), ?MException);
-            testCase.verifyError(@() assign(slider, "Max", -1), ?MException);
+            testCase.verifyError(@() assign(slider, "Min", 200), "uim:RangeSlider:InvalidLimits");
+            testCase.verifyError(@() assign(slider, "Max", -1), "uim:RangeSlider:InvalidLimits");
         end
 
         function rangeSliderTrackPressMovesNearestKnobAndNotifies(testCase)
@@ -253,8 +253,8 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
 
             scrollBar.BarColor = [1, 0, 0];
             testCase.verifyEqual(hBar.FaceColor, [1, 0, 0]);
-            testCase.verifyError(@() assign(scrollBar, "Visible", 'maybe'), ?MException);
-            testCase.verifyError(@() assign(scrollBar, "Maximum", -1), ?MException);
+            testCase.verifyError(@() assign(scrollBar, "Visible", 'maybe'), "uim:ScrollBar:InvalidVisible");
+            testCase.verifyError(@() assign(scrollBar, "Maximum", -1), "uim:ScrollBar:InvalidMaximum");
         end
 
         function horizontalScrollBarUsesXAxis(testCase)

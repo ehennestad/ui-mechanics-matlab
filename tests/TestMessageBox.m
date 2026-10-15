@@ -115,7 +115,7 @@ classdef TestMessageBox < matlab.unittest.TestCase
             testCase.addTeardown(@deleteValid, messageBox);
             testCase.verifyEqual(messageBox.FontSize, 10);
             testCase.verifyTrue(contains(output, 'NoSuchProperty'));
-            testCase.verifyError(@() uim.widget.MessageBox(hPanel, 1, 2), ?MException);
+            testCase.verifyError(@() uim.widget.MessageBox(hPanel, 1, 2), "uim:MessageBox:InvalidPairs");
         end
     end
 end

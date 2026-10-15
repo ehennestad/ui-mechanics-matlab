@@ -115,7 +115,7 @@ the overview indicator and the tiled image axes is extracted into pure
 functions that are unit-tested without graphics. Apart from the fixes
 listed below, one input is handled differently: `Slider.TickMode` is
 case-insensitive, and an unknown mode raises
-`uim:widget:InvalidTickMode` instead of drawing ticks under the track.
+`uim:tickMarkCoordinates:InvalidTickMode` instead of drawing ticks under the track.
 The widgets delegate to:
 
 - `uim.widget.internal` — `mapValueToPixel`/`mapPixelToValue`,

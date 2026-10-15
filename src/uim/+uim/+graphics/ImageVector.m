@@ -50,7 +50,7 @@ classdef ImageVector < handle
 
             assert(isa(hParent, 'matlab.graphics.axis.Axes') || ...
             isa(hParent, 'matlab.graphics.primitive.Group'), ...
-            'Invalid parent handle for ImageVector');
+            "uim:ImageVector:InvalidParent", 'Invalid parent handle for ImageVector');
 
             if isa(pathStr, 'char')
                 S = load(pathStr);
@@ -228,7 +228,7 @@ classdef ImageVector < handle
                         bbox, 'left', newAlignment);
                     shift(2) = obj.CurrentPosition(2) - anchor(2);
                 otherwise
-                    error("uim:graphics:InvalidAlignment", ...
+                    error("uim:ImageVector:InvalidAlignment", ...
                         "Unknown alignment ""%s"".", newAlignment)
             end
 

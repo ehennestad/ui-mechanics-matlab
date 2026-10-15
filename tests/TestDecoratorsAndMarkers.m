@@ -230,7 +230,8 @@ classdef TestDecoratorsAndMarkers < matlab.unittest.TestCase
 
             menu.Text = 'Something else';
             testCase.verifyError(...
-                @() uim.utility.toggleUicontrolLabel(menu, 'Show', 'Hide'), ?MException);
+                @() uim.utility.toggleUicontrolLabel(menu, 'Show', 'Hide'), ...
+                "uim:toggleUicontrolLabel:LabelNotFound");
         end
     end
 end

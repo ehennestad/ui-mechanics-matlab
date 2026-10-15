@@ -10,13 +10,13 @@ function result = nameValuePairsToStruct(nameValuePairs)
         return
     end
     if mod(numel(nameValuePairs), 2) ~= 0
-        error("uim:utility:nameValuePairsToStruct:InvalidPairs", ...
+        error("uim:nameValuePairsToStruct:InvalidPairs", ...
             "Name-value inputs must contain an even number of elements.")
     end
 
     names = string(nameValuePairs(1:2:end));
     if any(strlength(names) == 0)
-        error("uim:utility:nameValuePairsToStruct:InvalidName", ...
+        error("uim:nameValuePairsToStruct:InvalidName", ...
             "Property names must be nonempty text values.")
     end
 

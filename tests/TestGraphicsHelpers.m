@@ -205,7 +205,7 @@ classdef TestGraphicsHelpers < matlab.unittest.TestCase
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
             testCase.verifyError(...
-                @() uim.graphics.ImageVector(hFigure, testCase.Icons.zoomIn), ?MException);
+                @() uim.graphics.ImageVector(hFigure, testCase.Icons.zoomIn), "uim:ImageVector:InvalidParent");
         end
     end
 
