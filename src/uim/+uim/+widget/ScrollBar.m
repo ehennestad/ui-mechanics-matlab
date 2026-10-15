@@ -48,7 +48,6 @@ classdef ScrollBar < uim.Handle
     %   [x] Make sure bar stays in right position when the barlength is
     %       updated. Done. (Need to properly debug)
     %
-    %   [ ] Redraw scrollbar when container resizes.
     %   [ ] Change /xlim(horz) or ylim/ver only when maximum changes...
 
     properties

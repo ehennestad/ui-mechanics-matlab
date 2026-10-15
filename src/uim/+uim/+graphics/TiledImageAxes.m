@@ -54,11 +54,6 @@ classdef TiledImageAxes < uim.Handle
 %
 %   See also uim.graphics.internal.computeTileLayout
 
-% Todo:
-%   [ ] Make TileCallbackFcn a property and invoke it internally whenever a
-%       tile is selected. Define eventdata that has the tile number as a
-%       property.
-
 % "Persistent settings" Consider if it should be configurable for objects.
 properties (Constant = true)
     PlotOrder = 'rowwise'       % Tile numbering order: rowwise | columnwise

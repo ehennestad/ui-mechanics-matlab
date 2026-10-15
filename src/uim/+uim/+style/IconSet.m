@@ -29,7 +29,6 @@ classdef IconSet < uim.Handle
 %   See also uim.style.getDefaultIcons, uim.graphics.ImageVector
 
 % Todo:
-%   Implement remove icons
 %   Add multiple icons in one go
 %   Create colorful icons
 

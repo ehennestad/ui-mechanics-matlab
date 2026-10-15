@@ -136,9 +136,6 @@ classdef Zoomable < handle
         %   XLimOrig and YLimOrig (see uim.geometry.fitRangeInside), sets
         %   XLim and YLim, and calls ZoomFinishedFcn.
 
-            % Todo: Have tests here to prevent setting limits outside of
-            % image limits.
-
             pos = getpixelposition(obj.Axes);
             axesAspectRatio = pos(3)/pos(4);
 

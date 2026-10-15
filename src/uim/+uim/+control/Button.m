@@ -40,7 +40,6 @@ classdef Button < uim.abstract.Control
 
     % Todo:
     %   [x] How to best implement push and toggle buttons. Mech. action...
-    %   [ ] Maybe also have a mode prop which can be push and toggle...
     %   [ ] Setting Location prop at construction does not work.
     %   [ ] Need to update mouseover effect if button is moved when
     %   pressed.
@@ -50,7 +49,6 @@ classdef Button < uim.abstract.Control
     %   [ ] Allow icon to be filepath or raster-image
     %   [ ] Work more on icon/text placement
     %   [ ] Implement stylechange on button text & icon
-    %   [ ] Tooltip
     %   [ ] implement togglebuttonlistener.... What was that about.
     %   [ ] Why does margin not work when button is places south or
     %       north...
@@ -201,8 +199,6 @@ classdef Button < uim.abstract.Control
 
         function plotForeground(obj, updateFlag)
         %plotForeground Plot button foreground (Text or icon)
-
-            % Todo:
 
             if nargin < 2; updateFlag = false; end
 

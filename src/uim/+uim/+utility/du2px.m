@@ -13,8 +13,6 @@ function pixelCoordinates = du2px(ax, dataUnits, recursive)
 %
 %   See also uim.utility.px2du
 
-% Todo: Does it need to change if axis are reversed... Probably
-
     if nargin < 3
         recursive = false; % See getpixelposition doc
     end

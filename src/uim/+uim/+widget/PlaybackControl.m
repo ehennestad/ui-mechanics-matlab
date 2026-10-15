@@ -56,7 +56,6 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
     % 2)
 
 % - - - - - - - - - - - TODO - - - - - - - - - - - -
-%  [ ] Make property for function when playback button state changes
 %  [x] Better input handling.... Should be able to set props on
 %      construction
 %  [x] patch bars using uim.shape.rectangle...
