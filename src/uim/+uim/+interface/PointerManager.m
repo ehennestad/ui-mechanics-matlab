@@ -33,6 +33,7 @@ classdef PointerManager < handle
         IsHostButtonDownFcnHeld (1,1) logical = false
 
         AxesButtonPressListener event.listener
+        PointerToolToggleListeners event.listener
         WindowMousePressListener event.listener
         WindowButtonMotionListener event.listener
         WindowButtonUpListener event.listener
@@ -84,10 +85,9 @@ classdef PointerManager < handle
         %delete Delete method for PointerManager.
 
             obj.deleteFigureMouseListeners()
+            delete(obj.PointerToolToggleListeners)
 
-            if obj.IsHostButtonDownFcnHeld
-                obj.releaseHostButtonDownFcn()
-            end
+            obj.releaseHostButtonDownFcn()
         end
     end
 
@@ -166,6 +166,10 @@ classdef PointerManager < handle
                     thisPointerName = [lower(thisPointerName(1)), thisPointerName(2:end)];
                 end
                 obj.Pointers.(thisPointerName) = thisPointerRef(hAxes);
+
+                obj.PointerToolToggleListeners(end+1) = addlistener( ...
+                    obj.Pointers.(thisPointerName), 'ToggledPointerTool', ...
+                    @obj.onPointerToolToggled);
             end
         end
 
@@ -287,35 +291,50 @@ classdef PointerManager < handle
             end
 
             if ~isempty(obj.CurrentPointerTool)
+                % Hold before activating: activate() can block until the
+                % tool is done (Crop waits in uiwait for the selection).
+                obj.holdHostButtonDownFcn()
                 obj.CurrentPointerTool.activate();
             else
+                obj.releaseHostButtonDownFcn()
                 obj.Figure.Pointer = 'arrow';
             end
-
-            obj.updateHostButtonDownFcnHold()
         end
     end
 
     methods (Access = private)
 
-        function updateHostButtonDownFcnHold(obj)
-        %updateHostButtonDownFcnHold Hold the axes ButtonDownFcn while a tool is active
+        function onPointerToolToggled(obj, src, event)
+        %onPointerToolToggled Follow the current tool turning on or off
+        %
+        %   A tool can turn itself off without going through
+        %   togglePointerMode (Crop does when its selection ends), so the
+        %   hold follows the toggle events of the current tool. Events
+        %   from any other tool are ignored.
+
+            if ~isequal(src, obj.CurrentPointerTool); return; end
+
+            if event.Value
+                obj.holdHostButtonDownFcn()
+            else
+                obj.releaseHostButtonDownFcn()
+            end
+        end
+
+        function holdHostButtonDownFcn(obj)
+        %holdHostButtonDownFcn Set the axes ButtonDownFcn aside while a tool is on
         %
         %   An active pointer tool receives presses on the axes background
         %   through the figure's WindowMousePress listener, and MATLAB also
         %   runs the axes ButtonDownFcn for the same click. While a tool is
-        %   active the host's callback is set aside, so each click has one
-        %   handler; with no tool active the host's callback handles it.
+        %   on the host's callback is set aside, so each click has one
+        %   handler; with no tool on the host's callback handles it.
 
-            isToolActive = ~isempty(obj.CurrentPointerTool);
+            if obj.IsHostButtonDownFcnHeld; return; end
 
-            if isToolActive && ~obj.IsHostButtonDownFcnHeld
-                obj.HostAxesButtonDownFcn = obj.Axes.ButtonDownFcn;
-                obj.Axes.ButtonDownFcn = [];
-                obj.IsHostButtonDownFcnHeld = true;
-            elseif ~isToolActive && obj.IsHostButtonDownFcnHeld
-                obj.releaseHostButtonDownFcn()
-            end
+            obj.HostAxesButtonDownFcn = obj.Axes.ButtonDownFcn;
+            obj.Axes.ButtonDownFcn = [];
+            obj.IsHostButtonDownFcnHeld = true;
         end
 
         function releaseHostButtonDownFcn(obj)
@@ -323,6 +342,8 @@ classdef PointerManager < handle
         %
         %   A callback the host assigned while a tool was active takes
         %   precedence over the one that was set aside, so it is kept.
+
+            if ~obj.IsHostButtonDownFcnHeld; return; end
 
             if ~isempty(obj.Axes) && isvalid(obj.Axes) ...
                     && isempty(obj.Axes.ButtonDownFcn)

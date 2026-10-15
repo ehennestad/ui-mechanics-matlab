@@ -458,6 +458,53 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyEqual(func2str(hAxes.ButtonDownFcn), func2str(hostCallback));
         end
 
+        function pointerManagerReleasesHostButtonDownFcnWhenToolTurnsOff(testCase)
+            [hFigure, hAxes] = createPlainAxes(testCase);
+            hostCallback = @(~, ~) setappdata(hFigure, "HostPressed", true);
+            hAxes.ButtonDownFcn = hostCallback;
+            manager = uim.interface.PointerManager(hFigure, hAxes, {'zoomIn'});
+            testCase.addTeardown(@deleteValid, manager);
+
+            % A tool can turn itself off without going through the
+            % manager; the host's callback comes back all the same.
+            manager.togglePointerMode('zoomIn')
+            manager.Pointers.zoomIn.deactivate()
+
+            testCase.verifyEqual(func2str(hAxes.ButtonDownFcn), func2str(hostCallback));
+        end
+
+        function pointerManagerHoldsHostButtonDownFcnDuringCrop(testCase)
+            testCase.assumeTrue(exist("drawrectangle", "file") > 0, ...
+                "Crop needs Image Processing Toolbox ROI objects.");
+            [hFigure, hAxes] = createPlainAxes(testCase);
+            set(hAxes, "XLim", [0.5, 100.5], "YLim", [0.5, 100.5])
+            hostCallback = @(~, ~) setappdata(hFigure, "HostPressed", true);
+            hAxes.ButtonDownFcn = hostCallback;
+            manager = uim.interface.PointerManager(hFigure, hAxes, {'crop'});
+            testCase.addTeardown(@deleteValid, manager);
+
+            % Crop's activate() waits in uiwait until the selection ends,
+            % then turns the tool off. A timer stands in for the user: it
+            % records the axes callback during the wait and ends it. It
+            % repeats, because a resume that arrives before the wait
+            % starts has no effect.
+            manager.Pointers.crop.CurrentXLim = [11, 30];
+            manager.Pointers.crop.CurrentYLim = [21, 60];
+            resumeTimer = timer("StartDelay", 0.5, "Period", 0.5, ...
+                "ExecutionMode", "fixedSpacing", ...
+                "TimerFcn", @(~, ~) recordCallbackAndResume(hFigure, hAxes));
+            testCase.addTeardown(@() cleanupTimer(resumeTimer));
+            start(resumeTimer)
+
+            manager.togglePointerMode('crop')
+            stop(resumeTimer)
+
+            testCase.verifyTrue(getappdata(hFigure, "WasHeldDuringWait"), ...
+                "The host's callback is set aside while the crop is in progress.");
+            testCase.verifyEqual(func2str(hAxes.ButtonDownFcn), func2str(hostCallback), ...
+                "The host's callback is back once the crop has ended.");
+        end
+
         function coordinateConversionsRespectLocalAndRecursivePixelFrames(testCase)
             hFigure = figure("Visible", "off", "Position", [100, 100, 500, 400]);
             testCase.addTeardown(@deleteValid, hFigure);
@@ -1473,4 +1520,17 @@ function [hFigure, hAxes] = createPlainAxes(testCase)
     hFigure = figure("Visible", "off");
     testCase.addTeardown(@deleteValid, hFigure);
     hAxes = axes(hFigure, "XLim", [0, 100], "YLim", [0, 50]);
+end
+
+function recordCallbackAndResume(hFigure, hAxes)
+%recordCallbackAndResume Note whether the axes callback is held, then end the wait
+    setappdata(hFigure, "WasHeldDuringWait", isempty(hAxes.ButtonDownFcn))
+    uiresume(hFigure)
+end
+
+function cleanupTimer(resumeTimer)
+    if isvalid(resumeTimer)
+        stop(resumeTimer)
+        delete(resumeTimer)
+    end
 end
