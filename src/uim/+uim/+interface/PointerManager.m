@@ -29,11 +29,11 @@ classdef PointerManager < handle
         PreviousPointerTool
         WasCursorInAxes (1,1) logical = false;
 
-        OriginalWindowButtonMotionFcn = []
-        DummyWindowButtonMotionFcn = []
-        OwnsWindowButtonMotionFcn (1,1) logical = false
+        HostAxesButtonDownFcn = []
+        IsHostButtonDownFcnHeld (1,1) logical = false
 
         AxesButtonPressListener event.listener
+        PointerToolToggleListeners event.listener
         WindowMousePressListener event.listener
         WindowButtonMotionListener event.listener
         WindowButtonUpListener event.listener
@@ -55,14 +55,13 @@ classdef PointerManager < handle
 
             obj.Figure = hFigure;
             obj.Axes = hAxes;
-            obj.OriginalWindowButtonMotionFcn = hFigure.WindowButtonMotionFcn;
 
-            % Assign dummy callback if WindowButtonMotionFcn is unassigned
-            if isempty( hFigure.WindowButtonMotionFcn )
-                obj.DummyWindowButtonMotionFcn = @obj.mouseMotionDummyCallback;
-                hFigure.WindowButtonMotionFcn = obj.DummyWindowButtonMotionFcn;
-                obj.OwnsWindowButtonMotionFcn = true;
-            end
+            % In java figures CurrentPoint only follows the mouse while
+            % a WindowButtonMotionFcn is installed. The shared helper
+            % keeps its no-op for the figure's lifetime: widgets rely on
+            % the same mechanism, so it must survive this manager's
+            % deletion.
+            uim.utility.ensurePointerMotionTracking(hFigure)
 
             % Create listeners for mouse event in figure. Button presses
             % are captured at the window level (not via the axes
@@ -86,11 +85,9 @@ classdef PointerManager < handle
         %delete Delete method for PointerManager.
 
             obj.deleteFigureMouseListeners()
+            delete(obj.PointerToolToggleListeners)
 
-            if obj.OwnsWindowButtonMotionFcn && isvalid(obj.Figure) && ...
-                    isequal(obj.Figure.WindowButtonMotionFcn, obj.DummyWindowButtonMotionFcn)
-                obj.Figure.WindowButtonMotionFcn = obj.OriginalWindowButtonMotionFcn;
-            end
+            obj.releaseHostButtonDownFcn()
         end
     end
 
@@ -169,6 +166,10 @@ classdef PointerManager < handle
                     thisPointerName = [lower(thisPointerName(1)), thisPointerName(2:end)];
                 end
                 obj.Pointers.(thisPointerName) = thisPointerRef(hAxes);
+
+                obj.PointerToolToggleListeners(end+1) = addlistener( ...
+                    obj.Pointers.(thisPointerName), 'ToggledPointerTool', ...
+                    @obj.onPointerToolToggled);
             end
         end
 
@@ -290,14 +291,67 @@ classdef PointerManager < handle
             end
 
             if ~isempty(obj.CurrentPointerTool)
+                % Hold before activating: activate() can block until the
+                % tool is done (Crop waits in uiwait for the selection).
+                obj.holdHostButtonDownFcn()
                 obj.CurrentPointerTool.activate();
             else
+                obj.releaseHostButtonDownFcn()
                 obj.Figure.Pointer = 'arrow';
             end
         end
     end
 
     methods (Access = private)
+
+        function onPointerToolToggled(obj, src, event)
+        %onPointerToolToggled Follow the current tool turning on or off
+        %
+        %   A tool can turn itself off without going through
+        %   togglePointerMode (Crop does when its selection ends), so the
+        %   hold follows the toggle events of the current tool. Events
+        %   from any other tool are ignored.
+
+            if ~isequal(src, obj.CurrentPointerTool); return; end
+
+            if event.Value
+                obj.holdHostButtonDownFcn()
+            else
+                obj.releaseHostButtonDownFcn()
+            end
+        end
+
+        function holdHostButtonDownFcn(obj)
+        %holdHostButtonDownFcn Set the axes ButtonDownFcn aside while a tool is on
+        %
+        %   An active pointer tool receives presses on the axes background
+        %   through the figure's WindowMousePress listener, and MATLAB also
+        %   runs the axes ButtonDownFcn for the same click. While a tool is
+        %   on the host's callback is set aside, so each click has one
+        %   handler; with no tool on the host's callback handles it.
+
+            if obj.IsHostButtonDownFcnHeld; return; end
+
+            obj.HostAxesButtonDownFcn = obj.Axes.ButtonDownFcn;
+            obj.Axes.ButtonDownFcn = [];
+            obj.IsHostButtonDownFcnHeld = true;
+        end
+
+        function releaseHostButtonDownFcn(obj)
+        %releaseHostButtonDownFcn Give the held ButtonDownFcn back to the axes
+        %
+        %   A callback the host assigned while a tool was active takes
+        %   precedence over the one that was set aside, so it is kept.
+
+            if ~obj.IsHostButtonDownFcnHeld; return; end
+
+            if ~isempty(obj.Axes) && isvalid(obj.Axes) ...
+                    && isempty(obj.Axes.ButtonDownFcn)
+                obj.Axes.ButtonDownFcn = obj.HostAxesButtonDownFcn;
+            end
+            obj.HostAxesButtonDownFcn = [];
+            obj.IsHostButtonDownFcnHeld = false;
+        end
 
         function onWindowMousePress(obj, src, event)
         %onWindowMousePress Route presses that belong to the managed axes
@@ -313,20 +367,39 @@ classdef PointerManager < handle
                 isequal(ancestor(hitObject, 'axes'), obj.Axes);
             if ~isInManagedAxes; return; end
 
-            if ~isequal(hitObject, obj.Axes) && ...
-                    ~isempty(hitObject.ButtonDownFcn)
-                return
+            if ~isequal(hitObject, obj.Axes)
+                % Objects with their own ButtonDownFcn handle the press
+                % themselves. A hit object without the property is
+                % treated as interactive too.
+                if ~isprop(hitObject, 'ButtonDownFcn') || ...
+                        ~isempty(hitObject.ButtonDownFcn)
+                    return
+                end
             end
 
             % The window-level event data carries no Button; translate
             % the figure SelectionType for tools that check evt.Button.
+            % 'extend' is shift+left OR middle, so CurrentModifier is
+            % consulted to report shift+left as button 1. 'alt' (right OR
+            % ctrl+left) reports 3: on macOS ctrl+click is the secondary
+            % click, so tools leave it to the context menu.
+            modifiers = obj.Figure.CurrentModifier;
             switch obj.Figure.SelectionType
-                case 'alt';    buttonNumber = 3;
-                case 'extend'; buttonNumber = 2;
-                otherwise;     buttonNumber = 1;
+                case 'alt'
+                    buttonNumber = 3;
+                case 'extend'
+                    if any(strcmp(modifiers, 'shift'))
+                        buttonNumber = 1;
+                    else
+                        buttonNumber = 2;
+                    end
+                otherwise
+                    buttonNumber = 1;
             end
+
             eventData = struct('Button', buttonNumber, ...
-                'HitObject', hitObject, 'Point', event.Point);
+                'HitObject', hitObject, 'Point', event.Point, ...
+                'IntersectionPoint', event.IntersectionPoint);
 
             obj.onButtonDown(src, eventData)
         end
@@ -413,13 +486,6 @@ classdef PointerManager < handle
 
         function resetMouseDownPointerTool(obj)
             obj.MouseDownPointerTool = [];
-        end
-
-        function mouseMotionDummyCallback(~, ~, ~)
-            % Assign this if the WindowButtonMotionFcn of a figure is empty
-
-            % The figure's CurrentPoint property is only updated if a
-            % mousemotion callback is assigned.
         end
     end
 

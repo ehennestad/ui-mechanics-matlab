@@ -21,10 +21,17 @@ function icons = getDefaultIcons()
     iconFile = fullfile(toolboxSourceDir, 'resources', 'icons', ...
         'icon_library.mat');
 
+    fileInfo = dir(iconFile);
+    if isempty(fileInfo)
+        error('uim:style:IconLibraryNotFound', ...
+            ['The icon library was not found: %s. The resources ', ...
+             'folder ships with the toolbox sources; restore it or ', ...
+             'reinstall the toolbox.'], iconFile)
+    end
+
     % Key the cache on the file timestamp, so an updated icon library
     % (e.g. after pulling a new toolbox version into a running session)
     % is picked up without requiring clear functions.
-    fileInfo = dir(iconFile);
     if isempty(cachedIcons) || ~isequal(cachedFileDate, fileInfo.datenum)
         cachedIcons = load(iconFile);
         cachedFileDate = fileInfo.datenum;

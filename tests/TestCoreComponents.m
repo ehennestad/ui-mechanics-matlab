@@ -373,15 +373,22 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyTrue(restoredCallback{2});
         end
 
-        function pointerManagerRestoresOnlyItsOwnMotionCallback(testCase)
+        function pointerManagerKeepsMotionTrackingAlive(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
             hAxes = axes(hFigure);
 
+            % The manager ensures CurrentPoint tracking (a no-op
+            % WindowButtonMotionFcn). Deleting the manager must leave
+            % the tracking installed: widgets created while the manager
+            % was alive rely on the same mechanism, and would silently
+            % stop dragging in java figures if it were removed.
             manager = uim.interface.PointerManager(hFigure, hAxes);
+            testCase.verifyNotEmpty(hFigure.WindowButtonMotionFcn);
             delete(manager);
-            testCase.verifyEmpty(hFigure.WindowButtonMotionFcn);
+            testCase.verifyNotEmpty(hFigure.WindowButtonMotionFcn);
 
+            % A callback assigned by the host is never clobbered.
             manager = uim.interface.PointerManager(hFigure, hAxes);
             replacementCallback = @(~, ~) [];
             hFigure.WindowButtonMotionFcn = replacementCallback;
@@ -389,6 +396,113 @@ classdef TestCoreComponents < matlab.unittest.TestCase
 
             testCase.verifyEqual(func2str(hFigure.WindowButtonMotionFcn), ...
                 func2str(replacementCallback));
+        end
+
+        function pointerManagerLeavesHostButtonDownFcnWithNoToolActive(testCase)
+            [hFigure, hAxes] = createPlainAxes(testCase);
+
+            % With no tool active nothing else handles a press on the axes
+            % background, so the host's callback stays in place.
+            hostCallback = @(~, ~) setappdata(hFigure, "HostPressed", true);
+            hAxes.ButtonDownFcn = hostCallback;
+
+            manager = uim.interface.PointerManager(hFigure, hAxes, {'zoomIn'});
+            testCase.addTeardown(@deleteValid, manager);
+
+            testCase.verifyEqual(func2str(hAxes.ButtonDownFcn), func2str(hostCallback));
+        end
+
+        function pointerManagerHoldsHostButtonDownFcnWhileToolIsActive(testCase)
+            [hFigure, hAxes] = createPlainAxes(testCase);
+            hostCallback = @(~, ~) setappdata(hFigure, "HostPressed", true);
+            hAxes.ButtonDownFcn = hostCallback;
+            manager = uim.interface.PointerManager(hFigure, hAxes, {'zoomIn'});
+            testCase.addTeardown(@deleteValid, manager);
+
+            % An active tool takes presses through the window listener,
+            % so the host's callback is set aside to avoid a second
+            % handler for the same click.
+            manager.togglePointerMode('zoomIn')
+            testCase.verifyEmpty(hAxes.ButtonDownFcn);
+
+            manager.togglePointerMode('zoomIn')
+            testCase.verifyEqual(func2str(hAxes.ButtonDownFcn), func2str(hostCallback));
+        end
+
+        function pointerManagerKeepsCallbackAssignedWhileToolIsActive(testCase)
+            [hFigure, hAxes] = createPlainAxes(testCase);
+            hAxes.ButtonDownFcn = @(~, ~) setappdata(hFigure, "HostPressed", true);
+            manager = uim.interface.PointerManager(hFigure, hAxes, {'zoomIn'});
+            testCase.addTeardown(@deleteValid, manager);
+
+            % A callback the host assigns while a tool is active is newer
+            % than the one set aside, so releasing must not overwrite it.
+            manager.togglePointerMode('zoomIn')
+            replacementCallback = @(~, ~) setappdata(hFigure, "Replaced", true);
+            hAxes.ButtonDownFcn = replacementCallback;
+
+            manager.togglePointerMode('zoomIn')
+            testCase.verifyEqual(func2str(hAxes.ButtonDownFcn), ...
+                func2str(replacementCallback));
+        end
+
+        function pointerManagerReleasesHostButtonDownFcnOnDelete(testCase)
+            [hFigure, hAxes] = createPlainAxes(testCase);
+            hostCallback = @(~, ~) setappdata(hFigure, "HostPressed", true);
+            hAxes.ButtonDownFcn = hostCallback;
+            manager = uim.interface.PointerManager(hFigure, hAxes, {'zoomIn'});
+
+            manager.togglePointerMode('zoomIn')
+            delete(manager)
+
+            testCase.verifyEqual(func2str(hAxes.ButtonDownFcn), func2str(hostCallback));
+        end
+
+        function pointerManagerReleasesHostButtonDownFcnWhenToolTurnsOff(testCase)
+            [hFigure, hAxes] = createPlainAxes(testCase);
+            hostCallback = @(~, ~) setappdata(hFigure, "HostPressed", true);
+            hAxes.ButtonDownFcn = hostCallback;
+            manager = uim.interface.PointerManager(hFigure, hAxes, {'zoomIn'});
+            testCase.addTeardown(@deleteValid, manager);
+
+            % A tool can turn itself off without going through the
+            % manager; the host's callback comes back all the same.
+            manager.togglePointerMode('zoomIn')
+            manager.Pointers.zoomIn.deactivate()
+
+            testCase.verifyEqual(func2str(hAxes.ButtonDownFcn), func2str(hostCallback));
+        end
+
+        function pointerManagerHoldsHostButtonDownFcnDuringCrop(testCase)
+            testCase.assumeTrue(exist("drawrectangle", "file") > 0, ...
+                "Crop needs Image Processing Toolbox ROI objects.");
+            [hFigure, hAxes] = createPlainAxes(testCase);
+            set(hAxes, "XLim", [0.5, 100.5], "YLim", [0.5, 100.5])
+            hostCallback = @(~, ~) setappdata(hFigure, "HostPressed", true);
+            hAxes.ButtonDownFcn = hostCallback;
+            manager = uim.interface.PointerManager(hFigure, hAxes, {'crop'});
+            testCase.addTeardown(@deleteValid, manager);
+
+            % Crop's activate() waits in uiwait until the selection ends,
+            % then turns the tool off. A timer stands in for the user: it
+            % records the axes callback during the wait and ends it. It
+            % repeats, because a resume that arrives before the wait
+            % starts has no effect.
+            manager.Pointers.crop.CurrentXLim = [11, 30];
+            manager.Pointers.crop.CurrentYLim = [21, 60];
+            resumeTimer = timer("StartDelay", 0.5, "Period", 0.5, ...
+                "ExecutionMode", "fixedSpacing", ...
+                "TimerFcn", @(~, ~) recordCallbackAndResume(hFigure, hAxes));
+            testCase.addTeardown(@() cleanupTimer(resumeTimer));
+            start(resumeTimer)
+
+            manager.togglePointerMode('crop')
+            stop(resumeTimer)
+
+            testCase.verifyTrue(getappdata(hFigure, "WasHeldDuringWait"), ...
+                "The host's callback is set aside while the crop is in progress.");
+            testCase.verifyEqual(func2str(hAxes.ButtonDownFcn), func2str(hostCallback), ...
+                "The host's callback is back once the crop has ended.");
         end
 
         function coordinateConversionsRespectLocalAndRecursivePixelFrames(testCase)
@@ -443,17 +557,36 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyEqual(fieldnames(manager.Pointers), ...
                 {'zoomIn'; 'pan'});
 
-            % The manager captures presses at the window level; it must
-            % not hijack the axes ButtonDownFcn (clicks on data objects
-            % such as images never reach that callback anyway).
-            testCase.verifyEmpty(hAxes.ButtonDownFcn);
-
             manager.togglePointerMode('zoomIn');
             testCase.verifySameHandle(manager.CurrentPointerTool, ...
                 manager.Pointers.zoomIn);
 
             manager.togglePointerMode('zoomIn');
             testCase.verifyEmpty(manager.CurrentPointerTool);
+        end
+
+        function dataCursorReportsCursorMovement(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "Units", "pixels", "XLim", [0, 100], "YLim", [0, 50]);
+            manager = uim.interface.PointerManager(hFigure, hAxes, {'dataCursor'});
+            testCase.addTeardown(@deleteValid, manager);
+
+            % CursorMovedFcn passes the motion event's source through, and
+            % fires only while the tool is active and the pointer is inside
+            % the axes.
+            hDataCursor = manager.Pointers.dataCursor;
+            hDataCursor.CursorMovedFcn = @(src, ~) setappdata(hFigure, "MovedSource", src);
+            axesPosition = hAxes.Position;
+            hFigure.CurrentPoint = axesPosition(1:2) + axesPosition(3:4)/2;
+
+            hDataCursor.onButtonMotion(hFigure, [])
+            testCase.verifyFalse(isappdata(hFigure, "MovedSource"), ...
+                "An inactive data cursor stays silent.");
+
+            manager.togglePointerMode('dataCursor')
+            hDataCursor.onButtonMotion(hFigure, [])
+            testCase.verifySameHandle(getappdata(hFigure, "MovedSource"), hFigure);
         end
 
         function widgetOnPlainPanelCreatesAndSharesImplicitCanvas(testCase)
@@ -830,6 +963,29 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyEqual(evt.NewValue, 3);
         end
 
+        function dropDownOpensWithNoSelection(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            dropdown = uim.widget.DropDown(canvas, 'Items', ["a", "b"], 'Value', "b");
+
+            dropdown.open()
+            selectedRows = findall(canvas.Axes, "Type", "patch", "FaceAlpha", 0.15);
+            testCase.verifyNumElements(selectedRows, 1, "The selected row is marked.");
+            dropdown.close()
+
+            % "" is a valid state until Items is next assigned: the list
+            % opens with no row marked as selected, and closes cleanly.
+            dropdown.Value = "";
+            testCase.verifyEmpty(dropdown.ValueIndex);
+            dropdown.open()
+            testCase.verifyTrue(dropdown.IsOpen);
+            selectedRows = findall(canvas.Axes, "Type", "patch", "FaceAlpha", 0.15);
+            testCase.verifyEmpty(selectedRows, "No row is marked as selected.");
+            dropdown.close()
+            testCase.verifyFalse(dropdown.IsOpen);
+        end
+
         function dropDownSelectsItemAndNotifies(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
@@ -1018,19 +1174,32 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             slider.Limits = [0, 128];
             testCase.verifyEmpty(getappdata(hFigure, 'LimitsEvent'));
 
-            % A user interaction (the internal RangeSlider callback
-            % channel) notifies with old/new limit pairs.
-            slider.Callback(slider, struct('Low', 20, 'High', 220))
+            % A user interaction (knob drags flow through the value
+            % setters) notifies with old/new limit pairs.
+            slider.Low = 20;
             evt = getappdata(hFigure, 'LimitsEvent');
             testCase.verifyEqual(evt.OldValue, [0, 128]);
+            testCase.verifyEqual(evt.NewValue, [20, 128]);
+
+            % The public Callback stays available to hosts (the widget
+            % does not occupy it for its own plumbing) and fires
+            % alongside LimitsChangedFcn.
+            slider.Callback = @(~, evt) setappdata(hFigure, 'RawEvent', evt);
+            slider.High = 220;
+            evt = getappdata(hFigure, 'LimitsEvent');
             testCase.verifyEqual(evt.NewValue, [20, 220]);
+            rawEvt = getappdata(hFigure, 'RawEvent');
+            testCase.verifyEqual([rawEvt.Low, rawEvt.High], [20, 220]);
 
             % A collapsed range is clamped to strictly increasing limits
-            % before notification, so hosts can assign NewValue to CLim.
-            slider.Callback(slider, struct('Low', 50, 'High', 40))
+            % before notification, and the corrected interval is applied
+            % back to the slider, so hosts can assign NewValue to CLim
+            % and the widget state matches what was reported.
+            slider.High = 20; % Drag the high knob down onto the low knob
             evt = getappdata(hFigure, 'LimitsEvent');
             testCase.verifyGreaterThan(evt.NewValue(2), evt.NewValue(1));
-            testCase.verifyEqual(evt.NewValue(1), 50);
+            testCase.verifyEqual(evt.NewValue(1), 20);
+            testCase.verifyEqual(slider.Limits, evt.NewValue);
 
             % The auto button requests auto levels from the host.
             autoButton = findall(canvas.Axes, ...
@@ -1082,6 +1251,235 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 "uim.event.EventData");
         end
 
+        function contrastSliderAcceptsDisjointRangePushes(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            slider = uim.widget.ContrastSlider(canvas, ...
+                'DataLimits', [0, 255], 'Limits', [0, 5]);
+
+            % A pushed range lying entirely above the current one must
+            % not trip the ordering asserts of the underlying setters.
+            slider.Limits = [100, 130];
+            testCase.verifyEqual(slider.Limits, [100, 130]);
+
+            slider.DataLimits = [300, 500];
+            testCase.verifyEqual(slider.DataLimits, [300, 500]);
+            % The old limits are clamped into the new data range.
+            testCase.verifyEqual(slider.Limits, [300, 300]);
+
+            slider.Limits = [320, 480];
+            testCase.verifyEqual(slider.Limits, [320, 480]);
+
+            % And back down again.
+            slider.DataLimits = [0, 255];
+            testCase.verifyEqual(slider.DataLimits, [0, 255]);
+            slider.Limits = [10, 200];
+            testCase.verifyEqual(slider.Limits, [10, 200]);
+        end
+
+        function contrastSliderCallbackMatchesClampedLimitsChangedFcn(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            slider = uim.widget.ContrastSlider(canvas, ...
+                'DataLimits', [0, 255], 'Limits', [10, 200], ...
+                'LimitsChangedFcn', ...
+                @(~, evt) setappdata(hFigure, 'LimitsEvent', evt));
+
+            setappdata(hFigure, 'RawEvents', {})
+            slider.Callback = @(~, evt) setappdata(hFigure, 'RawEvents', ...
+                [getappdata(hFigure, 'RawEvents'), {evt}]);
+
+            % A collapsing drag must notify Callback exactly once, with
+            % the same clamped, strictly-increasing pair reported to
+            % LimitsChangedFcn — not the raw pre-clamp value, and not a
+            % second time from the internal correction push-back.
+            slider.High = 10; % Drag the high knob down onto the low knob
+            limitsEvt = getappdata(hFigure, 'LimitsEvent');
+            rawEvents = getappdata(hFigure, 'RawEvents');
+            testCase.verifyNumElements(rawEvents, 1);
+            testCase.verifyEqual([rawEvents{1}.Low, rawEvents{1}.High], ...
+                limitsEvt.NewValue);
+            testCase.verifyGreaterThan(rawEvents{1}.High, rawEvents{1}.Low);
+
+            % Programmatic pushes stay silent on the Callback channel
+            % too, matching the documented push/notify contract.
+            setappdata(hFigure, 'RawEvents', {})
+            slider.Limits = [50, 150];
+            testCase.verifyEmpty(getappdata(hFigure, 'RawEvents'));
+        end
+
+        function contrastSliderHoldsKnobPushedAgainstTheOther(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            setappdata(hFigure, "NotifyCount", 0)
+            slider = uim.widget.ContrastSlider(canvas, ...
+                'DataLimits', [0, 255], 'Limits', [10, 100], ...
+                'LimitsChangedFcn', @(~, ~) setappdata(hFigure, "NotifyCount", ...
+                    getappdata(hFigure, "NotifyCount") + 1));
+
+            % Pushing the low knob onto the high knob separates the pair
+            % by moving the low knob back; the high knob stays put.
+            slider.Low = slider.High;
+            pushedLimits = slider.Limits;
+            testCase.verifyEqual(pushedLimits(2), 100);
+            testCase.verifyLessThan(pushedLimits(1), 100);
+            testCase.verifyEqual(getappdata(hFigure, "NotifyCount"), 1);
+
+            % Holding the knob there (one push per motion event) neither
+            % moves the range nor notifies again.
+            for iPush = 1:20
+                slider.Low = slider.High;
+            end
+            testCase.verifyEqual(slider.Limits, pushedLimits);
+            testCase.verifyEqual(getappdata(hFigure, "NotifyCount"), 1);
+        end
+
+        function overviewIndicatorRecoversSizeAfterAspectChanges(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            indicator = uim.widget.OverviewIndicator(canvas, ...
+                'DataLimits', [0, 200; 0, 100], ...
+                'ViewLimits', [0, 200; 0, 100]);
+
+            % The box hugs the letterboxed frame: 2:1 data inside the
+            % default 120x90 box (padding 6) gives a 120x66 chip.
+            landscapeSize = indicator.Size;
+            testCase.verifyEqual(landscapeSize, [120, 66], "AbsTol", 1);
+
+            % The configured size stays the fitting maximum, so an
+            % aspect flip must not ratchet the box smaller and smaller.
+            indicator.DataLimits = [0, 100; 0, 200];
+            testCase.verifyEqual(indicator.Size, [51, 90], "AbsTol", 1);
+
+            indicator.DataLimits = [0, 200; 0, 100];
+            testCase.verifyEqual(indicator.Size, landscapeSize, "AbsTol", 1);
+
+            % A host-assigned size becomes the new fitting maximum.
+            indicator.Size = [140, 90];
+            testCase.verifyEqual(indicator.Size(1), 140, "AbsTol", 1);
+        end
+
+        function dropDownRejectsItemsUpdateAtomically(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            dropdown = uim.widget.DropDown(canvas, ...
+                'Items', ["gray", "jet"], 'Value', "jet");
+
+            % An Items list without the current Value is rejected before
+            % anything is assigned, so the widget stays consistent and
+            % usable for hosts that catch the error.
+            testCase.verifyError(...
+                @() assignProperty(dropdown, 'Items', ["a", "b"]), ...
+                "uim:DropDown:InvalidValue");
+            testCase.verifyEqual(dropdown.Items, ["gray", "jet"]);
+            testCase.verifyEqual(dropdown.Value, "jet");
+
+            dropdown.open()
+            testCase.verifyNumElements(...
+                findall(canvas.Axes, "Tag", "DropDownItem"), 2);
+            dropdown.close()
+
+            % A compatible update goes through; an unset Value defaults
+            % to the first item.
+            dropdown.Items = ["hot", "jet"];
+            testCase.verifyEqual(dropdown.Value, "jet");
+
+            plain = uim.widget.DropDown(canvas, ...
+                'Items', ["x", "y"], 'Location', 'northeast');
+            testCase.verifyEqual(plain.Value, "x");
+        end
+
+        function dropDownSwitchesToDisjointItemsViaValueReset(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            dropdown = uim.widget.DropDown(canvas, ...
+                'Items', ["gray", "jet"], 'Value', "jet");
+
+            % Neither assignment order works directly for a disjoint
+            % Items list (both are members-of-the-other-list checks);
+            % resetting Value to "" first is the escape hatch, and
+            % Items then defaults Value to the new first item.
+            testCase.verifyError(...
+                @() assignProperty(dropdown, 'Value', "hot"), ...
+                "uim:DropDown:InvalidValue");
+
+            dropdown.Value = "";
+            dropdown.Items = ["hot", "cool"];
+            testCase.verifyEqual(dropdown.Items, ["hot", "cool"]);
+            testCase.verifyEqual(dropdown.Value, "hot");
+        end
+
+        function spinnerHideDiscardsOpenEdit(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            spinner = uim.widget.Spinner(canvas, 'Value', 5);
+
+            editFcn = get(findall(canvas.Axes, ...
+                "Tag", "SpinnerValue"), 'ButtonDownFcn');
+            editFcn([], [])
+            editBox = findall(hFigure, "Type", "uicontrol", "Style", "edit");
+            testCase.verifyNumElements(editBox, 1);
+            editBox.String = '9'; % Typed but not committed
+
+            % Hiding the spinner must dismiss the native edit box (it is
+            % not a canvas child) and discard the uncommitted value.
+            spinner.Visible = 'off';
+            testCase.verifyFalse(isvalid(editBox));
+            testCase.verifyEqual(spinner.Value, 5);
+
+            % A fresh edit session works after showing the spinner again.
+            spinner.Visible = 'on';
+            editFcn([], [])
+            editBox = findall(hFigure, "Type", "uicontrol", "Style", "edit");
+            testCase.verifyNumElements(editBox, 1);
+            editBox.String = '7';
+            editBox.Callback(editBox, [])
+            testCase.verifyEqual(spinner.Value, 7);
+        end
+
+        function toolbarStaysConsistentAfterBindingDelete(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "Units", "pixels", ...
+                "Position", [50, 50, 300, 220]);
+
+            manager = uim.interface.PointerManager(hFigure, hAxes, ...
+                {'zoomIn', 'pan'});
+            testCase.addTeardown(@deleteValid, manager);
+
+            toolbar = uim.widget.Toolbar(hAxes, "Location", "northeast");
+            binding = uim.interface.PointerToolBinding(toolbar, manager, ...
+                ["zoomIn", "pan"]);
+            testCase.verifyEqual(toolbar.NumButtons, 2);
+
+            % Deleting the binding removes its buttons through the
+            % toolbar, so the toolbar's bookkeeping stays consistent
+            % and later operations work on valid handles.
+            delete(binding)
+            testCase.verifyEqual(toolbar.NumButtons, 0);
+
+            hButton = toolbar.addButton("Text", "x");
+            testCase.verifyEqual(toolbar.NumButtons, 1);
+            testCase.verifyTrue(isvalid(hButton));
+
+            toolbar.removeButton(hButton)
+            testCase.verifyEqual(toolbar.NumButtons, 0);
+            testCase.verifyFalse(isvalid(hButton));
+        end
+
         function explicitSizeSurvivesParentResize(testCase)
             hFigure = figure("Visible", "off", "Position", [200, 200, 500, 400]);
             testCase.addTeardown(@deleteValid, hFigure);
@@ -1115,4 +1513,24 @@ function assignProperty(object, propertyName, value)
 %assignProperty Assign a property inside a function call, so property-set
 %errors can be verified with verifyError.
     object.(propertyName) = value;
+end
+
+function [hFigure, hAxes] = createPlainAxes(testCase)
+%createPlainAxes Hidden figure with one data axes, deleted on teardown
+    hFigure = figure("Visible", "off");
+    testCase.addTeardown(@deleteValid, hFigure);
+    hAxes = axes(hFigure, "XLim", [0, 100], "YLim", [0, 50]);
+end
+
+function recordCallbackAndResume(hFigure, hAxes)
+%recordCallbackAndResume Note whether the axes callback is held, then end the wait
+    setappdata(hFigure, "WasHeldDuringWait", isempty(hAxes.ButtonDownFcn))
+    uiresume(hFigure)
+end
+
+function cleanupTimer(resumeTimer)
+    if isvalid(resumeTimer)
+        stop(resumeTimer)
+        delete(resumeTimer)
+    end
 end

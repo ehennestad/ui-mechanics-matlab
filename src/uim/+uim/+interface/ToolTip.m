@@ -22,6 +22,11 @@ classdef ToolTip < uim.Handle
     properties (Access = private)
         Axes
         TooltipHandle
+
+        % Set when a ChildAdded hoist failed (re-entrant uistack); the
+        % next showTooltip retries, so a failure on the last ChildAdded
+        % event cannot leave the tooltip buried for good.
+        IsHoistPending (1,1) logical = false
     end
 
     properties (Hidden, Access = private)
@@ -61,6 +66,10 @@ classdef ToolTip < uim.Handle
         function showTooltip(obj, text, position)
 
             if ~isempty(obj.TooltipHandle) && isvalid(obj.TooltipHandle)
+
+                if obj.IsHoistPending
+                    obj.bringTooltipToFront()
+                end
 
                 obj.TooltipHandle.String = text;
                 obj.TooltipHandle.Visible = 'on';
@@ -157,13 +166,16 @@ classdef ToolTip < uim.Handle
             if ~isempty(obj.TooltipHandle) && isvalid(obj.TooltipHandle)
                 try
                     uistack(obj.TooltipHandle, 'top')
+                    obj.IsHoistPending = false;
                 catch
                     % This runs from a ChildAdded listener, which also
                     % fires while OTHER code is restacking the axes
                     % children (e.g. a widget calling uistack); the
                     % re-entrant uistack can fail on that transient
-                    % state. Safe to skip: the tooltip is hoisted again
-                    % on the next ChildAdded.
+                    % state. Safe to skip: the hoist is retried on the
+                    % next ChildAdded and — since no further child may
+                    % ever be added — when the tooltip is next shown.
+                    obj.IsHoistPending = true;
                 end
             end
         end

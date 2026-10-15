@@ -70,8 +70,15 @@ classdef PointerToolBinding < handle
         end
 
         function delete(obj)
+            % Remove buttons through the toolbar, so its layout
+            % bookkeeping (button list, positions, count) stays
+            % consistent for later addButton/resize operations.
             for i = 1:numel(obj.Buttons)
-                if isvalid(obj.Buttons(i))
+                if ~isvalid(obj.Buttons(i)); continue; end
+
+                if isvalid(obj.Toolbar)
+                    obj.Toolbar.removeButton(obj.Buttons(i))
+                else
                     delete(obj.Buttons(i))
                 end
             end
@@ -84,8 +91,13 @@ classdef PointerToolBinding < handle
 
             try
                 defaultIcons = uim.style.getDefaultIcons();
-            catch
-                defaultIcons = struct(); % Fall back to text labels
+            catch ME
+                % Without the shipped icon library the buttons fall back
+                % to text labels; any other failure is a real error.
+                if ~strcmp(ME.identifier, 'uim:style:IconLibraryNotFound')
+                    rethrow(ME)
+                end
+                defaultIcons = struct();
             end
 
             for mode = obj.Modes

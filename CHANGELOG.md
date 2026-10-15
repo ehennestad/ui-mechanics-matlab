@@ -265,11 +265,26 @@ sites (verified by a full-repository search, not assumption):
   by a window-level `WindowMousePress` listener, gated so that presses
   on interactive objects (anything with its own `ButtonDownFcn`) or
   outside the managed axes are ignored. The axes' own `ButtonDownFcn`
-  is no longer touched; existing `HitTest = 'off'` workarounds remain
-  harmless.
+  is set aside only while a pointer tool is active (see below);
+  existing `HitTest = 'off'` workarounds remain harmless.
 - `PageIndicator.m` had a dead comment referencing
   `uim.style.nansenPageButton`, a class that never existed in this repo
   (leftover from the original extraction); it now references the real
   `uim.style.ButtonScheme`.
 - `uim.mixin.Resizable`'s `isResizeable` property (typo) is now
   `IsResizable`.
+
+### Changed — Pointer manager, data cursor and dropdown
+
+- `uim.interface.PointerManager` sets a host's axes `ButtonDownFcn`
+  aside while a pointer tool is active and gives it back when no tool
+  is, so each press on the axes background has exactly one handler. A
+  callback the host assigns while a tool is active is kept.
+- `uim.interface.pointertools.DataCursor` reports cursor movement
+  through the new `CursorMovedFcn` instead of the inherited
+  `ButtonMotionFcn`.
+- `uim.widget.DropDown` accepts `Value = ""` as "no selection". Assigning
+  `Items` while nothing is selected selects the first item, so to switch
+  to an `Items` list that lacks the current `Value`, set `Value` to `""`
+  first.
+- MATLAB R2020b is the minimum supported release.

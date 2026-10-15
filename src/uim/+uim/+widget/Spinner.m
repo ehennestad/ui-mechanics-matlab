@@ -147,6 +147,15 @@ classdef Spinner < uim.abstract.Control
         function onVisibleChanged(obj, ~)
             if ~obj.IsConstructed; return; end
 
+            % The edit box is a native uicontrol, not a canvas child:
+            % it must be dismissed explicitly, or it stays visible and
+            % editable on top of whatever replaces the hidden spinner.
+            % Discard rather than commit — applying a half-typed value
+            % on a visibility change would surprise.
+            if strcmp(obj.Visible, 'off')
+                obj.cancelEdit()
+            end
+
             obj.Background.Visible = obj.Visible;
             handles = [obj.ValueText, obj.DecrementButton, obj.IncrementButton];
             set(handles(isvalid(handles)), 'Visible', obj.Visible)
@@ -227,6 +236,20 @@ classdef Spinner < uim.abstract.Control
             if ~isnan(newValue)
                 obj.applyValueFromUser(newValue)
             end
+        end
+
+        function cancelEdit(obj)
+        %cancelEdit Discard an open edit session without applying it
+
+            if ~isempty(obj.WindowMousePressListener)
+                delete(obj.WindowMousePressListener)
+                obj.WindowMousePressListener = [];
+            end
+
+            if ~isempty(obj.EditBox) && isvalid(obj.EditBox)
+                delete(obj.EditBox)
+            end
+            obj.EditBox = gobjects(0,1);
         end
     end
 

@@ -62,6 +62,14 @@ classdef OverviewIndicator < uim.abstract.Control
         LocalScale (1,1) double = 1     % Pixels per data unit
         FrameOrigin (1,2) double = [0, 0]
 
+        % Size as configured by the host: the letterbox fit treats it
+        % as a maximum, so the box can grow back after shrinking when
+        % the data aspect ratio changes again.
+        ConfiguredSize (1,2) double = [1, 1]
+
+        % Guards ConfiguredSize while updateGraphics itself writes Size.
+        IsFittingSize (1,1) logical = false
+
         % Drag state
         DragStartPoint (1,2) double = [0, 0]
         DragStartViewLimits (2,2) double = [0, 1; 0, 1]
@@ -79,6 +87,8 @@ classdef OverviewIndicator < uim.abstract.Control
             % java figures that requires a WindowButtonMotionFcn.
             uim.utility.ensurePointerMotionTracking(...
                 ancestor(obj.CanvasAxes, 'figure'))
+
+            obj.ConfiguredSize = obj.Position(3:4);
 
             obj.plotOutlines()
 
@@ -115,6 +125,9 @@ classdef OverviewIndicator < uim.abstract.Control
         end
 
         function set.ViewLimits(obj, newValue)
+            % The recommended host wiring echoes ViewLimits back through
+            % an XLim/YLim PostSet listener; skip the redundant redraw.
+            if isequal(newValue, obj.ViewLimits); return; end
             obj.ViewLimits = newValue;
             obj.updateGraphics()
         end
@@ -158,25 +171,34 @@ classdef OverviewIndicator < uim.abstract.Control
             dataSize = diff(obj.DataLimits, 1, 2);
             if any(dataSize <= 0); return; end
 
-            % Fit the data extent inside the padded widget box, preserving
-            % the data aspect ratio (letterboxed when they differ).
-            innerOrigin = obj.Position(1:2) + obj.Padding(1:2);
-            innerSize = obj.Position(3:4) ...
-                - obj.Padding(1:2) - obj.Padding(3:4);
+            % Fit the data extent inside the configured (maximum) box,
+            % preserving the data aspect ratio (letterboxed when they
+            % differ).
+            paddingSize = obj.Padding(1:2) + obj.Padding(3:4);
+            maxInnerSize = obj.ConfiguredSize - paddingSize;
 
-            obj.LocalScale = min(innerSize(:)./dataSize);
+            obj.LocalScale = min(maxInnerSize(:)./dataSize);
             frameSize = (dataSize*obj.LocalScale)';
-            obj.FrameOrigin = innerOrigin + (innerSize - frameSize)/2;
 
             % Shrink the widget box to hug the letterboxed frame, so the
-            % chip background does not extend past the outline. Size acts
-            % as a maximum; the box re-anchors through set.Size and this
-            % method runs again with the fitted size.
-            targetSize = frameSize + obj.Padding(1:2) + obj.Padding(3:4);
+            % chip background does not extend past the outline. The fit
+            % is computed from ConfiguredSize, never from the already
+            % fitted box, so a later DataLimits push can grow the box
+            % back up to the configured maximum. The box re-anchors
+            % through set.Size and this method runs again with the
+            % fitted size.
+            targetSize = frameSize + paddingSize;
             if any(abs(targetSize - obj.Position(3:4)) > 0.5)
+                obj.IsFittingSize = true;
+                restoreFlag = onCleanup(@() obj.stopFittingSize());
                 obj.Size = targetSize;
+                delete(restoreFlag)
                 return
             end
+
+            innerOrigin = obj.Position(1:2) + obj.Padding(1:2);
+            innerSize = obj.Position(3:4) - paddingSize;
+            obj.FrameOrigin = innerOrigin + (innerSize - frameSize)/2;
 
             [frameX, frameY] = obj.dataToLocal(...
                 obj.DataLimits(1, [1, 2, 2, 1]), obj.DataLimits(2, [1, 1, 2, 2]));
@@ -273,6 +295,12 @@ classdef OverviewIndicator < uim.abstract.Control
             obj.centerViewOn(x, y)
         end
 
+        function stopFittingSize(obj)
+            if isvalid(obj)
+                obj.IsFittingSize = false;
+            end
+        end
+
         function applyViewFromUser(obj, newLimits)
         %applyViewFromUser Clamp to the data extent, update and notify
 
@@ -308,6 +336,13 @@ classdef OverviewIndicator < uim.abstract.Control
 
         function onSizeChanged(obj, oldPosition, newPosition)
             onSizeChanged@uim.abstract.Control(obj, oldPosition, newPosition)
+
+            % A host-driven size is the new maximum for the letterbox
+            % fit; the internal hug-fit must not ratchet it down.
+            if ~obj.IsFittingSize
+                obj.ConfiguredSize = newPosition(3:4);
+            end
+
             obj.updateGraphics()
         end
 

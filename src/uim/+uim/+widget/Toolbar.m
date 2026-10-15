@@ -178,6 +178,42 @@ classdef Toolbar < uim.abstract.Container
             ind = contains(tags, tagValue);
             h = obj.Buttons(ind);
         end
+
+        function removeButton(obj, hButton)
+        %removeButton Remove a button or separator from the toolbar
+        %
+        %   removeButton(obj, hButton) detaches hButton from the
+        %   toolbar's bookkeeping, deletes it, and re-lays-out the
+        %   remaining buttons. Handles not added to this toolbar are
+        %   ignored.
+
+            arguments
+                obj (1,1) uim.widget.Toolbar
+                hButton (1,1) uim.abstract.Component
+            end
+
+            isMatch = obj.Buttons == hButton;
+            if ~any(isMatch); return; end
+
+            delete(obj.ButtonSizeChangedListener(isMatch))
+            obj.ButtonSizeChangedListener(isMatch) = [];
+
+            obj.Buttons(isMatch) = [];
+            obj.AllButtonPosition(isMatch, :) = [];
+            obj.NumButtons = obj.NumButtons - nnz(isMatch);
+            obj.Children(obj.Children == hButton) = [];
+
+            if isvalid(hButton)
+                delete(hButton)
+            end
+
+            obj.repositionButtons()
+            obj.setNextButtonPosition()
+
+            if strcmp(obj.BarExtensionMode, 'tight')
+                obj.updateSize()
+            end
+        end
     end
 
     methods (Access = protected)

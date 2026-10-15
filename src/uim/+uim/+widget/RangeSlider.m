@@ -504,10 +504,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
             % make sure the callback is executed if source is the track
             if strcmp(src.Tag, 'Range Slider Track')
-                if ~isempty(obj.Callback)
-                    evtData = struct('Low', obj.Low, 'High', obj.High);
-                    obj.Callback(obj, evtData)
-                end
+                obj.notifyValueChanged()
             end
         end
 
@@ -535,10 +532,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
                 obj.ValueLabel.Visible = 'off';
             end
 
-            if ~isempty(obj.Callback)
-                evtData = struct('Low', obj.Low, 'High', obj.High);
-                obj.Callback(obj, evtData)
-            end
+            obj.notifyValueChanged()
         end
 
         function onValueChanging(obj, newValue, whichValue)
@@ -571,9 +565,8 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
                     obj.ValueChangingFcn(obj, evtData)
                 end
 
-                if ~isempty(obj.Callback) && toc(ticAtLastUpdate) > 1/obj.CallbackRefreshRate
-                    evtData = struct('Low', obj.Low, 'High', obj.High);
-                    obj.Callback(obj, evtData)
+                if toc(ticAtLastUpdate) > 1/obj.CallbackRefreshRate
+                    obj.notifyValueChanged()
                     ticAtLastUpdate = tic;
                 end
             end
@@ -589,6 +582,26 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         function onMouseExitKnob(obj, hSource, ~)
             if ~obj.IsKnobPressed
                 hSource.FaceColor = ones(1,3) * 0.8;
+            end
+        end
+    end
+
+    methods (Access = protected) % Host notification
+
+        function notifyValueChanged(obj)
+        %notifyValueChanged Notify the host of a new Low/High pair
+        %
+        %   Invokes the public Callback with a (Low, High) event struct.
+        %   It runs when a knob is released or the track is pressed, and,
+        %   at most CallbackRefreshRate times a second, whenever Low or
+        %   High changes, including programmatic assignments. Subclasses
+        %   override this to intercept those notifications; they should
+        %   call the superclass method so a host-assigned Callback keeps
+        %   working.
+
+            if ~isempty(obj.Callback)
+                evtData = struct('Low', obj.Low, 'High', obj.High);
+                obj.Callback(obj, evtData)
             end
         end
     end
