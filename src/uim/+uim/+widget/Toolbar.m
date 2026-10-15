@@ -187,6 +187,11 @@ classdef Toolbar < uim.abstract.Container
         %   remaining buttons. Handles not added to this toolbar are
         %   ignored.
 
+            arguments
+                obj (1,1) uim.widget.Toolbar
+                hButton (1,1) uim.abstract.Component
+            end
+
             isMatch = obj.Buttons == hButton;
             if ~any(isMatch); return; end
 

@@ -215,8 +215,18 @@ classdef ContrastSlider < uim.widget.RangeSlider
             minSeparation = max(diff(obj.DataLimits)*1e-6, ...
                 eps(newLimits(1)));
             if newLimits(2) <= newLimits(1) + minSeparation
-                newLimits(2) = newLimits(1) + minSeparation;
-                if newLimits(2) > obj.Max
+                % Separate the pair by moving back the end that moved, so
+                % a knob held against the other one stays put instead of
+                % pushing the range further on every motion event.
+                isLowMoved = ~isequal(newLimits(1), obj.LastNotifiedLimits(1));
+                if isLowMoved
+                    newLimits(1) = newLimits(2) - minSeparation;
+                else
+                    newLimits(2) = newLimits(1) + minSeparation;
+                end
+                if newLimits(1) < obj.Min
+                    newLimits = newLimits + (obj.Min - newLimits(1));
+                elseif newLimits(2) > obj.Max
                     newLimits = newLimits - (newLimits(2) - obj.Max);
                 end
 
@@ -442,8 +452,8 @@ classdef ContrastSlider < uim.widget.RangeSlider
         %   Runs the clamp/push-back first (onRangeSliderChanged), so a
         %   host-assigned Callback always sees the same corrected,
         %   strictly-increasing pair as LimitsChangedFcn, and never
-        %   fires during a silent programmatic push (onRangeSliderChanged
-        %   leaves SuppressNotification set for the duration of one).
+        %   fires during a silent programmatic push (applySilently holds
+        %   SuppressNotification for the duration of one).
 
             obj.onRangeSliderChanged()
 

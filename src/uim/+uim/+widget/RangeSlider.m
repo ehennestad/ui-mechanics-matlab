@@ -589,7 +589,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
     methods (Access = protected) % Host notification
 
         function notifyValueChanged(obj)
-        %notifyValueChanged Notify the host that the user changed a value
+        %notifyValueChanged Notify the host of a new Low/High pair
         %
         %   Invokes the public Callback with a (Low, High) event struct.
         %   Subclasses override this to intercept user-driven changes;

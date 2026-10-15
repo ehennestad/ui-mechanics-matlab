@@ -36,7 +36,7 @@ classdef DropDown < uim.abstract.Control
 
     properties
         Items (1,:) string = string.empty  % The selectable items
-        Value (1,1) string = ""            % The selected item (member of Items)
+        Value (1,1) string = ""            % The selected item (member of Items), or "" for no selection
 
         ItemHeight (1,1) double {mustBePositive} = 20 % Row height of the open list, in pixels
 
@@ -62,7 +62,7 @@ classdef DropDown < uim.abstract.Control
     end
 
     properties (Dependent, Transient)
-        ValueIndex  % Index of Value in Items (read-only)
+        ValueIndex  % Index of Value in Items, empty when nothing is selected (read-only)
         IsOpen      % True while the item list is showing (read-only)
     end
 
@@ -253,7 +253,7 @@ classdef DropDown < uim.abstract.Control
                     rowTop - [obj.ItemHeight, obj.ItemHeight, 0, 0], ...
                     obj.SelectionColor);
                 hRow.EdgeColor = 'none';
-                hRow.FaceAlpha = 0.15 * (i == obj.ValueIndex);
+                hRow.FaceAlpha = 0.15 * isequal(i, obj.ValueIndex);
                 hRow.Clipping = 'off';
                 hRow.HitTest = 'on';
                 hRow.PickableParts = 'all';
@@ -290,7 +290,7 @@ classdef DropDown < uim.abstract.Control
             pointerBehavior.enterFcn = @(~, ~) setRowHighlight(hRow, ...
                 obj.HighlightColor, 0.35);
             pointerBehavior.exitFcn = @(~, ~) setRowHighlight(hRow, ...
-                obj.SelectionColor, 0.15 * (itemIndex == obj.ValueIndex));
+                obj.SelectionColor, 0.15 * isequal(itemIndex, obj.ValueIndex));
             pointerBehavior.traverseFcn = [];
 
             uim.utility.setPointerBehavior(hRow, pointerBehavior)

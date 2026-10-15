@@ -29,7 +29,8 @@ classdef PointerManager < handle
         PreviousPointerTool
         WasCursorInAxes (1,1) logical = false;
 
-        OriginalAxesButtonDownFcn = []
+        HostAxesButtonDownFcn = []
+        IsHostButtonDownFcnHeld (1,1) logical = false
 
         AxesButtonPressListener event.listener
         WindowMousePressListener event.listener
@@ -53,13 +54,6 @@ classdef PointerManager < handle
 
             obj.Figure = hFigure;
             obj.Axes = hAxes;
-
-            % While a manager is attached, pointer tools own presses on
-            % the axes background exclusively: displace a pre-existing
-            % ButtonDownFcn (restored on delete) so a host callback and
-            % a pointer tool never both run on the same click.
-            obj.OriginalAxesButtonDownFcn = hAxes.ButtonDownFcn;
-            hAxes.ButtonDownFcn = [];
 
             % In java figures CurrentPoint only follows the mouse while
             % a WindowButtonMotionFcn is installed. The shared helper
@@ -91,12 +85,8 @@ classdef PointerManager < handle
 
             obj.deleteFigureMouseListeners()
 
-            % Restore only if nothing has reassigned ButtonDownFcn since
-            % construction (it is still the empty value the manager set):
-            % a host that took over clicks while the manager was attached
-            % must not have that callback silently overwritten.
-            if isvalid(obj.Axes) && isempty(obj.Axes.ButtonDownFcn)
-                obj.Axes.ButtonDownFcn = obj.OriginalAxesButtonDownFcn;
+            if obj.IsHostButtonDownFcnHeld
+                obj.releaseHostButtonDownFcn()
             end
         end
     end
@@ -301,10 +291,46 @@ classdef PointerManager < handle
             else
                 obj.Figure.Pointer = 'arrow';
             end
+
+            obj.updateHostButtonDownFcnHold()
         end
     end
 
     methods (Access = private)
+
+        function updateHostButtonDownFcnHold(obj)
+        %updateHostButtonDownFcnHold Hold the axes ButtonDownFcn while a tool is active
+        %
+        %   An active pointer tool receives presses on the axes background
+        %   through the figure's WindowMousePress listener, and MATLAB also
+        %   runs the axes ButtonDownFcn for the same click. While a tool is
+        %   active the host's callback is set aside, so each click has one
+        %   handler; with no tool active the host's callback handles it.
+
+            isToolActive = ~isempty(obj.CurrentPointerTool);
+
+            if isToolActive && ~obj.IsHostButtonDownFcnHeld
+                obj.HostAxesButtonDownFcn = obj.Axes.ButtonDownFcn;
+                obj.Axes.ButtonDownFcn = [];
+                obj.IsHostButtonDownFcnHeld = true;
+            elseif ~isToolActive && obj.IsHostButtonDownFcnHeld
+                obj.releaseHostButtonDownFcn()
+            end
+        end
+
+        function releaseHostButtonDownFcn(obj)
+        %releaseHostButtonDownFcn Give the held ButtonDownFcn back to the axes
+        %
+        %   A callback the host assigned while a tool was active takes
+        %   precedence over the one that was set aside, so it is kept.
+
+            if ~isempty(obj.Axes) && isvalid(obj.Axes) ...
+                    && isempty(obj.Axes.ButtonDownFcn)
+                obj.Axes.ButtonDownFcn = obj.HostAxesButtonDownFcn;
+            end
+            obj.HostAxesButtonDownFcn = [];
+            obj.IsHostButtonDownFcnHeld = false;
+        end
 
         function onWindowMousePress(obj, src, event)
         %onWindowMousePress Route presses that belong to the managed axes
@@ -334,9 +360,8 @@ classdef PointerManager < handle
             % the figure SelectionType for tools that check evt.Button.
             % SelectionType conflates modified left-clicks with other
             % buttons ('alt' is ctrl+left OR right, 'extend' is
-            % shift+left OR middle), so consult CurrentModifier to keep
-            % reporting modifier-left-clicks as button 1, like the axes
-            % ButtonDownFcn eventdata did. (A ctrl+right-click is
+            % shift+left OR middle), so consult CurrentModifier to report
+            % modifier-left-clicks as button 1. (A ctrl+right-click is
             % indistinguishable from ctrl+left and also reports 1.)
             modifiers = obj.Figure.CurrentModifier;
             switch obj.Figure.SelectionType

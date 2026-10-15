@@ -91,8 +91,13 @@ classdef PointerToolBinding < handle
 
             try
                 defaultIcons = uim.style.getDefaultIcons();
-            catch
-                defaultIcons = struct(); % Fall back to text labels
+            catch ME
+                % Without the shipped icon library the buttons fall back
+                % to text labels; any other failure is a real error.
+                if ~strcmp(ME.identifier, 'uim:style:IconLibraryNotFound')
+                    rethrow(ME)
+                end
+                defaultIcons = struct();
             end
 
             for mode = obj.Modes
