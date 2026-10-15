@@ -173,6 +173,36 @@ classdef TestSliderDetails < matlab.unittest.TestCase
             slider.FontSize = 14;
             testCase.verifyEqual(slider.FontSize, 14);
         end
+
+        function sliderKeepsItsInactiveKnobColors(testCase)
+            hFigure = createHiddenFigure(testCase);
+            faceColor = [0, 0, 1];
+            edgeColor = [1, 1, 0];
+            slider = uim.widget.Slider("Parent", hFigure, ...
+                "KnobFaceColorInactive", faceColor, "KnobEdgeColorInactive", edgeColor);
+            testCase.addTeardown(@deleteValid, slider);
+            hAxes = findall(hFigure, "Tag", "SlideBar Container");
+
+            testCase.verifyEqual(slider.KnobFaceColorInactive, faceColor);
+            testCase.verifyEqual(slider.KnobEdgeColorInactive, edgeColor);
+            knob = findobj(hAxes, "Type", "patch", "FaceColor", faceColor);
+            testCase.assertNumElements(knob, 1, "The knob is drawn in the constructor colours.");
+            testCase.verifyEqual(knob.EdgeColor, edgeColor);
+
+            newFaceColor = [1, 0, 0];
+            newEdgeColor = [0, 1, 1];
+            slider.KnobFaceColorInactive = newFaceColor;
+            slider.KnobEdgeColorInactive = newEdgeColor;
+            testCase.verifyEqual(slider.KnobFaceColorInactive, newFaceColor);
+            testCase.verifyEqual(slider.KnobEdgeColorInactive, newEdgeColor);
+
+            slider.activateSlider()
+            testCase.verifyEqual(knob.FaceColor, slider.KnobFaceColorActive);
+            slider.deactivateSlider()
+            testCase.verifyEqual(knob.FaceColor, newFaceColor, ...
+                "Releasing the knob restores the assigned inactive colours.");
+            testCase.verifyEqual(knob.EdgeColor, newEdgeColor);
+        end
     end
 
     methods (Test) % ScrollBar and Button details

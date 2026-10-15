@@ -413,6 +413,13 @@ classdef Slider < handle
                 obj.Track.FaceColor = obj.BarColor;
             end
         end
+
+        function onKnobColorSet(obj)
+            if ~isempty(obj.Knob)
+                obj.Knob.EdgeColor = obj.KnobEdgeColorInactive;
+                obj.Knob.FaceColor = obj.KnobFaceColorInactive;
+            end
+        end
     end
 
     methods % Set/Get
@@ -521,15 +528,13 @@ classdef Slider < handle
 % %         end
 
         function set.KnobEdgeColorInactive(obj, newColor)
-            if ~isempty(obj.Knob)
-                obj.Knob.EdgeColor = newColor;
-            end
+            obj.KnobEdgeColorInactive = newColor;
+            obj.onKnobColorSet()
         end
 
         function set.KnobFaceColorInactive(obj, newColor)
-            if ~isempty(obj.Knob)
-                obj.Knob.FaceColor = newColor;
-            end
+            obj.KnobFaceColorInactive = newColor;
+            obj.onKnobColorSet()
         end
 
         function set.BarColor(obj, newColor)
