@@ -1,7 +1,7 @@
 function rectangle = limitsToRectangle(xLim, yLim)
 %limitsToRectangle Convert crop limits to an [x, y, width, height] rectangle
 %
-%   rectangle = uim.geometry.limitsToRectangle(xLim, yLim)
+%   rectangle = uim.geometry.internal.limitsToRectangle(xLim, yLim)
 %   returns [] when no crop is defined (both empty, or both the [1, inf]
 %   "whole image" sentinel), and otherwise a rectangle sized to the
 %   inclusive pixel limits: xLim = [11, 30] spans 20 pixels, so the
@@ -11,7 +11,7 @@ function rectangle = limitsToRectangle(xLim, yLim)
 %   rectangleToLimits, so a crop survives repeated tool activations
 %   unchanged.
 %
-%   See also uim.geometry.rectangleToLimits
+%   See also uim.geometry.internal.rectangleToLimits
 
     arguments
         xLim double

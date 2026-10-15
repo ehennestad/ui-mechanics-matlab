@@ -21,22 +21,29 @@ classdef TestGeometry < matlab.unittest.TestCase
         end
 
         function rangeStrictlyInsideExcludesTouchingEdges(testCase)
-            testCase.verifyTrue(uim.geometry.isRangeStrictlyInside([1, 9], [0, 10]));
-            testCase.verifyFalse(uim.geometry.isRangeStrictlyInside([0, 9], [0, 10]));
-            testCase.verifyFalse(uim.geometry.isRangeStrictlyInside([1, 10], [0, 10]));
+            testCase.verifyTrue(uim.geometry.internal.isRangeStrictlyInside([1, 9], [0, 10]));
+            testCase.verifyFalse(uim.geometry.internal.isRangeStrictlyInside([0, 9], [0, 10]));
+            testCase.verifyFalse(uim.geometry.internal.isRangeStrictlyInside([1, 10], [0, 10]));
         end
     end
 
-    methods (Test) % Range clamping
+    methods (Test) % Fitting ranges inside bounds
 
-        function clampRangeShiftsWithoutResizing(testCase)
+        function fitRangeShiftsWithoutResizing(testCase)
             testCase.verifyEqual(uim.geometry.fitRangeInside([-5, 15], [0, 100]), [0, 20]);
             testCase.verifyEqual(uim.geometry.fitRangeInside([90, 110], [0, 100]), [80, 100]);
             testCase.verifyEqual(uim.geometry.fitRangeInside([20, 40], [0, 100]), [20, 40]);
         end
 
-        function clampRangeSnapsToBoundsWhenWider(testCase)
+        function fitRangeNarrowsToBoundsWhenWider(testCase)
             testCase.verifyEqual(uim.geometry.fitRangeInside([-50, 150], [0, 100]), [0, 100]);
+        end
+
+        function fitRangeRejectsReversedRanges(testCase)
+            testCase.verifyError(@() uim.geometry.fitRangeInside([12, -3], [0, 10]), ...
+                "uim:geometry:InvalidRange");
+            testCase.verifyError(@() uim.geometry.fitRangeInside([2, 3], [10, 0]), ...
+                "uim:geometry:InvalidRange");
         end
 
         function intersectRangesClipsEachEnd(testCase)
@@ -57,7 +64,7 @@ classdef TestGeometry < matlab.unittest.TestCase
         function zoomAboutCentredPointerKeepsCentre(testCase)
             % Pointer at the axes centre, pointing at the data centre: the
             % window shrinks symmetrically (up to the quarter-pixel tuning).
-            [xLim, yLim] = uim.geometry.zoomLimitsAboutPoint(...
+            [xLim, yLim] = uim.geometry.internal.zoomLimitsAboutPoint(...
                 [0, 100], [0, 100], -0.25, [200, 200], [400, 400], [50, 50], 'normal');
             testCase.verifyEqual(xLim, [25, 75], "AbsTol", 0.05);
             testCase.verifyEqual(yLim, [25, 75], "AbsTol", 0.05);
@@ -65,7 +72,7 @@ classdef TestGeometry < matlab.unittest.TestCase
 
         function zoomAboutOffCentrePointerKeepsPointUnderPointer(testCase)
             % Pointer a quarter of the way in from the left/bottom, at data (25, 25)
-            [xLim, yLim] = uim.geometry.zoomLimitsAboutPoint(...
+            [xLim, yLim] = uim.geometry.internal.zoomLimitsAboutPoint(...
                 [0, 100], [0, 100], -0.25, [100, 100], [400, 400], [25, 25], 'normal');
             % The point under the pointer must map to the same relative position
             relativeX = (25 - xLim(1))/diff(xLim);
@@ -77,9 +84,9 @@ classdef TestGeometry < matlab.unittest.TestCase
 
         function zoomHonoursReversedYAxis(testCase)
             % On an image axes the top of the axes is the smallest y value
-            [~, yLimNormal] = uim.geometry.zoomLimitsAboutPoint(...
+            [~, yLimNormal] = uim.geometry.internal.zoomLimitsAboutPoint(...
                 [0, 100], [0, 100], -0.25, [200, 300], [400, 400], [50, 25], 'normal');
-            [~, yLimReverse] = uim.geometry.zoomLimitsAboutPoint(...
+            [~, yLimReverse] = uim.geometry.internal.zoomLimitsAboutPoint(...
                 [0, 100], [0, 100], -0.25, [200, 300], [400, 400], [50, 25], 'reverse');
             testCase.verifyEqual((25 - yLimNormal(1))/diff(yLimNormal), 0.75, "AbsTol", 0.01);
             testCase.verifyEqual((25 - yLimReverse(1))/diff(yLimReverse), 0.25, "AbsTol", 0.01);
@@ -102,38 +109,38 @@ classdef TestGeometry < matlab.unittest.TestCase
     methods (Test) % Panning and axis dragging
 
         function panMovesContentWithThePointer(testCase)
-            [xLim, yLim] = uim.geometry.panLimits(...
+            [xLim, yLim] = uim.geometry.internal.panLimits(...
                 [0, 100], [0, 50], [40, 20], [400, 200], 'normal');
             testCase.verifyEqual(xLim, [-10, 90]);
             testCase.verifyEqual(yLim, [-5, 45]);
         end
 
         function panFlipsVerticalShiftOnReversedAxes(testCase)
-            [~, yLim] = uim.geometry.panLimits(...
+            [~, yLim] = uim.geometry.internal.panLimits(...
                 [0, 100], [0, 50], [0, 20], [400, 200], 'reverse');
             testCase.verifyEqual(yLim, [5, 55]);
         end
 
         function stretchLimitsScalesByDragFraction(testCase)
-            testCase.verifyEqual(uim.geometry.stretchLimits([0, 100], 40, 400), [-10, 110]);
-            testCase.verifyEqual(uim.geometry.stretchLimits([0, 100], -40, 400), [10, 90]);
+            testCase.verifyEqual(uim.geometry.internal.stretchLimits([0, 100], 40, 400), [-10, 110]);
+            testCase.verifyEqual(uim.geometry.internal.stretchLimits([0, 100], -40, 400), [10, 90]);
         end
     end
 
     methods (Test) % Selection rectangle and crop
 
         function cropLimitsAndRectanglesRoundTrip(testCase)
-            rectangle = uim.geometry.limitsToRectangle([11, 30], [5, 24]);
+            rectangle = uim.geometry.internal.limitsToRectangle([11, 30], [5, 24]);
             testCase.verifyEqual(rectangle, [11, 5, 20, 20]);
 
-            [xLim, yLim] = uim.geometry.rectangleToLimits(rectangle);
+            [xLim, yLim] = uim.geometry.internal.rectangleToLimits(rectangle);
             testCase.verifyEqual(xLim, [11, 30]);
             testCase.verifyEqual(yLim, [5, 24]);
         end
 
         function undefinedCropGivesEmptyRectangle(testCase)
-            testCase.verifyEmpty(uim.geometry.limitsToRectangle([], []));
-            testCase.verifyEmpty(uim.geometry.limitsToRectangle([1, inf], [1, inf]));
+            testCase.verifyEmpty(uim.geometry.internal.limitsToRectangle([], []));
+            testCase.verifyEmpty(uim.geometry.internal.limitsToRectangle([1, inf], [1, inf]));
         end
     end
 
@@ -157,20 +164,20 @@ classdef TestGeometry < matlab.unittest.TestCase
 
         function limitsInsideExtentAreUnchanged(testCase)
             limits = [10, 20; 30, 40];
-            clamped = uim.geometry.shiftLimitsInside(limits, [0, 100; 0, 100]);
+            clamped = uim.geometry.internal.shiftLimitsInside(limits, [0, 100; 0, 100]);
             testCase.verifyEqual(clamped, limits);
         end
 
         function limitsAreShiftedBackInsideExtent(testCase)
             extent = [0, 100; 0, 100];
-            clamped = uim.geometry.shiftLimitsInside([95, 105; -5, 5], extent);
+            clamped = uim.geometry.internal.shiftLimitsInside([95, 105; -5, 5], extent);
             testCase.verifyEqual(clamped, [90, 100; 0, 10]);
         end
 
         function oversizedWindowIsShiftedByNetOvershoot(testCase)
             % A window wider than the extent cannot fit: the two edge
             % corrections cancel to a net shift of the window.
-            clamped = uim.geometry.shiftLimitsInside([-10, 120; 0, 50], [0, 100; 0, 100]);
+            clamped = uim.geometry.internal.shiftLimitsInside([-10, 120; 0, 50], [0, 100; 0, 100]);
             testCase.verifyEqual(clamped, [-20, 110; 0, 50]);
         end
 

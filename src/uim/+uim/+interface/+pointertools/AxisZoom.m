@@ -104,7 +104,7 @@ classdef AxisZoom < uim.interface.PointerTool
             end
 
             deltaY = currentPoint(2) - obj.PreviousMousePoint(2);
-            newYLim = uim.geometry.stretchLimits(...
+            newYLim = uim.geometry.internal.stretchLimits(...
                 obj.Axes.YLim, deltaY, obj.Axes.Position(4));
             obj.setNewYLims(newYLim)
 
@@ -118,7 +118,7 @@ classdef AxisZoom < uim.interface.PointerTool
 
             currentPoint = obj.Figure.CurrentPoint;
             deltaX = currentPoint(1) - obj.PreviousMousePoint(1);
-            newXLim = uim.geometry.stretchLimits(...
+            newXLim = uim.geometry.internal.stretchLimits(...
                 obj.Axes.XLim, deltaX, obj.Axes.Position(3));
             obj.setNewXLims(newXLim)
         end

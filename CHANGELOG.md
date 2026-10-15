@@ -18,20 +18,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- New `uim.geometry` package holding the axis-limit, range and rectangle
-  arithmetic that was previously duplicated across two private packages:
-  `fitRangeInside` (was `uim.interface.internal.clampRangeWithin`) and
-  `shiftLimitsInside` (was `uim.widget.internal.clampLimitsToExtent`)
-  solved the same problem at different arity, and the names now say which
-  one narrows a range that does not fit and which only shifts it. The
-  other twelve move across unchanged: `intersectRanges`,
-  `isRangeStrictlyInside`, `isPointInsideLimits`, `scaleLimits`,
-  `stretchLimits`, `panLimits`, `zoomLimitsAboutPoint`,
-  `fitLimitsToAspectRatio`, `limitsToRectangle`, `rectangleToLimits`,
-  `centeredLimits` and `letterboxFit`. Interaction-specific helpers
-  (`cropMaskOutline`, `isClickWithoutDrag`, `keyToPointerToolName`,
-  `rectangleOutlineBetween`, `selectionTypeToButton`) stay private to
-  `uim.interface`.
+- New `uim.geometry` package for axis-limit, range and rectangle
+  arithmetic that hosts can use too: `scaleLimits`, `intersectRanges`,
+  `fitRangeInside`, `isPointInsideLimits`, `fitLimitsToAspectRatio`,
+  `centeredLimits` and `letterboxFit`. The helpers that encode one
+  tool's conventions live in `uim.geometry.internal`:
+  `zoomLimitsAboutPoint`, `panLimits`, `stretchLimits`,
+  `limitsToRectangle`, `rectangleToLimits`, `isRangeStrictlyInside` and
+  `shiftLimitsInside`. Interaction helpers (`cropMaskOutline`,
+  `isClickWithoutDrag`, `keyToPointerToolName`,
+  `rectangleOutlineBetween`, `selectionTypeToButton`) stay in
+  `uim.interface.internal`.
 - Moved classes and functions into the package that owns them:
   `uim.interface.Zoomable` and `uim.abstract.ToolbarComponent` are now
   `uim.mixin.Zoomable` and `uim.mixin.ToolbarComponent` (both are mixins,
@@ -68,19 +65,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   step right of the bar, and with `Minimum` above 1 both were shifted.
   Both now offset from `Minimum`.
 
-### Changed — Pointer-tool arithmetic lives in `uim.interface.internal`
+### Changed — Pointer-tool arithmetic is extracted into pure functions
 
 The zoom, pan, axis-drag, selection-rectangle and crop arithmetic of the
 pointer tools, plus the PointerManager's press and key translations, are
-pure functions now: `isPointInsideLimits`, `clampRangeWithin`,
-`intersectRanges`, `scaleLimits`, `zoomLimitsAboutPoint`,
-`fitLimitsToAspectRatio`, `panLimits`, `isRangeStrictlyInside`,
-`stretchLimits`, `rectangleOutlineBetween`, `isClickWithoutDrag`,
-`limitsToRectangle`, `rectangleToLimits`, `cropMaskOutline`,
-`selectionTypeToButton`, `keyToPointerToolName`. Tool behaviour is
-unchanged apart from the fix below and one edge case: an axes collapsed
-to zero width or height skips the aspect-ratio fit, so the requested
-limits are only clamped to the original limits.
+pure functions now, in `uim.geometry` (`isPointInsideLimits`,
+`fitRangeInside`, `intersectRanges`, `scaleLimits`,
+`fitLimitsToAspectRatio`), `uim.geometry.internal`
+(`zoomLimitsAboutPoint`, `panLimits`, `isRangeStrictlyInside`,
+`stretchLimits`, `limitsToRectangle`, `rectangleToLimits`) and
+`uim.interface.internal` (`rectangleOutlineBetween`,
+`isClickWithoutDrag`, `cropMaskOutline`, `selectionTypeToButton`,
+`keyToPointerToolName`). Tool behaviour is unchanged apart from the fix
+below and one edge case: an axes collapsed to zero width or height skips
+the aspect-ratio fit, so the requested limits are only fitted inside the
+original limits.
 
 ### Fixed — Crop tool shrank the crop by one pixel per activation
 
@@ -102,17 +101,20 @@ The widgets delegate to:
 - `uim.widget.internal` — `mapValueToPixel`/`mapPixelToValue`,
   `snapToStep`, `nearestRangeKnob`, `tickMarkCoordinates`, `knobOutline`
   (Slider, RangeSlider, PlaybackControl); `clampScrollChange`,
-  `acceptScrollStep`, `scrollBarSize` (ScrollBar); `letterboxFit`,
-  `mapDataToFrame`/`mapFrameToData`, `clampLimitsToExtent`,
-  `centeredLimits` (OverviewIndicator).
+  `acceptScrollStep`, `scrollBarSize` (ScrollBar);
+  `mapDataToFrame`/`mapFrameToData` (OverviewIndicator).
+- `uim.geometry` — `letterboxFit`, `centeredLimits`, and
+  `uim.geometry.internal` — `shiftLimitsInside` (OverviewIndicator).
 - `uim.graphics.internal` — `computeTileLayout`, `tileGridPixelSize`,
   `tileCenter`, `tileAtPoint` (TiledImageAxes).
 - `uim.utility.internal` — `findMonitorContainingPoint`
   (getCurrentScreenSize).
 
-Namespace policy: `uim.utility` is the public helper API. Helpers that
-only serve one package live in that package's `internal` sub-namespace;
-`uim.internal` is reserved for helpers shared across namespaces.
+Namespace policy: `uim.utility` is the public helper API, frozen from
+the first release. An `internal` namespace is not public API. A helper
+lives in the `internal` namespace of the domain it belongs to, for
+example limit arithmetic in `uim.geometry.internal`, which is usually
+the package of its only caller.
 
 ### Fixed
 

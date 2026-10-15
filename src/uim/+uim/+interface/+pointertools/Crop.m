@@ -146,7 +146,7 @@ classdef Crop < uim.interface.PointerTool
         end
 
         function rccInit = getRectangleInitCoordinates(obj)
-            rccInit = uim.geometry.limitsToRectangle(...
+            rccInit = uim.geometry.internal.limitsToRectangle(...
                 obj.CurrentXLim, obj.CurrentYLim);
         end
 
@@ -161,7 +161,7 @@ classdef Crop < uim.interface.PointerTool
 
         function updateLimits(obj, rcc)
             [obj.CurrentXLim, obj.CurrentYLim] = ...
-                uim.geometry.rectangleToLimits(rcc);
+                uim.geometry.internal.rectangleToLimits(rcc);
         end
 
         function onRectangleSizeChanged(obj, ~, evt)

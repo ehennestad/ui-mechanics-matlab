@@ -73,17 +73,17 @@ classdef Pan < uim.interface.PointerTool
 
             axPos = getpixelposition(obj.Axes);
 
-            [xLim, yLim] = uim.geometry.panLimits(...
+            [xLim, yLim] = uim.geometry.internal.panLimits(...
                 obj.Axes.XLim, obj.Axes.YLim, shift, axPos(3:4), obj.Axes.YDir);
 
             % Dont move outside of image boundaries..
             if ~obj.ConstrainX || ...
-                    uim.geometry.isRangeStrictlyInside(xLim, obj.XLimOrig)
+                    uim.geometry.internal.isRangeStrictlyInside(xLim, obj.XLimOrig)
                 set(obj.Axes, 'XLim', xLim);
             end
 
             if ~obj.ConstrainY || ...
-                    uim.geometry.isRangeStrictlyInside(yLim, obj.YLimOrig)
+                    uim.geometry.internal.isRangeStrictlyInside(yLim, obj.YLimOrig)
                 set(obj.Axes, 'YLim', yLim);
             end
         end

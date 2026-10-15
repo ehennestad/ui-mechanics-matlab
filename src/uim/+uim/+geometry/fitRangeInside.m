@@ -7,11 +7,11 @@ function range = fitRangeInside(range, bounds)
 %   alone, and is narrowed to bounds instead. Zoom tools use this so a
 %   zoomed view never shows anything outside the original axes limits.
 %
-%   See also uim.geometry.shiftLimitsInside, uim.geometry.intersectRanges
+%   See also uim.geometry.intersectRanges
 
     arguments
-        range (1,2) double
-        bounds (1,2) double
+        range (1,2) double {mustBeMinMaxPair}
+        bounds (1,2) double {mustBeMinMaxPair}
     end
 
     if diff(range) > diff(bounds)
@@ -20,5 +20,12 @@ function range = fitRangeInside(range, bounds)
         range = range - range(1) + bounds(1);
     elseif range(2) > bounds(2)
         range = range - (range(2) - bounds(2));
+    end
+end
+
+function mustBeMinMaxPair(values)
+    if values(1) > values(2)
+        error("uim:geometry:InvalidRange", ...
+            "A range must be ordered as [min, max]; got [%g, %g].", values(1), values(2))
     end
 end
