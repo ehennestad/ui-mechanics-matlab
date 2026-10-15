@@ -75,14 +75,14 @@ classdef TestLayoutUtilities < matlab.unittest.TestCase
 
         function monitorLookupUsesInclusiveBounds(testCase)
             monitors = [1, 1, 100, 100; 101, 1, 100, 100];
-            find = @(point) uim.utility.internal.findMonitorContainingPoint(point, monitors);
+            findMonitor = @(point) uim.utility.internal.findMonitorContainingPoint(point, monitors);
 
-            testCase.verifyEqual(find([50, 50]), 1);
-            testCase.verifyEqual(find([100, 100]), 1, "Far edge pixel belongs to the monitor.");
-            testCase.verifyEqual(find([101, 1]), 2);
-            testCase.verifyEqual(find([150, 50]), 2);
-            testCase.verifyTrue(isnan(find([300, 50])));
-            testCase.verifyTrue(isnan(find([50, 0])));
+            testCase.verifyEqual(findMonitor([50, 50]), 1);
+            testCase.verifyEqual(findMonitor([100, 100]), 1, "Far edge pixel belongs to the monitor.");
+            testCase.verifyEqual(findMonitor([101, 1]), 2);
+            testCase.verifyEqual(findMonitor([150, 50]), 2);
+            testCase.verifyTrue(isnan(findMonitor([300, 50])));
+            testCase.verifyTrue(isnan(findMonitor([50, 0])));
         end
 
         function currentScreenSizeIsAMonitorRectangle(testCase)

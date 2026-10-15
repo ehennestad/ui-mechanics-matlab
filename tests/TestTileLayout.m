@@ -84,10 +84,12 @@ classdef TestTileLayout < matlab.unittest.TestCase
             testCase.verifyEqual(tiledAxes.NumRows, 2);
             testCase.verifyEqual(tiledAxes.NumColumns, 3);
 
-            % PixelPadding is derived from NormalizedPadding and the grid
+            % PixelPadding is derived from NormalizedPadding and the grid.
+            % Tile 5 is row 2, column 2 of 16-by-24 tiles: one tile and one
+            % padding along each axis, plus half a tile and the half-pixel
+            % offset.
             expectedPadding = round(2 * 16 * tiledAxes.NormalizedPadding);
-            expectedCenter = uim.graphics.internal.tileCenter(...
-                5, 3, [16, 24], expectedPadding, [1, 1]);
+            expectedCenter = [24 + 12, 16 + 8] + expectedPadding + 0.5;
             testCase.verifyEqual(tiledAxes.getTileCenterAxesCoords(5), expectedCenter);
 
             for tileNum = [1, 4, 6]
@@ -95,7 +97,12 @@ classdef TestTileLayout < matlab.unittest.TestCase
                 testCase.verifyEqual(tiledAxes.hittest(center(1), center(2)), tileNum);
             end
             testCase.verifyTrue(isnan(tiledAxes.hittest(-5, -5)));
-            testCase.verifyTrue(isvalid(hFigure));
+
+            % Without coordinates, hittest reads the pointer position.
+            pointerPixel = uim.utility.du2px(tiledAxes.Axes, ...
+                tiledAxes.getTileCenterAxesCoords(4), true);
+            hFigure.CurrentPoint = pointerPixel;
+            testCase.verifyEqual(tiledAxes.hittest(), 4);
         end
 
         function tiledAxesShowsImagesAndTextPerTile(testCase)
@@ -107,8 +114,8 @@ classdef TestTileLayout < matlab.unittest.TestCase
 
             hImage = findobj(tiledAxes.Axes, "Type", "image");
             testCase.verifyNumElements(hImage, 1, "All tiles share one image object.");
-            cornerPixel = tiledAxes.getTileCenterAxesCoords(3);
-            testCase.verifyEqual(hImage.CData(round(cornerPixel(2)), round(cornerPixel(1))), ...
+            centerPoint = tiledAxes.getTileCenterAxesCoords(3);
+            testCase.verifyEqual(hImage.CData(round(centerPoint(2)), round(centerPoint(1))), ...
                 uint8(200));
         end
 

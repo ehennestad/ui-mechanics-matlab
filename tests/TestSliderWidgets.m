@@ -52,16 +52,23 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
             slider.Callback = @(~, value) setappdata(hFigure, "SliderValue", value);
 
             hAxes = findall(hFigure, "Tag", "SlideBar Container");
+            knob = findKnob(hAxes);
+
+            % Point at where the knob sits for 0.52, then press the track
+            % from another value: the press moves the value there,
+            % snapped to the 0.1 tick grid.
+            slider.Value = 0.52;
+            targetPoint = [patchCenter(knob), mean(knob.YData)];
+            slider.Value = -0.5;
+            hFigure.CurrentPoint = uim.utility.du2px(hAxes, targetPoint, true);
+
             hBackground = findBackground(hAxes);
             hBackground.ButtonDownFcn(hBackground, [])
 
             testCase.assertTrue(isappdata(hFigure, "SliderValue"), "Callback fired.");
             newValue = getappdata(hFigure, "SliderValue");
-            testCase.verifyGreaterThanOrEqual(newValue, -1);
-            testCase.verifyLessThanOrEqual(newValue, 1);
+            testCase.verifyEqual(newValue, 0.5, "AbsTol", 1e-9);
             testCase.verifyEqual(slider.Value, newValue);
-            testCase.verifyEqual(mod(newValue, 0.1), 0, "AbsTol", 1e-9, ...
-                "Pointer values snap to the tick grid.");
         end
 
         function sliderInCallerAxesUsesPixelTrack(testCase)
@@ -78,6 +85,9 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
 
             slider.Value = 100;
             testCase.verifyEqual(patchCenter(knob), 217, "AbsTol", 0.01);
+            valueLabel = findobj(hAxes, "Type", "text");
+            testCase.verifyEqual(valueLabel.Position(1), 217, "AbsTol", 0.01, ...
+                "The value label follows the knob on the padded track.");
 
             slider.Visible = 'off';
             testCase.verifyEqual(knob.Visible, matlab.lang.OnOffSwitchState.off);
@@ -138,15 +148,21 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
             testCase.addTeardown(@deleteValid, slider);
             slider.Callback = @(~, evt) setappdata(hFigure, "Range", [evt.Low, evt.High]);
 
+            % Point at where the low knob sits for 30, then press the
+            % track: the nearest knob (low) moves there.
+            hLow = findobj(canvas.Axes, "Tag", "Range Slider Low");
+            slider.Low = 30;
+            targetPoint = [patchCenter(hLow), mean(hLow.YData)];
+            slider.Low = 20;
+            hFigure.CurrentPoint = uim.utility.du2px(canvas.Axes, targetPoint, true);
+
             hTrack = findobj(canvas.Axes, "Tag", "Range Slider Track");
             hTrack.ButtonDownFcn(hTrack, [])
 
             testCase.assertTrue(isappdata(hFigure, "Range"), "Callback fired.");
             reported = getappdata(hFigure, "Range");
+            testCase.verifyEqual(reported, [30, 80], "AbsTol", 0.5);
             testCase.verifyEqual(reported, [slider.Low, slider.High]);
-            testCase.verifyLessThanOrEqual(reported(1), reported(2));
-            testCase.verifyGreaterThanOrEqual(reported(1), 0);
-            testCase.verifyLessThanOrEqual(reported(2), 100);
         end
     end
 
@@ -272,6 +288,26 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
 
             widget.Visible = 'off';
             testCase.verifyEqual(knob.Visible, matlab.lang.OnOffSwitchState.off);
+        end
+
+        function playbackControlShowsSingleFrameRange(testCase)
+            hFigure = createHiddenFigure(testCase, [100, 100, 500, 200]);
+
+            % A one-frame stack gives Minimum == Maximum; the knob then
+            % sits at the start of the track.
+            widget = uim.widget.PlaybackControl(hFigure, "Position", [10, 10, 400, 30], ...
+                "Minimum", 1, "Maximum", 1, "Value", 1);
+            testCase.addTeardown(@deleteValid, widget);
+
+            hSliderAxes = findall(hFigure, "Tag", "Playback Widget (Slider Axes)");
+            knob = findobj(hSliderAxes, "Tag", "Button");
+            testCase.verifyEqual(patchCenter(knob), widget.BarPadding, "AbsTol", 0.01);
+
+            widget.Maximum = 5;
+            widget.Value = 5;
+            trackLength = hSliderAxes.Position(3) - 2*widget.BarPadding;
+            testCase.verifyEqual(patchCenter(knob), widget.BarPadding + trackLength, ...
+                "AbsTol", 0.01, "The widget recovers once the range has extent.");
         end
 
         function playbackControlReflectsSpeedPlayStateAndRange(testCase)

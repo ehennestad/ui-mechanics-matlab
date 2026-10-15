@@ -23,7 +23,7 @@ classdef Slider < handle
 
         TickLength = 0;
         TickWidth = 1;
-        TickMode = 'both' % 'over','under', 'both'
+        TickMode = 'both' % 'over', 'under', 'both' or 'underx2' (case-insensitive)
 
         ValueChangedFcn
         ValueChangingFcn

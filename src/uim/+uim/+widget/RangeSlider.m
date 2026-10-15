@@ -365,8 +365,8 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         end
 
         function limits = getValueLimits(obj)
-        %getValueLimits [Min, Max] as doubles, whatever class the host used
-            limits = [double(obj.Min), double(obj.Max)];
+        %getValueLimits [Min, Max] of the slider
+            limits = [obj.Min, obj.Max];
         end
 
         function value = getKnobValue(obj, whichKnob)
@@ -377,8 +377,8 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
                 case 'high'
                     value = double(obj.High);
                 otherwise
-                    error('uim:RangeSlider:UnknownKnob', ...
-                        'Knob must be ''low'' or ''high''; got "%s".', whichKnob)
+                    error("uim:RangeSlider:UnknownKnob", ...
+                        "Knob must be 'low' or 'high'; got ""%s"".", whichKnob)
             end
         end
 

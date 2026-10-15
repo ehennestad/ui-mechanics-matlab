@@ -175,7 +175,7 @@ classdef OverviewIndicator < uim.abstract.Control
             % preserving the data aspect ratio (letterboxed when they
             % differ).
             paddingSize = obj.Padding(1:2) + obj.Padding(3:4);
-            maxInnerSize = obj.ConfiguredSize - paddingSize;
+            maxInnerSize = max(obj.ConfiguredSize - paddingSize, 0);
 
             [obj.LocalScale, frameSize] = uim.widget.internal.letterboxFit(...
                 dataSize', maxInnerSize);

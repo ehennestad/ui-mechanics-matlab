@@ -10,8 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 The coordinate and value arithmetic of the slider family, the scrollbar,
 the overview indicator and the tiled image axes is extracted into pure
-functions that are unit-tested without graphics. Widget behaviour is
-unchanged; the widgets now delegate to:
+functions that are unit-tested without graphics. Apart from the fixes
+listed below, one input is handled differently: `Slider.TickMode` is
+case-insensitive, and an unknown mode raises
+`uim:widget:InvalidTickMode` instead of drawing ticks under the track.
+The widgets delegate to:
 
 - `uim.widget.internal` — `mapValueToPixel`/`mapPixelToValue`,
   `snapToStep`, `nearestRangeKnob`, `tickMarkCoordinates`, `knobOutline`
@@ -36,6 +39,11 @@ only serve one package live in that package's `internal` sub-namespace;
   single element of `CurrentPoint` and errored.
 - `uim.widget.Slider`: the value label was positioned on the full widget
   width instead of the padded knob track.
+- `uim.utility.getCurrentScreenSize`: a point on the last pixel column
+  or row of a monitor counted as outside that monitor.
+- `uim.graphics.TiledImageAxes`: tile hit-testing and tile centres read
+  the height and width scale factors in swapped order, which mattered
+  only when images were rescaled non-uniformly.
 
 ### Tests
 

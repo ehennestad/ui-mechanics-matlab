@@ -647,11 +647,17 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         %
         %   sliderValue is measured from Minimum (a value of 0 sits at the
         %   start of the track), so the same mapping also converts a
-        %   value span into a pixel length.
+        %   value span into a pixel length. A single-value range (for
+        %   example a one-frame stack) has no extent to map onto, so
+        %   every value sits at the start of the track.
 
-            x = uim.widget.internal.mapValueToPixel(sliderValue, ...
-                [0, obj.Maximum - obj.Minimum], obj.BarPadding, ...
-                obj.getTrackLength());
+            valueSpan = obj.Maximum - obj.Minimum;
+            if valueSpan > 0
+                x = uim.widget.internal.mapValueToPixel(sliderValue, ...
+                    [0, valueSpan], obj.BarPadding, obj.getTrackLength());
+            else
+                x = obj.BarPadding + zeros(size(sliderValue));
+            end
         end
 
         function val = getSliderValue(obj, xPosition)
