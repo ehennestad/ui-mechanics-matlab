@@ -379,19 +379,14 @@ classdef PointerManager < handle
 
             % The window-level event data carries no Button; translate
             % the figure SelectionType for tools that check evt.Button.
-            % SelectionType conflates modified left-clicks with other
-            % buttons ('alt' is ctrl+left OR right, 'extend' is
-            % shift+left OR middle), so consult CurrentModifier to report
-            % modifier-left-clicks as button 1. (A ctrl+right-click is
-            % indistinguishable from ctrl+left and also reports 1.)
+            % 'extend' is shift+left OR middle, so CurrentModifier is
+            % consulted to report shift+left as button 1. 'alt' (right OR
+            % ctrl+left) reports 3: on macOS ctrl+click is the secondary
+            % click, so tools leave it to the context menu.
             modifiers = obj.Figure.CurrentModifier;
             switch obj.Figure.SelectionType
                 case 'alt'
-                    if any(strcmp(modifiers, 'control'))
-                        buttonNumber = 1;
-                    else
-                        buttonNumber = 3;
-                    end
+                    buttonNumber = 3;
                 case 'extend'
                     if any(strcmp(modifiers, 'shift'))
                         buttonNumber = 1;
