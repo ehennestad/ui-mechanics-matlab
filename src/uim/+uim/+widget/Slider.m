@@ -23,7 +23,7 @@ classdef Slider < handle
 
         TickLength = 0;
         TickWidth = 1;
-        TickMode = 'both' % 'over','under', 'both'
+        TickMode = 'both' % 'over', 'under', 'both' or 'underx2' (case-insensitive)
 
         ValueChangedFcn
         ValueChangingFcn
@@ -243,57 +243,44 @@ classdef Slider < handle
                 xCoords = obj.Value;
                 yCoords = obj.Axes.YLim(2) .* 1.4; % Ad hoc offset.
             else
-                xCoords = obj.Position(1) + obj.Padding(1) + ...
-                    obj.Position(3) .* (obj.Value - obj.Min) ./ (obj.Max - obj.Min);
+                [trackStart, trackLength] = obj.getTrackExtent();
+                xCoords = uim.widget.internal.mapValueToPixel(...
+                    obj.Value, [obj.Min, obj.Max], trackStart, trackLength);
                 yCoords = obj.Position(2) + obj.Position(4) .* 0.9;
             end
         end
 
         function [xCoords, yCoords] = getKnobCoordinates(obj)
 
-            sliderSize = 15;
-            theta = linspace(0, 2*pi, 200);
+            knobDiameter = 15;
 
             if obj.OwnsAxes
 
-                % Get axes size in pixels
                 axPosition = getpixelposition(obj.Axes);
+                axesSizePixels = axPosition(3:4);
 
-                xrangepx = axPosition(3);
-                yrangepx = axPosition(4);
-
-                % Get axes size in data units.
-                xrangedu = uim.utility.range(obj.Axes.XLim);
-                yrangedu = uim.utility.range(obj.Axes.YLim);
-
-                % Expand axes limits to account for slider moving to the
-                % limits..
+                % Expand the x-limits so the knob stays fully visible at
+                % either end of the value range.
+                xRangeData = uim.utility.range(obj.Axes.XLim);
                 obj.Axes.XLim = [obj.Min, obj.Max] + ...
-                            [-1,1] .* xrangedu .* (sliderSize / xrangepx);
-% %                 obj.Axes.YLim = [0, 1] + ...
-% %                             [-1, 1] .* yrangedu .* (sliderSize / yrangepx);
+                    [-1, 1] .* xRangeData .* (knobDiameter / axesSizePixels(1));
 
-                % Get new x-dim axes size in data units.
-                xrangedu = uim.utility.range(obj.Axes.XLim);
-                yrangedu = uim.utility.range(obj.Axes.YLim);
+                % Data units per pixel after the expansion: scaling the
+                % radii per axis keeps the knob round on screen whatever
+                % the axes limits are.
+                dataUnitsPerPixel = [uim.utility.range(obj.Axes.XLim), ...
+                    uim.utility.range(obj.Axes.YLim)] ./ axesSizePixels;
 
-                rho = ones(size(theta)).*0.5;
-
-                % Calculate radius in x and y of slider handle
-                [xCoords, yCoords] = pol2cart(theta, rho);
-                xCoords = xCoords .* xrangedu .* (sliderSize / xrangepx);
-                yCoords = yCoords .* yrangedu .* (sliderSize / yrangepx);
-
-                xCoords = xCoords + obj.Value;
-                yCoords = yCoords + 0.5;
-
+                [xCoords, yCoords] = uim.widget.internal.knobOutline(...
+                    [obj.Value, 0.5], knobDiameter/2 .* dataUnitsPerPixel);
             else
-            	rho = ones(size(theta)) .* 0.5 .* sliderSize;
-                [xCoords, yCoords] = pol2cart(theta, rho);
+                [trackStart, trackLength] = obj.getTrackExtent();
+                knobCenterX = uim.widget.internal.mapValueToPixel(...
+                    obj.Value, [obj.Min, obj.Max], trackStart, trackLength);
+                knobCenterY = obj.Position(2) + obj.Position(4)/2;
 
-                xCoords = xCoords + obj.Position(1) + obj.Padding(1) + ...
-                    (obj.Position(3)-sum(obj.Padding([1,3]))) .* (obj.Value - obj.Min) ./ (obj.Max - obj.Min);
-                yCoords = yCoords + obj.Position(2) + obj.Position(4)/2;
+                [xCoords, yCoords] = uim.widget.internal.knobOutline(...
+                    [knobCenterX, knobCenterY], knobDiameter/2);
             end
         end
 
@@ -319,33 +306,13 @@ classdef Slider < handle
 
         function [xCoords, yCoords] = getTickCoordinates(obj)
 
-            x1 = obj.Position(1)+obj.Padding(1);
-            x2 = sum(obj.Position([1,3]))-obj.Padding(3);
-
-            % Correct for linewidth
-            x1 = x1+2;
-            x2 = x2-2;
-
-            y1 = obj.Position(2) + obj.Position(4) / 2;
-            y2 = y1 - obj.TickLength;
-
-            if strcmp(obj.TickMode, 'both')
-               y1 = y1+obj.TickLength/2;
-               y2 = y2+obj.TickLength/2;
-            elseif strcmp(obj.TickMode, 'over')
-                y1 = y1+obj.TickLength;
-                y2 = y2+obj.TickLength;
-            elseif strcmp(obj.TickMode, 'underx2')
-                y1 = y1-obj.TickLength;
-                y2 = y2-obj.TickLength;
-            end
-
+            [trackStart, trackLength] = obj.getTrackExtent();
+            yCenter = obj.Position(2) + obj.Position(4) / 2;
             numTicks = 9;
-            xCoords = linspace(x1,x2,numTicks);
-            xCoords = repmat(xCoords, 3, 1);
-            xCoords(3,:) = nan;
 
-            yCoords = repmat([y1;y2;nan], 1, numTicks);
+            [xCoords, yCoords] = uim.widget.internal.tickMarkCoordinates(...
+                [trackStart, trackStart + trackLength], yCenter, ...
+                obj.TickLength, obj.TickMode, numTicks);
 
             if obj.OwnsAxes
                 pixelPoints = [xCoords(:), yCoords(:)];
@@ -353,6 +320,12 @@ classdef Slider < handle
                 xCoords = reshape(dataPoints(:,1), size(xCoords));
                 yCoords = reshape(dataPoints(:,2), size(yCoords));
             end
+        end
+
+        function [trackStart, trackLength] = getTrackExtent(obj)
+        %getTrackExtent Pixel start and length of the knob's travel
+            trackStart = obj.Position(1) + obj.Padding(1);
+            trackLength = obj.Position(3) - sum(obj.Padding([1,3]));
         end
 
         function [xCoords, yCoords] = getBackgroundCoordinates(obj)
@@ -590,22 +563,20 @@ classdef Slider < handle
 
         function moveSlider(obj, ~, ~)
 
-            % NOTE: The CurrentPoint property only updates on mouse
-            % motion if the figure has a value assigned to its
-            % WindowButtonMotionFcn property. This is super weird! And
-            % pontially really fucking confusing if the sliderbar is
-            % created in a figure without a WindowButtonMotionFcn
-
+            % CurrentPoint only follows the pointer while the figure has
+            % a WindowButtonMotionFcn; the constructor guarantees one via
+            % uim.utility.ensurePointerMotionTracking.
             mousePoint = get(obj.Axes, 'CurrentPoint');
 
             if obj.OwnsAxes
                 newValue = mousePoint(1);
             else
-                newValue = (mousePoint(1) - obj.Position(1) - obj.Padding(1)) / (obj.Position(3)-sum(obj.Padding([1,3]))) .* (obj.Max-obj.Min) + obj.Min;
+                [trackStart, trackLength] = obj.getTrackExtent();
+                newValue = uim.widget.internal.mapPixelToValue(...
+                    mousePoint(1), [obj.Min, obj.Max], trackStart, trackLength);
             end
 
-            % Round to nearest point...
-            newValue = round(newValue/obj.Step) * obj.Step;
+            newValue = uim.widget.internal.snapToStep(newValue, obj.Step);
 
             if ~isequal(newValue, obj.Value)
                 obj.valueChangedCallback(newValue)

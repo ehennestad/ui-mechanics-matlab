@@ -265,13 +265,9 @@ classdef ScrollBar < uim.Handle
         function change = checkMoveLimits(obj, change, currentPosition)
         %checkMoveLimits Check that bar will stay in range when moved
 
-            if currentPosition + change < 0 % Todo: Change to obj.Minimum
-                change = -currentPosition;
-            elseif currentPosition + change >= obj.Maximum - obj.VisibleAmount
-                change = obj.Maximum - obj.VisibleAmount - currentPosition;
-            else
-                % All is good
-            end
+            % Todo: Use obj.Minimum for the lower bound once implemented
+            change = uim.widget.internal.clampScrollChange(...
+                change, currentPosition, obj.Maximum, obj.VisibleAmount);
         end
 
         function startScrollbarMove(obj, src, ~)
@@ -332,15 +328,13 @@ classdef ScrollBar < uim.Handle
                 % Use the ScrollHistory to avoid "glitchy" scrolling. For small
                 % movements on a mousepad, scroll values can come in as 0, 1, 1,
                 % -1, 1, 1 even if fingers are moving in on direction.
-                obj.ScrollHistory = cat(1, obj.ScrollHistory(2:5), event.VerticalScrollCount);
+                [isAccepted, obj.ScrollHistory] = ...
+                    uim.widget.internal.acceptScrollStep(...
+                    obj.ScrollHistory, event.VerticalScrollCount);
+                if ~isAccepted; return; end
 
-                if event.VerticalScrollCount > 0 && sum(obj.ScrollHistory) > 0
-                    change = event.VerticalScrollCount .* obj.Maximum ./ 20;    %Todo: Scroll increment should be a property.
-                elseif event.VerticalScrollCount < 0  && sum(obj.ScrollHistory) < 0
-                    change = event.VerticalScrollCount .* obj.Maximum ./ 20;
-                else
-                    return;
-                end
+                % Todo: Scroll increment should be a property.
+                change = event.VerticalScrollCount .* obj.Maximum ./ 20;
             end
 
             change = obj.checkMoveLimits(change, barInitialPosition);
@@ -591,23 +585,18 @@ classdef ScrollBar < uim.Handle
 
             % Todo: Implement obj.Minimum
             newAxesLimits = [0, obj.Maximum]; % + [-1, 1] .* obj.VisibleAmount/2;
-            axesRange = obj.Maximum; % + obj.VisibleAmount;
 
             switch lower(obj.Orientation)
                 case 'horizontal'
                     isDim = [0, 1];
                     obj.Axes.XLim = newAxesLimits;
-                    barLength = axSize(1) .* obj.VisibleAmount ./ axesRange;
-                    %barLength = max([barLength, obj.BarWidth]);
-                    barSize = round( [barLength, obj.BarWidth] );
                 case 'vertical'
                     isDim = [1, 0];
                     obj.Axes.YLim = newAxesLimits;
-                    barLength = axSize(2) .* obj.VisibleAmount ./ obj.Maximum;
-                    barSize = round( [obj.BarWidth, barLength] );
             end
 
-            barSize(~isDim) = round( max([barSize(~isDim), obj.BarWidth]) );
+            barSize = uim.widget.internal.scrollBarSize(axSize, ...
+                obj.Orientation, obj.VisibleAmount, obj.Maximum, obj.BarWidth);
 
             obj.updateTrackLimits() % since axes limits was changed...
 
@@ -670,7 +659,7 @@ classdef ScrollBar < uim.Handle
             switch lower(obj.Orientation)
                 case 'horizontal'
                     xDataTrack = obj.Axes.XLim([1,2,2,1]);
-                    obj.Bar(1).YData = xDataTrack;
+                    obj.Bar(1).XData = xDataTrack;
 
                 case 'vertical'
                     yDataTrack = obj.Axes.YLim([2,1,1,2]);

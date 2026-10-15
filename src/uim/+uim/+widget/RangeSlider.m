@@ -320,43 +320,23 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
         function [xCoords, yCoords] = getTextCoordinates(obj, whichKnob)
 
-            xRangeSlider = obj.Max - obj.Min;
-
-            switch lower(whichKnob)
-                case 'low'
-                    xRelativePosition = (obj.Low - obj.Min) ./ xRangeSlider;
-                case 'high'
-                    xRelativePosition = (obj.High - obj.Min) ./ xRangeSlider;
-            end
-
-            xRangeAxes = obj.Position(3) - sum( obj.Padding([1,3]) );
-            xCoords = obj.Position(1) + obj.Padding(1) + ...
-                xRangeAxes .* xRelativePosition;
+            [trackStart, trackLength] = obj.getTrackExtent();
+            xCoords = uim.widget.internal.mapValueToPixel(...
+                obj.getKnobValue(whichKnob), obj.getValueLimits(), ...
+                trackStart, trackLength);
             yCoords = obj.Position(2) + obj.Position(4) .* 0.85;
         end
 
         function [xCoords, yCoords] = getKnobCoordinates(obj, whichKnob)
 
-            sliderSize = obj.KnobSize;
-            theta = linspace(0, 2*pi, 200);
+            [trackStart, trackLength] = obj.getTrackExtent();
+            knobCenterX = uim.widget.internal.mapValueToPixel(...
+                obj.getKnobValue(whichKnob), obj.getValueLimits(), ...
+                trackStart, trackLength);
+            knobCenterY = obj.Position(2) + obj.Position(4)/2;
 
-            rho = ones(size(theta)) .* 0.5 .* sliderSize;
-            [xCoords, yCoords] = pol2cart(theta, rho);
-
-            xRange = obj.Max - obj.Min;
-
-            switch lower(whichKnob)
-                case 'low'
-                    xRelativePosition = (obj.Low - obj.Min) ./ xRange;
-                case 'high'
-                    xRelativePosition = (obj.High - obj.Min) ./ xRange;
-            end
-
-            xRelativePosition = double(xRelativePosition);
-
-            xCoords = xCoords + obj.Position(1) + obj.Padding(1) + ...
-                (obj.Position(3)-sum(obj.Padding([1,3]))) .* xRelativePosition;
-            yCoords = yCoords + obj.Position(2) + obj.Position(4)/2;
+            [xCoords, yCoords] = uim.widget.internal.knobOutline(...
+                [knobCenterX, knobCenterY], obj.KnobSize/2);
         end
 
         function [xCoords, yCoords] = getTrackCoordinates(obj)
@@ -369,35 +349,37 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
         function [xCoords, yCoords] = getTickCoordinates(obj)
 
-            % Todo....
-
-            x1 = obj.Position(1)+obj.Padding(1);
-            x2 = sum(obj.Position([1,3]))-obj.Padding(3);
-
-            % Correct for linewidth
-            x1 = x1+2;
-            x2 = x2-2;
-
-            y1 = obj.Position(2) + obj.Position(4) / 2;
-            y2 = y1 - obj.TickLength;
-
-            if strcmp(obj.TickMode, 'both')
-               y1 = y1+obj.TickLength/2;
-               y2 = y2+obj.TickLength/2;
-            elseif strcmp(obj.TickMode, 'over')
-                y1 = y1+obj.TickLength;
-                y2 = y2+obj.TickLength;
-            elseif strcmp(obj.TickMode, 'underx2')
-                y1 = y1-obj.TickLength;
-                y2 = y2-obj.TickLength;
-            end
-
+            [trackStart, trackLength] = obj.getTrackExtent();
+            yCenter = obj.Position(2) + obj.Position(4) / 2;
             numTicks = 9;
-            xCoords = linspace(x1,x2,numTicks);
-            xCoords = repmat(xCoords, 3, 1);
-            xCoords(3,:) = nan;
 
-            yCoords = repmat([y1;y2;nan], 1, numTicks);
+            [xCoords, yCoords] = uim.widget.internal.tickMarkCoordinates(...
+                [trackStart, trackStart + trackLength], yCenter, ...
+                obj.TickLength, obj.TickMode, numTicks);
+        end
+
+        function [trackStart, trackLength] = getTrackExtent(obj)
+        %getTrackExtent Pixel start and length of the knobs' travel
+            trackStart = obj.Position(1) + obj.Padding(1);
+            trackLength = obj.Position(3) - sum(obj.Padding([1,3]));
+        end
+
+        function limits = getValueLimits(obj)
+        %getValueLimits [Min, Max] of the slider
+            limits = [obj.Min, obj.Max];
+        end
+
+        function value = getKnobValue(obj, whichKnob)
+        %getKnobValue Value of the 'low' or 'high' knob as a double
+            switch lower(whichKnob)
+                case 'low'
+                    value = double(obj.Low);
+                case 'high'
+                    value = double(obj.High);
+                otherwise
+                    error("uim:RangeSlider:UnknownKnob", ...
+                        "Knob must be 'low' or 'high'; got ""%s"".", whichKnob)
+            end
         end
 
         function updateValuetipString(obj, whichKnob)
@@ -466,15 +448,10 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
             mousePoint = obj.CanvasAxes.CurrentPoint(1, 1:2);
 
-            % Calculate value based on position in axes and relative range
-            % of axes.
-            xRange = obj.Max-obj.Min;
-
-            newValue = (mousePoint(1) - obj.Position(1) - obj.Padding(1)) / ...
-                (obj.Position(3)-sum(obj.Padding([1,3]))) .* xRange + obj.Min;
-
-            % Round to nearest point...
-            newValue = round(newValue/obj.StepSize) * obj.StepSize;
+            [trackStart, trackLength] = obj.getTrackExtent();
+            newValue = uim.widget.internal.mapPixelToValue(...
+                mousePoint(1), obj.getValueLimits(), trackStart, trackLength);
+            newValue = uim.widget.internal.snapToStep(newValue, obj.StepSize);
 
             switch src.Tag
                 case 'Range Slider Low'
@@ -484,19 +461,9 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
                     obj.onValueChanging(newValue, 'high')
                     obj.updateValuetipString('high')
                 otherwise
-                    % Move the knob which is closest to where the track was
-                    % pressed
-                    if newValue <= obj.Low
-                        whichValue = 'low';
-                    elseif newValue >= obj.High
-                        whichValue = 'high';
-                    else
-                        if abs(newValue-obj.Low) > abs(newValue-obj.High)
-                            whichValue = 'high';
-                        else
-                            whichValue = 'low';
-                        end
-                    end
+                    % Move the knob closest to where the track was pressed
+                    whichValue = uim.widget.internal.nearestRangeKnob(...
+                        newValue, obj.Low, obj.High);
 
                     obj.onValueChanging(newValue, whichValue)
                     obj.updateValuetipString(whichValue)

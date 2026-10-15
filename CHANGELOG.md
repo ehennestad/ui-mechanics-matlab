@@ -6,6 +6,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed — UI-free geometry lives in `internal` namespaces
+
+The coordinate and value arithmetic of the slider family, the scrollbar,
+the overview indicator and the tiled image axes is extracted into pure
+functions that are unit-tested without graphics. Apart from the fixes
+listed below, one input is handled differently: `Slider.TickMode` is
+case-insensitive, and an unknown mode raises
+`uim:widget:InvalidTickMode` instead of drawing ticks under the track.
+The widgets delegate to:
+
+- `uim.widget.internal` — `mapValueToPixel`/`mapPixelToValue`,
+  `snapToStep`, `nearestRangeKnob`, `tickMarkCoordinates`, `knobOutline`
+  (Slider, RangeSlider, PlaybackControl); `clampScrollChange`,
+  `acceptScrollStep`, `scrollBarSize` (ScrollBar); `letterboxFit`,
+  `mapDataToFrame`/`mapFrameToData`, `clampLimitsToExtent`,
+  `centeredLimits` (OverviewIndicator).
+- `uim.graphics.internal` — `computeTileLayout`, `tileGridPixelSize`,
+  `tileCenter`, `tileAtPoint` (TiledImageAxes).
+- `uim.utility.internal` — `findMonitorContainingPoint`
+  (getCurrentScreenSize).
+
+Namespace policy: `uim.utility` is the public helper API. Helpers that
+only serve one package live in that package's `internal` sub-namespace;
+`uim.internal` is reserved for helpers shared across namespaces.
+
+### Fixed
+
+- `uim.widget.ScrollBar`: a horizontal scrollbar wrote its track extent
+  to `YData` instead of `XData` when the limits changed.
+- `uim.graphics.TiledImageAxes`: `hittest()` without coordinates read a
+  single element of `CurrentPoint` and errored.
+- `uim.widget.Slider`: the value label was positioned on the full widget
+  width instead of the padded knob track.
+- `uim.utility.getCurrentScreenSize`: a point on the last pixel column
+  or row of a monitor counted as outside that monitor.
+- `uim.graphics.TiledImageAxes` with `TileUnits = 'scaled'`: the axes
+  limits, tile outlines, tile centres and hit-testing read the scale
+  factor in different orders ([height, width] and [x, y]). With images
+  rescaled unevenly the axes did not span the original pixels, and
+  `hittest` and `getTileCenterAxesCoords` disagreed with the drawn
+  tiles. The scale factor is now [x, y] throughout.
+
+### Tests
+
+New headless test classes: `TestWidgetGeometry`, `TestTileLayout`,
+`TestLayoutUtilities`, `TestColorAndDataUtilities`, `TestSliderWidgets`.
+
 ### Added — New widgets: DropDown, Spinner, Readout
 
 Three new Component-family controls, usable on any supported parent
