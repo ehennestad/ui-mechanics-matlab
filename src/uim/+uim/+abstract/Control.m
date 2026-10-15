@@ -38,7 +38,7 @@ classdef Control < uim.abstract.Component
 
             % Reset pointerbehavior
             if ~isempty(obj.Background) && isvalid(obj.Background)
-                uim.utility.setPointerBehavior(obj.Background, [])
+                uim.internal.setPointerBehavior(obj.Background, [])
             end
 
             if ~isempty(obj.MouseReleasedListener)
@@ -71,7 +71,7 @@ classdef Control < uim.abstract.Component
             pointerBehavior.exitFcn     = @obj.onMouseExited;
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            uim.utility.setPointerBehavior(obj.Background, pointerBehavior)
+            uim.internal.setPointerBehavior(obj.Background, pointerBehavior)
         end
 
         function showTooltip(obj)

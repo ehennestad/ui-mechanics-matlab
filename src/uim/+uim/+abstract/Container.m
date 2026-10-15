@@ -45,7 +45,7 @@ classdef Container < uim.abstract.Component
                 hGraphicsParent = obj.Parent;
             end
 
-            args = uim.utility.getAxesToolbarArgs();
+            args = uim.internal.getAxesToolbarArgs();
 
             obj.CanvasAxes = axes('Parent', hGraphicsParent, args{:});
             hold(obj.CanvasAxes, 'on');
@@ -64,7 +64,7 @@ classdef Container < uim.abstract.Component
                 obj.CanvasAxes.XLim = [1, obj.Position(3)];
             end
 
-            uim.utility.disableAxesInteractivity(obj.CanvasAxes)
+            uim.internal.disableAxesInteractivity(obj.CanvasAxes)
 
             obj.Canvas = obj.CanvasAxes;
         end

@@ -1,7 +1,7 @@
 function setPointerBehavior(hObj, pointerBehavior)
 %setPointerBehavior Set hover pointer behavior on an object, if possible.
 %
-%   uim.utility.setPointerBehavior(hObj, pointerBehavior) assigns the
+%   uim.internal.setPointerBehavior(hObj, pointerBehavior) assigns the
 %   given pointer behavior struct (or [] to clear it) to a graphics
 %   object, using the Image Processing Toolbox pointer manager.
 %

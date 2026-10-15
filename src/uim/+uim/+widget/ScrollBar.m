@@ -209,7 +209,7 @@ classdef ScrollBar < uim.Handle
             pointerBehavior.exitFcn     = @(s,e)obj.lowlightBar;
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            uim.utility.setPointerBehavior(obj.Bar(2), pointerBehavior)
+            uim.internal.setPointerBehavior(obj.Bar(2), pointerBehavior)
         end
 
         function highlightBar(obj)
@@ -465,7 +465,7 @@ classdef ScrollBar < uim.Handle
             obj.Axes.XLim = [0,1];
             obj.Axes.YLim = [0,1];
 
-            uim.utility.disableAxesInteractivity(obj.Axes)
+            uim.internal.disableAxesInteractivity(obj.Axes)
 
             switch obj.Direction
                 case 'normal'

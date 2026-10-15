@@ -126,7 +126,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             obj.Figure = ancestor(parentHandle, 'figure');
             % Draggable parts read CurrentPoint from motion listeners; in
             % java figures that requires a WindowButtonMotionFcn.
-            uim.utility.ensurePointerMotionTracking(obj.Figure)
+            uim.internal.ensurePointerMotionTracking(obj.Figure)
 
             obj.parseInputs(varargin{:})
 
@@ -334,15 +334,15 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
                 % policy to the caller, but the button axes is ours.
                 obj.SliderAxes = parentHandle;
                 obj.ButtonAxes = axes('Parent', parentHandle.Parent);
-                uim.utility.disableAxesInteractivity(obj.ButtonAxes)
+                uim.internal.disableAxesInteractivity(obj.ButtonAxes)
             else
-                args = uim.utility.getAxesToolbarArgs();
+                args = uim.internal.getAxesToolbarArgs();
 
                 hAxes = gobjects(1,2);
 
                 for i = 1:2
                     hAxes(i) = axes('Parent', parentHandle, args{:});
-                    uim.utility.disableAxesInteractivity(hAxes(i))
+                    uim.internal.disableAxesInteractivity(hAxes(i))
                 end
 
                 obj.ButtonAxes = hAxes(1);
@@ -733,7 +733,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             pointerBehavior.exitFcn     = @(s,e,hObj)obj.onMouseExited(h);
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            uim.utility.setPointerBehavior(h, pointerBehavior)
+            uim.internal.setPointerBehavior(h, pointerBehavior)
         end
 
         function onMouseEntered(obj, h, varargin)
@@ -775,7 +775,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             pointerBehavior.exitFcn     = @(s,e,hObj)obj.onMouseExitedRangeButton(h);
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            uim.utility.setPointerBehavior(h, pointerBehavior)
+            uim.internal.setPointerBehavior(h, pointerBehavior)
         end
 
         function onMouseEnteredRangeButton(obj, ~, varargin)

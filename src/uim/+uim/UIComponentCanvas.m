@@ -215,7 +215,7 @@ classdef UIComponentCanvas < handle
         % Important. HitTest and Pickable parts need to be on and visible
         % for children of the axes to be able to capture mouseclicks.!
 
-            args = uim.utility.getAxesToolbarArgs();
+            args = uim.internal.getAxesToolbarArgs();
 
             obj.Axes = axes(obj.Parent, args{:});
 
@@ -230,7 +230,7 @@ classdef UIComponentCanvas < handle
 
             obj.setAxesLimits()
 
-            uim.utility.disableAxesInteractivity(obj.Axes)
+            uim.internal.disableAxesInteractivity(obj.Axes)
         end
 
         function configureParentPositionChangedListener(obj)
@@ -614,7 +614,7 @@ classdef UIComponentCanvas < handle
 
         function hAxes = createComponentAxes(hParent)
 
-            args = uim.utility.getAxesToolbarArgs();
+            args = uim.internal.getAxesToolbarArgs();
 
             hAxes = axes(hParent, args{:});
 
@@ -627,7 +627,7 @@ classdef UIComponentCanvas < handle
             axis(hAxes, 'equal')
             hold(hAxes, 'on')
 
-            uim.utility.disableAxesInteractivity(hAxes)
+            uim.internal.disableAxesInteractivity(hAxes)
         end
     end
 end

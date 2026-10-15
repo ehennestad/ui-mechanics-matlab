@@ -61,7 +61,7 @@ classdef PointerManager < handle
             % keeps its no-op for the figure's lifetime: widgets rely on
             % the same mechanism, so it must survive this manager's
             % deletion.
-            uim.utility.ensurePointerMotionTracking(hFigure)
+            uim.internal.ensurePointerMotionTracking(hFigure)
 
             % Create listeners for mouse event in figure. Button presses
             % are captured at the window level (not via the axes

@@ -76,7 +76,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
             % Knob drags read CurrentPoint from motion listeners; in
             % java figures that requires a WindowButtonMotionFcn.
-            uim.utility.ensurePointerMotionTracking(...
+            uim.internal.ensurePointerMotionTracking(...
                 ancestor(obj.CanvasAxes, 'figure'))
 
             obj.initializeFiniteRange()
@@ -407,7 +407,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             pointerBehavior.exitFcn     = @(s,e,hObj)obj.onMouseExitKnob(h);
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            uim.utility.setPointerBehavior(h, pointerBehavior)
+            uim.internal.setPointerBehavior(h, pointerBehavior)
         end
     end
 
