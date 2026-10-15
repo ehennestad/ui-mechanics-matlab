@@ -26,9 +26,9 @@ classdef TabGroup < uim.abstract.Container
 
         TabButtonGroup uim.control.Button
         TabSeparators uim.decorator.Separator
-        TabPanels uim.Panel
+        TabPanels uim.container.Panel
 
-        Tabs uim.Tab
+        Tabs uim.container.Tab
     end
 
     events
