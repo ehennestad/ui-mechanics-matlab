@@ -36,7 +36,7 @@ classdef NameValueAssignable < uim.Handle & matlab.mixin.SetGet
             propArray = mc.PropertyList(keep);
             propertyNames = {propArray.Name};
 
-            S = uim.utility.nameValuePairsToStruct(nvPairs);
+            S = uim.mixin.internal.nameValuePairsToStruct(nvPairs);
 
             % Only set varargins...
 

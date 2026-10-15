@@ -66,7 +66,7 @@ classdef MessageBox < uim.mixin.Resizable
             obj.ReferenceAxes = hParent;
             % Draggable parts read CurrentPoint from motion listeners; in
             % java figures that requires a WindowButtonMotionFcn.
-            uim.utility.ensurePointerMotionTracking(...
+            uim.internal.ensurePointerMotionTracking(...
                 ancestor(hParent, 'figure'))
 
             obj.createAxes()
@@ -124,7 +124,7 @@ classdef MessageBox < uim.mixin.Resizable
             obj.Axes.HandleVisibility = 'off';
             obj.Axes.Tag = 'Message Box';
 
-            uim.utility.disableAxesInteractivity(obj.Axes)
+            uim.internal.disableAxesInteractivity(obj.Axes)
 
             % Get parent position
             origParentUnits = obj.ReferenceAxes.Units;
@@ -236,7 +236,7 @@ classdef MessageBox < uim.mixin.Resizable
             pointerBehavior.exitFcn     = @obj.onMouseExitedButton;
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            uim.utility.setPointerBehavior(obj.CloseButton, pointerBehavior)
+            uim.internal.setPointerBehavior(obj.CloseButton, pointerBehavior)
             uistack(obj.CloseButton, 'top')
 
         end % \createTextbox

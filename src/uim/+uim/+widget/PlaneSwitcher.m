@@ -48,7 +48,7 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
             obj.Figure = ancestor(hParent, 'figure');
             % Draggable parts read CurrentPoint from motion listeners; in
             % java figures that requires a WindowButtonMotionFcn.
-            uim.utility.ensurePointerMotionTracking(obj.Figure)
+            uim.internal.ensurePointerMotionTracking(obj.Figure)
 
             obj.resolveParent(hParent)
 
@@ -278,7 +278,7 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
             pointerBehavior.exitFcn     = @(s,e,hObj)obj.onMouseExited(h);
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            uim.utility.setPointerBehavior(h, pointerBehavior)
+            uim.internal.setPointerBehavior(h, pointerBehavior)
         end
 
         function onMouseEntered(obj, h, varargin)

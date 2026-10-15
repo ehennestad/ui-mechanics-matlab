@@ -51,7 +51,7 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
             obj.ParentFigure = ancestor(hAxes, 'figure');
             % Knob drags read CurrentPoint from motion listeners; in
             % java figures that requires a WindowButtonMotionFcn.
-            uim.utility.ensurePointerMotionTracking(obj.ParentFigure)
+            uim.internal.ensurePointerMotionTracking(obj.ParentFigure)
             obj.parseInputs(varargin{:})
             obj.drawFrameMarker()
             obj.IsConstructed = true;
@@ -118,7 +118,7 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
 
             % The knobs keep HitTest on for dragging, so interactive
             % data tips are excluded per object.
-            uim.utility.excludeFromDataTips(allHandles)
+            uim.internal.excludeFromDataTips(allHandles)
 
             obj.setPointerBehavior(obj.TopButtonHandle)
             obj.setPointerBehavior(obj.BottomButtonHandle)
@@ -131,7 +131,7 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
             pointerBehavior.exitFcn     = @(s,e,hObj)obj.onMouseExitSlider(h);
             pointerBehavior.traverseFcn = [];%@obj.moving;
 
-            uim.utility.setPointerBehavior(h, pointerBehavior)
+            uim.internal.setPointerBehavior(h, pointerBehavior)
         end
 
         function onVisibleChanged(obj)

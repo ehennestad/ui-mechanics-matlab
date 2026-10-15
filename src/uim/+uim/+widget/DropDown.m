@@ -133,7 +133,7 @@ classdef DropDown < uim.abstract.Control
             % mouse move otherwise.
             for i = 1:numel(obj.ItemPatches)
                 if isvalid(obj.ItemPatches(i))
-                    uim.utility.setPointerBehavior(obj.ItemPatches(i), [])
+                    uim.internal.setPointerBehavior(obj.ItemPatches(i), [])
                 end
             end
 
@@ -293,7 +293,7 @@ classdef DropDown < uim.abstract.Control
                 obj.SelectionColor, 0.15 * isequal(itemIndex, obj.ValueIndex));
             pointerBehavior.traverseFcn = [];
 
-            uim.utility.setPointerBehavior(hRow, pointerBehavior)
+            uim.internal.setPointerBehavior(hRow, pointerBehavior)
         end
 
         function onVisibleChanged(obj, ~)

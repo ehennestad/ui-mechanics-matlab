@@ -34,9 +34,9 @@ function disableAxesInteractivity(hAxes)
     % (observed on R2026a). Exclude every object drawn into the axes
     % from the data-cursor machinery instead. The listener's lifetime
     % is tied to the axes.
-    uim.utility.excludeFromDataTips(hAxes.Children)
+    uim.internal.excludeFromDataTips(hAxes.Children)
     addlistener(hAxes, 'ChildAdded', ...
-        @(~, evt) uim.utility.excludeFromDataTips(evt.ChildNode));
+        @(~, evt) uim.internal.excludeFromDataTips(evt.ChildNode));
 end
 
 function suppressUnsupportedFigureWarning()

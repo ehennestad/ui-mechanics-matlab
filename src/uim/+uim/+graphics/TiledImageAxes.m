@@ -225,7 +225,7 @@ methods (Access = private) % Methods for setting up gui
         % Since axes will hold image data, the yaxis is reversed.
         obj.Axes_.YDir = 'reverse';
 
-        uim.utility.disableAxesInteractivity(obj.Axes_)
+        uim.internal.disableAxesInteractivity(obj.Axes_)
 
         % Set colormap
         colormap(obj.Axes_, obj.TileConfiguration.DefaultColorMap)
@@ -309,12 +309,12 @@ methods (Access = private) % Methods for setting up gui
                 pointerBehavior.enterFcn    = @(s,e,num)obj.onMouseEnteredTile(i);
                 pointerBehavior.exitFcn     = @(s,e,num)obj.onMouseExitedTile(i);
 
-                uim.utility.setPointerBehavior(obj.TileOutline(i), pointerBehavior)
+                uim.internal.setPointerBehavior(obj.TileOutline(i), pointerBehavior)
             end
 
         else % Reset
             for i = 1:numel(obj.TileOutline)
-                uim.utility.setPointerBehavior(obj.TileOutline(i), [])
+                uim.internal.setPointerBehavior(obj.TileOutline(i), [])
             end
         end
     end

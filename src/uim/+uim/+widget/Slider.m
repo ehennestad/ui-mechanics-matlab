@@ -81,7 +81,7 @@ classdef Slider < handle
 
             % Knob drags read CurrentPoint from motion listeners; in
             % java figures that requires a WindowButtonMotionFcn.
-            uim.utility.ensurePointerMotionTracking(...
+            uim.internal.ensurePointerMotionTracking(...
                 ancestor(obj.Axes, 'figure'))
 
             obj.IsConstructed = true;
@@ -224,7 +224,7 @@ classdef Slider < handle
             obj.Axes.XLim = [obj.Min, obj.Max];
             obj.OwnsAxes = true;
 
-            uim.utility.disableAxesInteractivity(obj.Axes)
+            uim.internal.disableAxesInteractivity(obj.Axes)
         end
 
         function plotTicks(obj)
@@ -585,7 +585,7 @@ classdef Slider < handle
 
             % CurrentPoint only follows the pointer while the figure has
             % a WindowButtonMotionFcn; the constructor guarantees one via
-            % uim.utility.ensurePointerMotionTracking.
+            % uim.internal.ensurePointerMotionTracking.
             mousePoint = get(obj.Axes, 'CurrentPoint');
 
             if obj.OwnsAxes

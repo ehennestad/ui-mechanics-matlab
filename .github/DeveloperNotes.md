@@ -268,7 +268,7 @@ regimes before trusting a widget.
   motion callback (a `PointerManager`, a host app, a debug callback),
   which makes it look intermittent.
 - **Rule**: every widget that reads `CurrentPoint` from motion listeners
-  must call `uim.utility.ensurePointerMotionTracking(hFigure)` in its
+  must call `uim.internal.ensurePointerMotionTracking(hFigure)` in its
   constructor. It assigns a no-op `WindowButtonMotionFcn` only when the
   slot is empty. (This has been independently rediscovered at least
   twice; `PointerManager`'s dummy motion callback is the same fix from
@@ -295,7 +295,7 @@ regimes before trusting a widget.
   (web figures), and the per-object `DataCursor` behavior (java
   figures).
 - **Rule**: every axes the toolbox creates must go through
-  `uim.utility.disableAxesInteractivity(hAxes)`, which handles all
+  `uim.internal.disableAxesInteractivity(hAxes)`, which handles all
   three (including a `ChildAdded` listener for objects plotted later).
   Widgets drawing into a *caller's* axes must not touch the axes —
   use primitive `line()` objects (no `DataTipTemplate`) for
@@ -309,7 +309,7 @@ regimes before trusting a widget.
   callbacks for the object the cursor was on, even after that object is
   deleted.
 - **Rule**: deregister before deleting —
-  `uim.utility.setPointerBehavior(h, [])` for every registered object in
+  `uim.internal.setPointerBehavior(h, [])` for every registered object in
   the teardown path (see `uim.abstract.Control.delete` and
   `uim.widget.DropDown.close`), and make hover callbacks
   `isvalid`-guarded.
