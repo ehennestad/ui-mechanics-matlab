@@ -29,7 +29,7 @@ classdef Resizable < uim.Handle
 %   [ ] Update references in different apps/scripts/functions
 
     properties (Abstract)
-        Position
+        Position % [x, y, width, height] of the object; subclasses define it
     end
 
     properties

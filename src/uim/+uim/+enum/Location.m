@@ -29,6 +29,10 @@ classdef Location < handle
 
     methods
         function obj = Location(key)
+        %Location Create a member that carries its lowercase key
+        %
+        %   MATLAB calls this for each enumeration member; use the members,
+        %   e.g. uim.enum.Location.NORTHWEST, rather than calling it.
             obj.Key = key;
         end
     end

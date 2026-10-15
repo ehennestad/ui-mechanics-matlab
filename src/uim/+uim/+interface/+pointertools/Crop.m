@@ -32,7 +32,7 @@ classdef Crop < uim.interface.PointerTool
 %   See also uim.interface.PointerManager, drawrectangle
 
     properties (Constant)
-        ExitMode = 'previous';
+        ExitMode = 'previous'; % On toggle-off, PointerManager makes the suspended previous tool current
     end
 
     properties

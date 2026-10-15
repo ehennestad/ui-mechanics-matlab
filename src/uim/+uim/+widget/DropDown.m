@@ -60,6 +60,7 @@ classdef DropDown < uim.abstract.Control
         % List colors take effect the next time the list opens.
 
         ListBackgroundColor = []        % Background of the open list. Empty: follow BackgroundColor
+        % Opacity of the open list background, 0 (transparent) to 1 (opaque)
         ListBackgroundAlpha (1,1) double ...
             {mustBeGreaterThanOrEqual(ListBackgroundAlpha, 0), ...
              mustBeLessThanOrEqual(ListBackgroundAlpha, 1)} = 0.9

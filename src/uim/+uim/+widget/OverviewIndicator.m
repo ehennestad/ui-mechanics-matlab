@@ -45,7 +45,7 @@ classdef OverviewIndicator < uim.abstract.Control
 %   See also uim.UIComponentCanvas, uim.abstract.Control
 
     properties (Constant) % Inherited from Component
-        Type = 'OverviewIndicator'
+        Type = 'OverviewIndicator' % Component type name
     end
 
     properties

@@ -24,7 +24,7 @@ classdef ZoomOut < uim.interface.PointerTool & uim.mixin.Zoomable
 %   uim.interface.PointerManager
 
     properties (Constant)
-        ExitMode = 'previous';
+        ExitMode = 'previous'; % On toggle-off, PointerManager makes the suspended previous tool current
     end
 
     properties % Implement abstract properties from zoom

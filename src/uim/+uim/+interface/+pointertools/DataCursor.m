@@ -28,7 +28,7 @@ classdef DataCursor < uim.interface.PointerTool
     %   3) Should it work on mouseover, or only on button click?
 
     properties (Constant)
-        ExitMode = 'default';
+        ExitMode = 'default'; % On toggle-off, PointerManager makes the manager's DefaultPointerTool current
     end
 
     properties

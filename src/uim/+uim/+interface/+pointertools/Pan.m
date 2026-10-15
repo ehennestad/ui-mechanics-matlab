@@ -24,7 +24,7 @@ classdef Pan < uim.interface.PointerTool
 %   See also uim.interface.PointerManager, uim.interface.pointertools.ZoomIn
 
     properties (Constant)
-        ExitMode = 'previous';
+        ExitMode = 'previous'; % On toggle-off, PointerManager makes the suspended previous tool current
     end
 
     properties
