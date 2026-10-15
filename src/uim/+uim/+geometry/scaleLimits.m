@@ -4,7 +4,9 @@ function limits = scaleLimits(limits, zoomFactor)
 %   limits = uim.geometry.scaleLimits(limits, zoomFactor) moves
 %   each end outwards by zoomFactor times the interval width, so a
 %   positive zoomFactor zooms out and a negative one zooms in
-%   (zoomFactor -0.25 halves the width; 0.5 doubles it).
+%   (zoomFactor -0.25 halves the width; 0.5 doubles it). zoomFactor -0.5
+%   collapses the interval to its centre, and a smaller value reverses
+%   it.
 
     arguments
         limits (1,2) double

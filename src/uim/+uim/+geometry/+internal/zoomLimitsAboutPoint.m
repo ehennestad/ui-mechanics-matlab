@@ -4,11 +4,12 @@ function [xLimNew, yLimNew] = zoomLimitsAboutPoint(xLim, yLim, zoomFactor, ...
 %
 %   [xLimNew, yLimNew] = uim.geometry.internal.zoomLimitsAboutPoint(...
 %       xLim, yLim, zoomFactor, pointerPixel, axesSizePixels, pointerData,
-%       yDir) scales both limits by zoomFactor (see scaleLimits) and then
-%   shifts them so the data point pointerData ([x, y]) remains under the
-%   pointer, which sits at pointerPixel ([x, y] pixels from the axes'
-%   lower-left corner) in an axes of axesSizePixels ([width, height]).
-%   yDir is the axes YDir ('normal' or 'reverse').
+%       yDir) scales both limits by zoomFactor (see
+%   uim.geometry.scaleLimits) and then shifts them so the data point
+%   pointerData ([x, y]) remains under the pointer, which sits at
+%   pointerPixel ([x, y] pixels from the axes' lower-left corner) in an
+%   axes of axesSizePixels ([width, height]). yDir is the axes YDir
+%   ('normal' or 'reverse').
 %
 %   The quarter-pixel terms in the shift have no known derivation. The
 %   data point under the pointer can move by up to about one screen

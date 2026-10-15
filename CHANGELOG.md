@@ -16,7 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   positioning), `cropImageToContent` (icon rasters).
 - `uim.mixin.internal`: `rescaleChildPosition` (resizable children).
 
-### Changed
+### Added
 
 - New `uim.geometry` package for axis-limit, range and rectangle
   arithmetic that hosts can use too: `scaleLimits`, `intersectRanges`,
@@ -28,7 +28,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `shiftLimitsInside`. Interaction helpers (`cropMaskOutline`,
   `isClickWithoutDrag`, `keyToPointerToolName`,
   `rectangleOutlineBetween`, `selectionTypeToButton`) stay in
-  `uim.interface.internal`.
+  `uim.interface.internal`. `TestGeometry` covers both packages.
+
+### Changed
+
 - Moved classes and functions into the package that owns them:
   `uim.interface.Zoomable` and `uim.abstract.ToolbarComponent` are now
   `uim.mixin.Zoomable` and `uim.mixin.ToolbarComponent` (both are mixins,
@@ -88,7 +91,7 @@ with an exclusive width but read the rectangle back with an inclusive
 one, so re-activating the tool on an existing crop lost a pixel each
 time. Both conversions now use inclusive pixel limits.
 
-### Changed — UI-free geometry lives in `internal` namespaces
+### Changed — UI-free widget geometry is extracted into pure functions
 
 The coordinate and value arithmetic of the slider family, the scrollbar,
 the overview indicator and the tiled image axes is extracted into pure
@@ -110,11 +113,12 @@ The widgets delegate to:
 - `uim.utility.internal` — `findMonitorContainingPoint`
   (getCurrentScreenSize).
 
-Namespace policy: `uim.utility` is the public helper API, frozen from
-the first release. An `internal` namespace is not public API. A helper
-lives in the `internal` namespace of the domain it belongs to, for
-example limit arithmetic in `uim.geometry.internal`, which is usually
-the package of its only caller.
+Namespace policy: `uim.utility` and `uim.geometry` are the public
+helper API, frozen from the first release. An `internal` namespace is
+not public API. A helper lives in the `internal` namespace of the domain
+it belongs to, not necessarily its caller's package: the tool-specific
+limit arithmetic in `uim.geometry.internal` is called from
+`uim.interface`, `uim.widget` and `uim.mixin`.
 
 ### Fixed
 

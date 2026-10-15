@@ -164,21 +164,21 @@ classdef TestGeometry < matlab.unittest.TestCase
 
         function limitsInsideExtentAreUnchanged(testCase)
             limits = [10, 20; 30, 40];
-            clamped = uim.geometry.internal.shiftLimitsInside(limits, [0, 100; 0, 100]);
-            testCase.verifyEqual(clamped, limits);
+            shifted = uim.geometry.internal.shiftLimitsInside(limits, [0, 100; 0, 100]);
+            testCase.verifyEqual(shifted, limits);
         end
 
         function limitsAreShiftedBackInsideExtent(testCase)
             extent = [0, 100; 0, 100];
-            clamped = uim.geometry.internal.shiftLimitsInside([95, 105; -5, 5], extent);
-            testCase.verifyEqual(clamped, [90, 100; 0, 10]);
+            shifted = uim.geometry.internal.shiftLimitsInside([95, 105; -5, 5], extent);
+            testCase.verifyEqual(shifted, [90, 100; 0, 10]);
         end
 
         function oversizedWindowIsShiftedByNetOvershoot(testCase)
             % A window wider than the extent cannot fit: the two edge
             % corrections cancel to a net shift of the window.
-            clamped = uim.geometry.internal.shiftLimitsInside([-10, 120; 0, 50], [0, 100; 0, 100]);
-            testCase.verifyEqual(clamped, [-20, 110; 0, 50]);
+            shifted = uim.geometry.internal.shiftLimitsInside([-10, 120; 0, 50], [0, 100; 0, 100]);
+            testCase.verifyEqual(shifted, [-20, 110; 0, 50]);
         end
 
         function centeredLimitsSurroundTheCenter(testCase)

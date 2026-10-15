@@ -7,6 +7,9 @@ function range = fitRangeInside(range, bounds)
 %   alone, and is narrowed to bounds instead. Zoom tools use this so a
 %   zoomed view never shows anything outside the original axes limits.
 %
+%   Both inputs must be ordered [min, max]; a reversed range or bounds
+%   raises uim:geometry:InvalidRange.
+%
 %   See also uim.geometry.intersectRanges
 
     arguments

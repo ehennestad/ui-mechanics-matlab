@@ -1,9 +1,10 @@
 classdef TestInteractionGeometry < matlab.unittest.TestCase
 %TestInteractionGeometry Unit tests for the UI-free maths in uim.interface.internal
 %
-%   Zoom, pan, axis-drag, selection-rectangle and crop arithmetic, plus
-%   the press/key translations of the PointerManager, tested without
-%   any graphics.
+%   Click-without-drag detection, the selection-rectangle and crop-mask
+%   outlines, and the press/key translations of the PointerManager,
+%   tested without any graphics. The limit arithmetic is tested in
+%   TestGeometry.
 
     methods (TestClassSetup)
         function addStandaloneSource(testCase)

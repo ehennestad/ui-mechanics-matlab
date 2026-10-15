@@ -284,7 +284,7 @@ classdef OverviewIndicator < uim.abstract.Control
         end
 
         function applyViewFromUser(obj, newLimits)
-        %applyViewFromUser Clamp to the data extent, update and notify
+        %applyViewFromUser Shift the view inside the data extent, update and notify
 
             newLimits = uim.geometry.internal.shiftLimitsInside(...
                 newLimits, obj.DataLimits);
