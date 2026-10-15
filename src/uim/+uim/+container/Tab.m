@@ -21,8 +21,8 @@ classdef Tab < uim.Handle & uim.mixin.NameValueAssignable
         function obj = Tab(hParent, varargin)
 
             % Assert that parent is a tabgroup.
-            assertMsg = 'Parent must be an instance of uim.TabGroup';
-            assert(isa(hParent, 'uim.TabGroup'), assertMsg)
+            assertMsg = 'Parent must be an instance of uim.container.TabGroup';
+            assert(isa(hParent, 'uim.container.TabGroup'), assertMsg)
 
             obj.Parent = hParent;
             obj.parseInputs(varargin{:});
@@ -30,7 +30,7 @@ classdef Tab < uim.Handle & uim.mixin.NameValueAssignable
             % Create tab panel (todo: Add more properties?)
             % Since tabgroup itself is a virtual container, need to add the
             % panel in the tabgroups parent handle
-            obj.Panel = uim.Panel(obj.Parent.Parent, ...
+            obj.Panel = uim.container.Panel(obj.Parent.Parent, ...
                 'BackgroundColor', obj.BackgroundColor);
 
             % Add tab to the tabgroup

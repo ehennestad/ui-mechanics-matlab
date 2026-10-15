@@ -876,7 +876,7 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 "uim:Container:PrivateCanvasUnsupportedOnOverlay");
 
             % A Panel wraps a real uipanel, which can not live on a canvas.
-            testCase.verifyError(@() uim.Panel(hAxes), ...
+            testCase.verifyError(@() uim.container.Panel(hAxes), ...
                 "uim:Panel:CanvasParentNotSupported");
 
             % Axes inside a tiled layout can not host a sibling overlay.
