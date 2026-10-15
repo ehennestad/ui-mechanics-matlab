@@ -12,7 +12,7 @@ function propertyNames = findProperties(objectOrClassName, attributeName, attrib
     elseif isobject(objectOrClassName)
         metaClass = metaclass(objectOrClassName);
     else
-        error("uim:utility:findProperties:InvalidInput", ...
+        error("uim:findProperties:InvalidInput", ...
             "Input must be an object or class name.")
     end
 
@@ -24,7 +24,7 @@ function propertyNames = findProperties(objectOrClassName, attributeName, attrib
 
     attributeName = char(attributeName);
     if isempty(propertyList) || ~isprop(propertyList(1), attributeName)
-        error("uim:utility:findProperties:InvalidAttribute", ...
+        error("uim:findProperties:InvalidAttribute", ...
             "'%s' is not a property metadata attribute.", attributeName)
     end
 

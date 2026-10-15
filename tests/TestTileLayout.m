@@ -43,7 +43,7 @@ classdef TestTileLayout < matlab.unittest.TestCase
         function layoutRejectsUnknownPlotOrder(testCase)
             testCase.verifyError(...
                 @() uim.graphics.internal.computeTileLayout([2, 3], [2, 2], 1, 'spiral'), ...
-                "uim:graphics:InvalidPlotOrder");
+                "uim:computeTileLayout:InvalidPlotOrder");
         end
 
         function tileCenterFollowsRowwiseNumbering(testCase)

@@ -23,7 +23,7 @@ end
 
 function mustBeStrictlyIncreasing(limits)
     if ~(limits(2) > limits(1))
-        error("uim:widget:InvalidLimits", ...
+        error("uim:mapValueToPixel:InvalidLimits", ...
             "Limits must be strictly increasing; got [%g, %g].", limits(1), limits(2))
     end
 end

@@ -8,7 +8,7 @@ function range = fitRangeInside(range, bounds)
 %   zoomed view never shows anything outside the original axes limits.
 %
 %   Both inputs must be ordered [min, max]; a reversed range or bounds
-%   raises uim:geometry:InvalidRange.
+%   raises uim:fitRangeInside:InvalidRange.
 %
 %   See also uim.geometry.intersectRanges
 
@@ -28,7 +28,7 @@ end
 
 function mustBeMinMaxPair(values)
     if values(1) > values(2)
-        error("uim:geometry:InvalidRange", ...
+        error("uim:fitRangeInside:InvalidRange", ...
             "A range must be ordered as [min, max]; got [%g, %g].", values(1), values(2))
     end
 end

@@ -12,14 +12,14 @@ classdef EventData < event.EventData & dynamicprops
                 inputs = inputs{1};
             end
             if mod(numel(inputs), 2) ~= 0
-                error("uim:event:EventData:InvalidPairs", ...
+                error("uim:EventData:InvalidPairs", ...
                     "Event data must be provided as name-value pairs.")
             end
 
             for i = 1:2:numel(inputs)
                 propertyName = char(string(inputs{i}));
                 if ~isvarname(propertyName)
-                    error("uim:event:EventData:InvalidName", ...
+                    error("uim:EventData:InvalidName", ...
                         "'%s' is not a valid event-data property name.", propertyName)
                 end
                 addprop(obj, propertyName);

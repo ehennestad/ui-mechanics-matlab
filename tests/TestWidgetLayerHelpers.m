@@ -24,10 +24,10 @@ classdef TestWidgetLayerHelpers < matlab.unittest.TestCase
         function contentOffsetRejectsUnknownAlignment(testCase)
             testCase.verifyError(@() uim.control.internal.contentOffsetInBox(...
                 [100, 40], [30, 10], zeros(1, 4), 'justified', 'middle'), ...
-                "uim:control:InvalidAlignment");
+                "uim:contentOffsetInBox:InvalidAlignment");
             testCase.verifyError(@() uim.control.internal.contentOffsetInBox(...
                 [100, 40], [30, 10], zeros(1, 4), 'left', 'baseline'), ...
-                "uim:control:InvalidAlignment");
+                "uim:contentOffsetInBox:InvalidAlignment");
         end
 
         function requestedIconSizeDrivesTheLongDimension(testCase)
@@ -61,7 +61,7 @@ classdef TestWidgetLayerHelpers < matlab.unittest.TestCase
             testCase.verifyEqual(start('middle'), 45);
             testCase.verifyEqual(start('right'), 80);
             testCase.verifyEqual(start('bottom'), 80);
-            testCase.verifyError(@() start('sideways'), "uim:widget:InvalidAlignment");
+            testCase.verifyError(@() start('sideways'), "uim:alignRunStart:InvalidAlignment");
         end
 
         function messageWrapsAtSpacesWithinTheLimit(testCase)
@@ -101,8 +101,8 @@ classdef TestWidgetLayerHelpers < matlab.unittest.TestCase
             testCase.verifyEqual(anchor('left', 'bottom'), [10, 20]);
             testCase.verifyEqual(anchor('center', 'middle'), [25, 40]);
             testCase.verifyEqual(anchor('right', 'top'), [40, 60]);
-            testCase.verifyError(@() anchor('outside', 'top'), "uim:graphics:InvalidAlignment");
-            testCase.verifyError(@() anchor('left', 'above'), "uim:graphics:InvalidAlignment");
+            testCase.verifyError(@() anchor('outside', 'top'), "uim:boundingBoxAnchor:InvalidAlignment");
+            testCase.verifyError(@() anchor('left', 'above'), "uim:boundingBoxAnchor:InvalidAlignment");
         end
 
         function cropKeepsOnePixelMarginAroundContent(testCase)

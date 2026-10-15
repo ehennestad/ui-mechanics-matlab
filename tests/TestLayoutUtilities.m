@@ -148,7 +148,7 @@ classdef TestLayoutUtilities < matlab.unittest.TestCase
             hPanel = uipanel(hFigure, "Units", "pixels", "Position", [0, 0, 100, 50]);
             testCase.verifyError(...
                 @() uim.utility.layout.centerObjectInRectangle(hPanel, "nowhere"), ...
-                "uim:utility:layout:centerObjectInRectangle:InvalidPosition");
+                "uim:centerObjectInRectangle:InvalidPosition");
         end
 
         function centerObjectInRectangleKeepsFigureOnScreen(testCase)

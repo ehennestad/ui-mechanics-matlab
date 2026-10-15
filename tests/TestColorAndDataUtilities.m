@@ -28,8 +28,8 @@ classdef TestColorAndDataUtilities < matlab.unittest.TestCase
         end
 
         function hexRejectsUnsupportedRange(testCase)
-            testCase.verifyError(@() uim.utility.hex2rgb('#334D66', 100), "uim:utility:hex2rgb:InvalidRange");
-            testCase.verifyError(@() uim.utility.hex2rgb('#334D66', [1, 2]), "uim:utility:hex2rgb:InvalidRange");
+            testCase.verifyError(@() uim.utility.hex2rgb('#334D66', 100), "uim:hex2rgb:InvalidRange");
+            testCase.verifyError(@() uim.utility.hex2rgb('#334D66', [1, 2]), "uim:hex2rgb:InvalidRange");
         end
 
         function rgbConvertsToHexFromUnitOrByteScale(testCase)
@@ -46,9 +46,9 @@ classdef TestColorAndDataUtilities < matlab.unittest.TestCase
         end
 
         function rgbRejectsMalformedInput(testCase)
-            testCase.verifyError(@() uim.utility.rgb2hex([0, 1]), "uim:utility:rgb2hex:InvalidSize");
-            testCase.verifyError(@() uim.utility.rgb2hex([0, 300, 0]), "uim:utility:rgb2hex:ValueOutOfRange");
-            testCase.verifyError(@() uim.utility.rgb2hex('#00FF00'), "uim:utility:rgb2hex:InvalidType");
+            testCase.verifyError(@() uim.utility.rgb2hex([0, 1]), "uim:rgb2hex:InvalidSize");
+            testCase.verifyError(@() uim.utility.rgb2hex([0, 300, 0]), "uim:rgb2hex:ValueOutOfRange");
+            testCase.verifyError(@() uim.utility.rgb2hex('#00FF00'), "uim:rgb2hex:InvalidType");
         end
     end
 

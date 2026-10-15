@@ -41,9 +41,9 @@ classdef TestGeometry < matlab.unittest.TestCase
 
         function fitRangeRejectsReversedRanges(testCase)
             testCase.verifyError(@() uim.geometry.fitRangeInside([12, -3], [0, 10]), ...
-                "uim:geometry:InvalidRange");
+                "uim:fitRangeInside:InvalidRange");
             testCase.verifyError(@() uim.geometry.fitRangeInside([2, 3], [10, 0]), ...
-                "uim:geometry:InvalidRange");
+                "uim:fitRangeInside:InvalidRange");
         end
 
         function intersectRangesClipsEachEnd(testCase)
