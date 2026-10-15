@@ -18,17 +18,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- Renamed style classes whose numeric suffixes said nothing about what they
-  look like: `ButtonDarkMode3` -> `ButtonDarkModeBold`, `ButtonLightMode2`
-  -> `ButtonLightModeTranslucent`, `TabButton2` -> `TabButtonDark`. Each
-  now carries help text naming the variant it differs from.
-  `ButtonSymbol2` is deliberately left alone: it differs from
-  `ButtonSymbol` only in `BorderWidth` while both set `BorderColor` to
-  `none`, so it has no visible difference to name it after, and it is a
-  deletion candidate rather than a rename candidate.
-- Renamed `uim.utility.layout.findgridsize` to
-  `uim.utility.layout.findGridSize`, the lowerCamelCase the rest of the
-  toolbox uses.
 - New `uim.geometry` package for axis-limit, range and rectangle
   arithmetic that hosts can use too: `scaleLimits`, `intersectRanges`,
   `fitRangeInside`, `isPointInsideLimits`, `fitLimitsToAspectRatio`,
@@ -43,6 +32,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Renamed style classes whose numeric suffixes said nothing about what they
+  look like: `ButtonDarkMode3` -> `ButtonDarkModeBold`, `ButtonLightMode2`
+  -> `ButtonLightModeTranslucent`, `TabButton2` -> `TabButtonDark`. Each
+  now carries help text naming the variant it differs from.
+  `ButtonSymbol2` is deliberately left alone: it differs from
+  `ButtonSymbol` only in `BorderWidth` while both set `BorderColor` to
+  `none`, so it has no visible difference to name it after, and it is a
+  deletion candidate rather than a rename candidate.
+- Renamed `uim.utility.layout.findgridsize` to
+  `uim.utility.layout.findGridSize`, the lowerCamelCase the rest of the
+  toolbox uses.
 - Moved classes and functions into the package that owns them:
   `uim.interface.Zoomable` and `uim.abstract.ToolbarComponent` are now
   `uim.mixin.Zoomable` and `uim.mixin.ToolbarComponent` (both are mixins,

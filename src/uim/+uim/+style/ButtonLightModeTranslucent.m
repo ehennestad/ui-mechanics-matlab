@@ -1,10 +1,12 @@
 classdef ButtonLightModeTranslucent < uim.style.ButtonScheme
 %ButtonLightModeTranslucent Light button styling with a translucent fill
 %
-%   As uim.style.ButtonLightMode, but the fill is partly transparent
+%   A variant of uim.style.ButtonLightMode with a partly transparent fill
 %   (alpha 0.4 to 0.6), so the button reads as an overlay on whatever it
-%   covers. Selected buttons have black labels and a light-blue border,
-%   and borders are wider: 1 when unselected and 1.5 when selected.
+%   covers. Selected buttons have black labels on a white fill and a
+%   light-blue border, so they are lighter than unselected buttons, which
+%   have a grey fill; ButtonLightMode darkens the selected button
+%   instead. Borders are wider: 1 when unselected and 1.5 when selected.
 
     properties (Constant)
 

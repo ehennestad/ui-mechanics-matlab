@@ -3,8 +3,10 @@ classdef TabButtonDark < uim.style.ButtonScheme
 %
 %   The selected tab has white labels on a slate fill. Unselected tabs
 %   have light grey labels on a transparent fill, as in
-%   uim.style.TabButton, which marks the selected tab with a light grey
-%   fill instead. For a light background, use uim.style.TabButtonLight.
+%   uim.style.TabButton, and show a darker slate fill under the pointer,
+%   where TabButton shows none. TabButton marks the selected tab with a
+%   light grey fill instead. For a light background, use
+%   uim.style.TabButtonLight.
 
     properties (Constant)
 
