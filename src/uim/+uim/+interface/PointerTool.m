@@ -98,12 +98,8 @@ classdef PointerTool < handle & matlab.mixin.Heterogeneous
                 currentPoint = obj.Axes.CurrentPoint(1, 1:2);
             end
 
-            xLim = obj.Axes.XLim;
-            yLim = obj.Axes.YLim;
-            axLim = [xLim(1), yLim(1), xLim(2), yLim(2)];
-
-            % Check if mousepoint is within axes limits.
-            tf = ~any(any(diff([axLim(1:2); currentPoint; axLim(3:4)]) < 0));
+            tf = uim.interface.internal.isPointInsideLimits(...
+                currentPoint, obj.Axes.XLim, obj.Axes.YLim);
         end
 
         function onPointerExitedAxes(obj)

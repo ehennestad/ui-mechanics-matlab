@@ -104,12 +104,8 @@ classdef AxisZoom < uim.interface.PointerTool
             end
 
             deltaY = currentPoint(2) - obj.PreviousMousePoint(2);
-            deltaY = deltaY / obj.Axes.Position(4);
-
-            yLimRange = uim.utility.range(obj.Axes.YLim);
-            yLimDiff = yLimRange .* deltaY;
-
-            newYLim = [obj.Axes.YLim(1)-yLimDiff, obj.Axes.YLim(2)+yLimDiff];
+            newYLim = uim.interface.internal.stretchLimits(...
+                obj.Axes.YLim, deltaY, obj.Axes.Position(4));
             obj.setNewYLims(newYLim)
 
 % %             if switchYAxis % Switch back...
@@ -122,12 +118,8 @@ classdef AxisZoom < uim.interface.PointerTool
 
             currentPoint = obj.Figure.CurrentPoint;
             deltaX = currentPoint(1) - obj.PreviousMousePoint(1);
-            deltaX = deltaX / obj.Axes.Position(3);
-
-            xLimRange = uim.utility.range(obj.Axes.XLim);
-            xLimDiff = xLimRange .* deltaX;
-
-            newXLim = [obj.Axes.XLim(1)-xLimDiff, obj.Axes.XLim(2)+xLimDiff];
+            newXLim = uim.interface.internal.stretchLimits(...
+                obj.Axes.XLim, deltaX, obj.Axes.Position(3));
             obj.setNewXLims(newXLim)
         end
     end
@@ -137,18 +129,14 @@ classdef AxisZoom < uim.interface.PointerTool
         function setNewXLims(obj, newLimits)
         % setNewXLims Set axes XLim, clamped to the original limits
 
-            newLimits(1) = max([obj.XLimOrig(1), newLimits(1)]);
-            newLimits(2) = min([obj.XLimOrig(2), newLimits(2)]);
-
+            newLimits = uim.interface.internal.intersectRanges(newLimits, obj.XLimOrig);
             set(obj.Axes, 'XLim', newLimits);
         end
 
         function setNewYLims(obj, newLimits)
         % setNewYLims Set axes YLim, clamped to the original limits
 
-            newLimits(1) = max([obj.YLimOrig(1), newLimits(1)]);
-            newLimits(2) = min([obj.YLimOrig(2), newLimits(2)]);
-
+            newLimits = uim.interface.internal.intersectRanges(newLimits, obj.YLimOrig);
             set(obj.Axes, 'YLim', newLimits);
         end
     end

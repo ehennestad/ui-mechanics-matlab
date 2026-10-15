@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed — Pointer-tool arithmetic lives in `uim.interface.internal`
+
+The zoom, pan, axis-drag, selection-rectangle and crop arithmetic of the
+pointer tools, plus the PointerManager's press and key translations, are
+pure functions now: `isPointInsideLimits`, `clampRangeWithin`,
+`intersectRanges`, `scaleLimits`, `zoomLimitsAboutPoint`,
+`fitLimitsToAspectRatio`, `panLimits`, `isRangeStrictlyInside`,
+`stretchLimits`, `rectangleOutlineBetween`, `isClickWithoutDrag`,
+`limitsToRectangle`, `rectangleToLimits`, `cropMaskOutline`,
+`selectionTypeToButton`, `keyToPointerToolName`. Tool behaviour is
+unchanged apart from the fix below and one edge case: an axes collapsed
+to zero width or height skips the aspect-ratio fit, so the requested
+limits are only clamped to the original limits.
+
+### Fixed — Crop tool shrank the crop by one pixel per activation
+
+`uim.interface.pointertools.Crop` converted limits to an ROI rectangle
+with an exclusive width but read the rectangle back with an inclusive
+one, so re-activating the tool on an existing crop lost a pixel each
+time. Both conversions now use inclusive pixel limits.
+
 ### Changed — UI-free geometry lives in `internal` namespaces
 
 The coordinate and value arithmetic of the slider family, the scrollbar,

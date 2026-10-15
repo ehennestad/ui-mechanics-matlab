@@ -129,46 +129,25 @@ classdef Crop < uim.interface.PointerTool
 
         function makeCroppedRegionSemiOpaque(obj, rcc)
 
-            % Create an alphamask for image, where cropped part is in focus
-            vertexX = rcc(1) + [0, rcc(3), rcc(3), 0];
-            vertexY = rcc(2) + [0, 0, rcc(4), rcc(4)];
-
+            % A patch with a hole: the crop stays in focus, the rest dims
             imSizeXY = [obj.XLimOrig(2), obj.YLimOrig(2)];
-
-        %             mask = double(poly2mask(vertexX, vertexY, imSizeXY(2), imSizeXY(1)));
-        %             mask(~mask) = 0.4;
-        %             hImage.AlphaData = mask;
-
-            outerBoxX = [0, imSizeXY(1)+1, imSizeXY(1)+1, 0, 0];
-            innerBoxX = [vertexX, vertexX(1)];
-            outerBoxY = [imSizeXY(2)+1, imSizeXY(2)+1, 0, 0, imSizeXY(2)+1];
-            innerBoxY = [vertexY, vertexY(1)];
+            [xCoords, yCoords] = uim.interface.internal.cropMaskOutline(rcc, imSizeXY);
 
             if isempty(obj.CroppedBoundaryPatch)
-                h = patch(obj.Axes, [outerBoxX, innerBoxX], [outerBoxY, innerBoxY], 'k');
+                h = patch(obj.Axes, xCoords, yCoords, 'k');
                 h.FaceAlpha = 0.3;
                 h.EdgeColor = 'none';
                 h.Tag = 'Crop Outline';
                 obj.CroppedBoundaryPatch = h;
             else
                 h = obj.CroppedBoundaryPatch;
-                set(h, 'XData', [outerBoxX, innerBoxX], 'YData',  [outerBoxY, innerBoxY] )
+                set(h, 'XData', xCoords, 'YData', yCoords)
             end
         end
 
         function rccInit = getRectangleInitCoordinates(obj)
-            xLim = obj.CurrentXLim;
-            yLim = obj.CurrentYLim;
-
-            if isequal(xLim, [1,inf]) && isequal(yLim, [1,inf])
-                rccInit = [];
-            elseif isempty(xLim) && isempty(yLim)
-                rccInit = [];
-            else
-                rccInit = zeros(1,4);
-                rccInit([1,3]) = [xLim(1), xLim(2)-xLim(1)];
-                rccInit([2,4]) = [yLim(1), yLim(2)-yLim(1)];
-            end
+            rccInit = uim.interface.internal.limitsToRectangle(...
+                obj.CurrentXLim, obj.CurrentYLim);
         end
 
         function updateRectangleContextMenu(obj, hRect)
@@ -181,8 +160,8 @@ classdef Crop < uim.interface.PointerTool
         end
 
         function updateLimits(obj, rcc)
-            obj.CurrentXLim = [rcc(1), rcc(1) + rcc(3) - 1];
-            obj.CurrentYLim = [rcc(2), rcc(2) + rcc(4) - 1];
+            [obj.CurrentXLim, obj.CurrentYLim] = ...
+                uim.interface.internal.rectangleToLimits(rcc);
         end
 
         function onRectangleSizeChanged(obj, ~, evt)

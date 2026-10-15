@@ -44,34 +44,17 @@ classdef DraggableRectangle < handle
 
             if isempty(obj.RectanglePlotHandle); return; end
 
-            % Set rectangle vertex coordinates
-            x1 = obj.AnchorPoint(1);
-            y1 = obj.AnchorPoint(2);
-
             if nargin < 2 || isempty(currentPoint)
                 currentPoint = obj.Axes.CurrentPoint(1, 1:2);
             end
 
-            x2 = currentPoint(1);
-            y2 = currentPoint(2);
+            % The far corner is clamped so the rectangle never exceeds the
+            % axes limits.
+            [xCoords, yCoords] = uim.interface.internal.rectangleOutlineBetween(...
+                obj.AnchorPoint, currentPoint, obj.Axes.XLim, obj.Axes.YLim);
 
-            % Make sure rectangle does not exceed axes limits.
-            xLim = obj.Axes.XLim;
-            yLim = obj.Axes.YLim;
-
-            if      x2 < xLim(1);   x2 = xLim(1);
-            elseif  x2 > xLim(2);   x2 = xLim(2);
-            end
-
-            if      y2 < yLim(1);   y2 = yLim(1);
-            elseif  y2 > yLim(2);   y2 = yLim(2);
-            end
-
-            % Assign rectangle vertex coordinates to plot handle
-            if ~isempty(obj.RectanglePlotHandle)
-                obj.RectanglePlotHandle.XData = [x1, x1, x2, x2, x1];
-                obj.RectanglePlotHandle.YData = [y1, y2, y2, y1, y1];
-            end
+            obj.RectanglePlotHandle.XData = xCoords;
+            obj.RectanglePlotHandle.YData = yCoords;
         end
 
         function resetRectangle(obj)

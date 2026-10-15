@@ -71,35 +71,20 @@ classdef Pan < uim.interface.PointerTool
         function moveAxes(obj, shift)
         % Move image in ax according to shift
 
-            % Get ax position in figure coordinates
             axPos = getpixelposition(obj.Axes);
 
-            if strcmp(obj.Axes.YDir, 'reverse')
-                shift(2) = -1 * shift(2);
-            end
-
-            % Get current axes limits
-            xlim = obj.Axes.XLim;
-            ylim = obj.Axes.YLim;
-
-            % Convert mouse shift to image shift
-            imshift = shift ./ axPos(3:4) .* [diff(xlim), diff(ylim)];
-            xlim = xlim - imshift(1);
-            ylim = ylim - imshift(2);
+            [xLim, yLim] = uim.interface.internal.panLimits(...
+                obj.Axes.XLim, obj.Axes.YLim, shift, axPos(3:4), obj.Axes.YDir);
 
             % Dont move outside of image boundaries..
-            if xlim(1) > obj.XLimOrig(1) && xlim(2) < obj.XLimOrig(2)
-                set(obj.Axes, 'XLim', xlim);
-%                 plotZoomRegion(obj, xlim, obj.Axes.YLim)
-            elseif ~obj.ConstrainX
-                set(obj.Axes, 'XLim', xlim);
+            if ~obj.ConstrainX || ...
+                    uim.interface.internal.isRangeStrictlyInside(xLim, obj.XLimOrig)
+                set(obj.Axes, 'XLim', xLim);
             end
 
-            if ylim(1) > obj.YLimOrig(1) && ylim(2) < obj.YLimOrig(2)
-                set(obj.Axes, 'YLim', ylim);
-            elseif ~obj.ConstrainY
-                set(obj.Axes, 'YLim', ylim);
-%                 plotZoomRegion(obj, obj.Axes.XLim, ylim)
+            if ~obj.ConstrainY || ...
+                    uim.interface.internal.isRangeStrictlyInside(yLim, obj.YLimOrig)
+                set(obj.Axes, 'YLim', yLim);
             end
         end
     end
