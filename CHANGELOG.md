@@ -32,6 +32,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Renamed style classes whose numeric suffixes said nothing about what they
+  look like: `ButtonDarkMode3` -> `ButtonDarkModeBold`, `ButtonLightMode2`
+  -> `ButtonLightModeTranslucent`, `TabButton2` -> `TabButtonDark`. Each
+  now carries help text naming the variant it differs from.
+  `ButtonSymbol2` is deliberately left alone: it differs from
+  `ButtonSymbol` only in `BorderWidth` while both set `BorderColor` to
+  `none`, so it has no visible difference to name it after, and it is a
+  deletion candidate rather than a rename candidate.
+- Renamed `uim.utility.layout.findgridsize` to
+  `uim.utility.layout.findGridSize`, the lowerCamelCase the rest of the
+  toolbox uses.
 - Moved classes and functions into the package that owns them:
   `uim.interface.Zoomable` and `uim.abstract.ToolbarComponent` are now
   `uim.mixin.Zoomable` and `uim.mixin.ToolbarComponent` (both are mixins,
@@ -44,6 +55,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `uim.shape.getIcon`, which returned play/pause glyph coordinates. It was
   unreferenced — `uim.widget.PlaybackControl` defines its own glyphs — and
   it was not a shape.
+- `uim.utility.setpixelpositionnonscalar`, an adaptation of MATLAB's
+  `setpixelposition` that the MATLAB licence does not allow
+  redistributing. Nothing called it; call `setpixelposition` for each
+  handle instead.
 
 ### Fixed
 
@@ -315,7 +330,12 @@ see git history for the complete list):
 | `uim.widget.messageBox` | `uim.widget.MessageBox` |
 | `uim.widget.toolbar` | `uim.widget.Toolbar` |
 | `uim.widget.tabbar` | `uim.widget.TabBar` |
-| `uim.style.*` (18 classes) | PascalCase (`uim.style.ButtonScheme`, `uim.style.TableTheme`, etc.) |
+| `uim.style.buttonDarkMode3` | `uim.style.ButtonDarkModeBold` |
+| `uim.style.buttonLightMode2` | `uim.style.ButtonLightModeTranslucent` |
+| `uim.style.tabButton2` | `uim.style.TabButtonDark` |
+| `uim.style.*` (other classes) | PascalCase (`uim.style.ButtonScheme`, `uim.style.TableTheme`, etc.) |
+| `uim.utility.setpixelpositionnonscalar` | Removed; call `setpixelposition` for each handle |
+| `uim.utility.layout.findgridsize` | `uim.utility.layout.findGridSize` |
 | `uim.decorator.box/image` | `uim.decorator.Box/Image` |
 | `uim.graphics.imageVector/tiledImageAxes` | `uim.graphics.ImageVector/TiledImageAxes` |
 | `uim.abstract.toolbarComponent` | `uim.mixin.ToolbarComponent` |

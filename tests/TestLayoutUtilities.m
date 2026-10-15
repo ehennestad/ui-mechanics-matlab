@@ -46,21 +46,21 @@ classdef TestLayoutUtilities < matlab.unittest.TestCase
         end
     end
 
-    methods (Test) % findgridsize, pos2lim
+    methods (Test) % findGridSize, pos2lim
 
         function gridSizeFavoursLandscapeAspect(testCase)
-            [nRows, nCols] = uim.utility.layout.findgridsize(6);
+            [nRows, nCols] = uim.utility.layout.findGridSize(6);
             testCase.verifyEqual([nRows, nCols], [2, 3]);
         end
 
         function gridSizeGrowsCountUntilAnAspectFits(testCase)
-            [nRows, nCols] = uim.utility.layout.findgridsize(7);
+            [nRows, nCols] = uim.utility.layout.findGridSize(7);
             testCase.verifyEqual([nRows, nCols], [3, 5], ...
                 "7 has no landscape factorisation; the next count that does is 15.");
         end
 
         function gridSizeAcceptsTargetAspectRatio(testCase)
-            [nRows, nCols] = uim.utility.layout.findgridsize(4, [], 1);
+            [nRows, nCols] = uim.utility.layout.findGridSize(4, [], 1);
             testCase.verifyEqual([nRows, nCols], [2, 2]);
         end
 
@@ -157,39 +157,6 @@ classdef TestLayoutUtilities < matlab.unittest.TestCase
 
             uim.utility.layout.centerObjectInRectangle(hFigure, screen - [10000, 10000, 0, 0])
             testCase.verifyGreaterThanOrEqual(hFigure.Position(1:2), screen(1:2));
-        end
-
-        function setPixelPositionNonScalarPositionsEachHandle(testCase)
-            hFigure = createHiddenFigure(testCase, [100, 100, 400, 300]);
-            hControls = gobjects(1, 2);
-            hControls(1) = uicontrol(hFigure, "Style", "text", "Units", "normalized");
-            hControls(2) = uicontrol(hFigure, "Style", "text", "Units", "normalized");
-
-            positions = [10, 20, 30, 40; 50, 60, 70, 80];
-            uim.utility.setpixelpositionnonscalar(hControls, positions)
-
-            testCase.verifyEqual(getpixelposition(hControls(1)), positions(1, :), "AbsTol", 1);
-            testCase.verifyEqual(getpixelposition(hControls(2)), positions(2, :), "AbsTol", 1);
-            testCase.verifyEqual(get(hControls, "Units"), {'normalized'; 'normalized'}, ...
-                "Original units are restored.");
-
-            uim.utility.setpixelpositionnonscalar(hControls(1), [1, 2, 30, 40])
-            testCase.verifyEqual(getpixelposition(hControls(1)), [1, 2, 30, 40], "AbsTol", 1);
-        end
-
-        function setPixelPositionNonScalarSupportsRecursiveAndRejectsBadShape(testCase)
-            hFigure = createHiddenFigure(testCase, [100, 100, 400, 300]);
-            hPanel = uipanel(hFigure, "Units", "pixels", "Position", [50, 50, 300, 200]);
-            hControls = [uicontrol(hPanel, "Style", "text"), uicontrol(hPanel, "Style", "text")];
-
-            uim.utility.setpixelpositionnonscalar(hControls, [60, 70, 20, 10; 80, 90, 20, 10], true)
-            testCase.verifyEqual(getpixelposition(hControls(1), true), [60, 70, 20, 10], "AbsTol", 1);
-            testCase.verifyEqual(getpixelposition(hControls(2)), [30, 40, 20, 10], "AbsTol", 1);
-
-            testCase.verifyError(...
-                @() uim.utility.setpixelpositionnonscalar(hControls, [1, 2, 3, 4]), ?MException);
-            testCase.verifyError(...
-                @() uim.utility.setpixelpositionnonscalar(42, [1, 2, 3, 4]), ?MException);
         end
     end
 end

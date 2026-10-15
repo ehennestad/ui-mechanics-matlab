@@ -475,7 +475,7 @@ classdef Toolbar < uim.abstract.Container
                 case 'on'
                     style = uim.style.ButtonDarkMode;
                 case 'off'
-                    style = uim.style.ButtonLightMode2;
+                    style = uim.style.ButtonLightModeTranslucent;
             end
 
             for i = 1:numel(obj.Buttons)
