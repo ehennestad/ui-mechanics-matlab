@@ -42,7 +42,7 @@ function [ hex ] = rgb2hex(rgb)
 %% Check inputs:
 
 assert(nargin==1,"uim:rgb2hex:InvalidNumberOfInputs",'This function requires an RGB input.')
-assert(isnumeric(rgb)==1,"uim:rgb2hex:InvalidType",'Function input must be numeric.')
+assert(isnumeric(rgb),"uim:rgb2hex:InvalidType",'Function input must be numeric.')
 
 sizergb = size(rgb);
 assert(sizergb(2)==3,"uim:rgb2hex:InvalidSize", ...
