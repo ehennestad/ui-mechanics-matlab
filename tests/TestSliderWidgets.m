@@ -96,6 +96,24 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
             testCase.verifyTrue(isvalid(hAxes), "A caller-supplied axes is left in place.");
             testCase.verifyEmpty(findobj(hAxes, "Type", "patch"));
         end
+
+        function sliderInCallerAxesTrackPressMovesValue(testCase)
+            hFigure = createHiddenFigure(testCase, [100, 100, 400, 300]);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [10, 10, 300, 100], ...
+                "XLim", [0, 300], "YLim", [0, 100]);
+            slider = uim.widget.Slider("Parent", hAxes, "Position", [20, 40, 200, 30], ...
+                "Min", 0, "Max", 100, "Value", 25);
+            testCase.addTeardown(@deleteValid, slider);
+
+            % The track starts at x = 20 and is 197 pixels long, so a
+            % press three quarters along it selects 75.
+            targetPoint = [20 + 197*0.75, 55];
+            hFigure.CurrentPoint = uim.utility.du2px(hAxes, targetPoint, true);
+            hBackground = findBackground(hAxes);
+            hBackground.ButtonDownFcn(hBackground, [])
+
+            testCase.verifyEqual(slider.Value, 75, "AbsTol", 0.5);
+        end
     end
 
     methods (Test) % RangeSlider
@@ -295,6 +313,26 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
 
             widget.Visible = 'off';
             testCase.verifyEqual(knob.Visible, matlab.lang.OnOffSwitchState.off);
+        end
+
+        function playbackControlBarPressSelectsValueUnderPointer(testCase)
+            hFigure = createHiddenFigure(testCase, [100, 100, 500, 200]);
+            widget = uim.widget.PlaybackControl(hFigure, "Position", [10, 10, 400, 30], ...
+                "Minimum", 11, "Maximum", 50, "Value", 20);
+            testCase.addTeardown(@deleteValid, widget);
+
+            % The track maps Minimum to its start, so a press at the
+            % pixel for 30 selects 30 even though Minimum is not 1.
+            hSliderAxes = findall(hFigure, "Tag", "Playback Widget (Slider Axes)");
+            hBar = findobj(hSliderAxes, "Tag", "Scrollbar");
+            trackLength = hSliderAxes.Position(3) - 2*widget.BarPadding;
+            xFor = @(value) widget.BarPadding + ...
+                trackLength*(value - widget.Minimum)/(widget.Maximum - widget.Minimum);
+            targetPoint = [xFor(30), mean(hBar.YData)];
+            hFigure.CurrentPoint = uim.utility.du2px(hSliderAxes, targetPoint, true);
+
+            hBar.ButtonDownFcn(hBar, [])
+            testCase.verifyEqual(widget.Value, 30);
         end
 
         function playbackControlShowsSingleFrameRange(testCase)
