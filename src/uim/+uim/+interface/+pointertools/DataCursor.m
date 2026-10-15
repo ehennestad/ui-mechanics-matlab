@@ -73,9 +73,6 @@ classdef DataCursor < uim.interface.PointerTool
 
             obj.plotCrosshair(currentPoint)
 
-            % The generic ButtonMotionFcn is a shift-style callback on
-            % other tools (Pan, AxisZoom); the data cursor's motion
-            % notification has its own, documented seam.
             if ~isempty(obj.CursorMovedFcn)
                 obj.CursorMovedFcn(src, evt)
             end

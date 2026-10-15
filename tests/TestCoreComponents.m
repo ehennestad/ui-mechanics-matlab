@@ -974,8 +974,8 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyNumElements(selectedRows, 1, "The selected row is marked.");
             dropdown.close()
 
-            % "" is a valid lasting state: the list opens with no row
-            % marked as selected, and closes again cleanly.
+            % "" is a valid state until Items is next assigned: the list
+            % opens with no row marked as selected, and closes cleanly.
             dropdown.Value = "";
             testCase.verifyEmpty(dropdown.ValueIndex);
             dropdown.open()

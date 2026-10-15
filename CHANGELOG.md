@@ -283,7 +283,8 @@ sites (verified by a full-repository search, not assumption):
 - `uim.interface.pointertools.DataCursor` reports cursor movement
   through the new `CursorMovedFcn` instead of the inherited
   `ButtonMotionFcn`.
-- `uim.widget.DropDown` accepts `Value = ""` as "no selection" with any
-  `Items`. To switch to an `Items` list that lacks the current `Value`,
-  set `Value` to `""` first.
+- `uim.widget.DropDown` accepts `Value = ""` as "no selection". Assigning
+  `Items` while nothing is selected selects the first item, so to switch
+  to an `Items` list that lacks the current `Value`, set `Value` to `""`
+  first.
 - MATLAB R2020b is the minimum supported release.

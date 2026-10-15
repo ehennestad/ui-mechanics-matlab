@@ -369,8 +369,8 @@ classdef PointerManager < handle
 
             if ~isequal(hitObject, obj.Axes)
                 % Objects with their own ButtonDownFcn handle the press
-                % themselves. Not every hit object exposes the property
-                % (e.g. datatips) — treat those as interactive too.
+                % themselves. A hit object without the property is
+                % treated as interactive too.
                 if ~isprop(hitObject, 'ButtonDownFcn') || ...
                         ~isempty(hitObject.ButtonDownFcn)
                     return

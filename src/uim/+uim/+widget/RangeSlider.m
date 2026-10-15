@@ -592,9 +592,12 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         %notifyValueChanged Notify the host of a new Low/High pair
         %
         %   Invokes the public Callback with a (Low, High) event struct.
-        %   Subclasses override this to intercept user-driven changes;
-        %   they should call the superclass method so a host-assigned
-        %   Callback keeps working.
+        %   It runs when a knob is released or the track is pressed, and,
+        %   at most CallbackRefreshRate times a second, whenever Low or
+        %   High changes, including programmatic assignments. Subclasses
+        %   override this to intercept those notifications; they should
+        %   call the superclass method so a host-assigned Callback keeps
+        %   working.
 
             if ~isempty(obj.Callback)
                 evtData = struct('Low', obj.Low, 'High', obj.High);
