@@ -41,12 +41,14 @@ function [ hex ] = rgb2hex(rgb)
 
 %% Check inputs:
 
-assert(nargin==1,'This function requires an RGB input.')
-assert(isnumeric(rgb)==1,'Function input must be numeric.')
+assert(nargin==1,"uim:utility:rgb2hex:InvalidNumberOfInputs",'This function requires an RGB input.')
+assert(isnumeric(rgb)==1,"uim:utility:rgb2hex:InvalidType",'Function input must be numeric.')
 
 sizergb = size(rgb);
-assert(sizergb(2)==3,'rgb value must have three components in the form [r g b].')
-assert(max(rgb(:))<=255& min(rgb(:))>=0,'rgb values must be on a scale of 0 to 1 or 0 to 255')
+assert(sizergb(2)==3,"uim:utility:rgb2hex:InvalidSize", ...
+    'rgb value must have three components in the form [r g b].')
+assert(max(rgb(:))<=255& min(rgb(:))>=0,"uim:utility:rgb2hex:ValueOutOfRange", ...
+    'rgb values must be on a scale of 0 to 1 or 0 to 255')
 
 %% If no value in RGB exceeds unity, scale from 0 to 255:
 if max(rgb(:))<=1

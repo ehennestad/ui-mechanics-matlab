@@ -459,7 +459,8 @@ classdef Slider < handle
 %
 
         function set.Min(obj, newMin)
-            assert(newMin < obj.Max, 'Slider lower limit must be smaller than slider upper limit')
+            assert(newMin < obj.Max, "uim:Slider:InvalidLimits", ...
+                'Slider lower limit must be smaller than slider upper limit')
             obj.Min = newMin;
 
             if ~isempty(obj.Axes) && obj.OwnsAxes
@@ -468,7 +469,8 @@ classdef Slider < handle
         end
 
         function set.Max(obj, newMax)
-            assert(newMax > obj.Min, 'Slider upper limit must be larger than slider lower limit')
+            assert(newMax > obj.Min, "uim:Slider:InvalidLimits", ...
+                'Slider upper limit must be larger than slider lower limit')
             obj.Max = newMax;
 
             if ~isempty(obj.Axes) && obj.OwnsAxes

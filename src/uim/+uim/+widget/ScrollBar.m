@@ -126,7 +126,7 @@ classdef ScrollBar < uim.Handle
 
         function set.Maximum(obj, newValue)
             assert(isnumeric(newValue) && isscalar(newValue) && newValue > 0, ...
-                'Maximum must be a positive scalar number')
+                "uim:ScrollBar:InvalidMaximum", 'Maximum must be a positive scalar number')
             obj.Maximum = newValue;
             obj.redraw()
         end
@@ -153,7 +153,8 @@ classdef ScrollBar < uim.Handle
 
         function set.Visible(obj, newValue)
 
-            assert(contains(newValue, {'on', 'off'}), 'Visible must be ''on'' or ''off''')
+            assert(contains(newValue, {'on', 'off'}), "uim:ScrollBar:InvalidVisible", ...
+                'Visible must be ''on'' or ''off''')
 
             obj.Visible = newValue;
             obj.onVisibleChanged()

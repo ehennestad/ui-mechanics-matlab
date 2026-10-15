@@ -10,6 +10,7 @@ function toggleUicontrolLabel(h, strA, strB)
     elseif contains(h.Text, strB)
         h.Text = strrep(h.Text, strB, strA);
     else
-        error('Text labels are not present, something has gone wrong...')
+        error("uim:utility:toggleUicontrolLabel:LabelNotFound", ...
+            'Text labels are not present, something has gone wrong...')
     end
 end
