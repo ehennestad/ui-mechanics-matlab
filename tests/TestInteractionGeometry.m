@@ -174,7 +174,8 @@ classdef TestInteractionGeometry < matlab.unittest.TestCase
             testCase.verifyEqual(button('normal', {}), 1);
             testCase.verifyEqual(button('open', {}), 1);
             testCase.verifyEqual(button('alt', {}), 3);
-            testCase.verifyEqual(button('alt', {'control'}), 1, "ctrl+left is still the left button.");
+            testCase.verifyEqual(button('alt', {'control'}), 3, ...
+                "ctrl+click is the secondary click on macOS.");
             testCase.verifyEqual(button('extend', {}), 2);
             testCase.verifyEqual(button('extend', {'shift'}), 1, "shift+left is still the left button.");
             testCase.verifyEqual(button("alt"), 3, "Modifiers default to none.");

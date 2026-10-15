@@ -63,17 +63,18 @@ classdef TestPointerTools < matlab.unittest.TestCase
             [hFigure, hAxes] = createImageAxes(testCase);
             tool = uim.interface.pointertools.ZoomIn(hAxes);
 
-            % The axes spans figure pixels 50..350 on both axes and shows
-            % 0.5..100.5 with y reversed, so figure pixel (125, 275) is
-            % over data point (25.5, 25.5).
+            % The axes is 300 pixels square. The pointer stays at one
+            % figure pixel; the data point under it may move by about a
+            % screen pixel per zoom step, and no more.
             hFigure.CurrentPoint = [125, 275];
+            pointBefore = hAxes.CurrentPoint(1, 1:2);
             tool.imageZoom('in')
+            pointAfter = hAxes.CurrentPoint(1, 1:2);
 
             testCase.verifyLessThan(diff(hAxes.XLim), 100, "The view zoomed in.");
-            dataUnderPointer = [ ...
-                hAxes.XLim(1) + 75/300*diff(hAxes.XLim), ...
-                hAxes.YLim(1) + 75/300*diff(hAxes.YLim)];
-            testCase.verifyEqual(dataUnderPointer, [25.5, 25.5], "AbsTol", 0.5);
+            dataUnitsPerPixel = diff(hAxes.XLim) / 300;
+            testCase.verifyEqual(pointAfter, pointBefore, ...
+                "AbsTol", 1.5*dataUnitsPerPixel);
         end
 
         function zoomInHonoursHostCallbacks(testCase)

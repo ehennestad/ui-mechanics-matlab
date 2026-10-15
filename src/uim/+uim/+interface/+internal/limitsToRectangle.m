@@ -3,9 +3,11 @@ function rectangle = limitsToRectangle(xLim, yLim)
 %
 %   rectangle = uim.interface.internal.limitsToRectangle(xLim, yLim)
 %   returns [] when no crop is defined (both empty, or both the [1, inf]
-%   "whole image" sentinel), and otherwise the rectangle covering the
+%   "whole image" sentinel), and otherwise a rectangle sized to the
 %   inclusive pixel limits: xLim = [11, 30] spans 20 pixels, so the
-%   rectangle is [11, y, 20, h]. This is the inverse of
+%   rectangle is [11, y, 20, h]. It starts at the first pixel's centre,
+%   so on image axes it sits half a pixel past the pixels' edges along
+%   each axis. This is the inverse of
 %   rectangleToLimits, so a crop survives repeated tool activations
 %   unchanged.
 %

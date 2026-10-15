@@ -1,4 +1,11 @@
 classdef Zoomable < handle
+%Zoomable Mixin adding zoom-limit handling to a pointer tool.
+%
+%   Combined into uim.interface.PointerTool subclasses; relies on the
+%   concrete Axes and Figure properties that PointerTool provides rather
+%   than declaring them here. PointerTool's Axes is a validated concrete
+%   property, and MATLAB's property-validation-inheritance rules do not
+%   allow a mixin to redeclare it, even as Abstract.
 
     % TODO:
     % [ ] Add switcher to only zoom in x or only zoom in y.

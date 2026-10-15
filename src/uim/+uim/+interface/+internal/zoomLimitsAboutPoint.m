@@ -10,8 +10,9 @@ function [xLimNew, yLimNew] = zoomLimitsAboutPoint(xLim, yLim, zoomFactor, ...
 %   lower-left corner) in an axes of axesSizePixels ([width, height]).
 %   yDir is the axes YDir ('normal' or 'reverse').
 %
-%   The quarter-pixel corrections were found empirically to give
-%   precise zooming; where they come from is not established.
+%   The quarter-pixel terms in the shift have no known derivation. The
+%   data point under the pointer can move by up to about one screen
+%   pixel per zoom step.
 
     arguments
         xLim (1,2) double

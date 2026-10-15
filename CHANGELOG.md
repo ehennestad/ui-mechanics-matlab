@@ -16,7 +16,9 @@ pure functions now: `isPointInsideLimits`, `clampRangeWithin`,
 `stretchLimits`, `rectangleOutlineBetween`, `isClickWithoutDrag`,
 `limitsToRectangle`, `rectangleToLimits`, `cropMaskOutline`,
 `selectionTypeToButton`, `keyToPointerToolName`. Tool behaviour is
-unchanged apart from the fix below.
+unchanged apart from the fix below and one edge case: an axes collapsed
+to zero width or height skips the aspect-ratio fit, so the requested
+limits are only clamped to the original limits.
 
 ### Fixed — Crop tool shrank the crop by one pixel per activation
 
