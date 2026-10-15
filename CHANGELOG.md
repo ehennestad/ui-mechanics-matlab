@@ -51,6 +51,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   not interaction machinery or abstract bases), and the single-function
   `uim.menu` package is gone — `createColormapList` now lives in
   `uim.graphics.internal` beside its only caller.
+- Moved `uim.Panel`, `uim.Tab` and `uim.TabGroup` into the new
+  `uim.container` namespace: `uim.container.Panel`, `uim.container.Tab`
+  and `uim.container.TabGroup`. Their error identifiers are unchanged.
 
 ### Removed
 
