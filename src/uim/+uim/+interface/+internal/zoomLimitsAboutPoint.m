@@ -1,4 +1,5 @@
-function [xLimNew, yLimNew] = zoomLimitsAboutPoint(xLim, yLim, zoomFactor, pointerPixel, axesSizePixels, pointerData, yDir)
+function [xLimNew, yLimNew] = zoomLimitsAboutPoint(xLim, yLim, zoomFactor, ...
+        pointerPixel, axesSizePixels, pointerData, yDir)
 %zoomLimitsAboutPoint Scale axes limits so the point under the pointer stays put
 %
 %   [xLimNew, yLimNew] = uim.interface.internal.zoomLimitsAboutPoint(...
@@ -9,9 +10,8 @@ function [xLimNew, yLimNew] = zoomLimitsAboutPoint(xLim, yLim, zoomFactor, point
 %   lower-left corner) in an axes of axesSizePixels ([width, height]).
 %   yDir is the axes YDir ('normal' or 'reverse').
 %
-%   The quarter-pixel corrections were tuned empirically for precise
-%   zooming on image axes (half a pixel of image-coordinate offset,
-%   halved again); they are kept for behavioural compatibility.
+%   The quarter-pixel corrections were found empirically to give
+%   precise zooming; where they come from is not established.
 
     arguments
         xLim (1,2) double

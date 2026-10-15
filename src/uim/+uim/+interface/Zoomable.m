@@ -93,9 +93,13 @@ classdef Zoomable < handle
             pos = getpixelposition(obj.Axes);
             axesAspectRatio = pos(3)/pos(4);
 
-            % Adjust limits so that the zoomed image fills up the display
-            [xLimNew, yLimNew] = uim.interface.internal.fitLimitsToAspectRatio(...
-                xLimNew, yLimNew, axesAspectRatio);
+            % Adjust limits so that the zoomed image fills up the display.
+            % An axes collapsed to zero width or height has no aspect to
+            % fill, so its limits are only clamped.
+            if axesAspectRatio > 0 && isfinite(axesAspectRatio)
+                [xLimNew, yLimNew] = uim.interface.internal.fitLimitsToAspectRatio(...
+                    xLimNew, yLimNew, axesAspectRatio);
+            end
 
             xLimNew = uim.interface.internal.clampRangeWithin(xLimNew, obj.XLimOrig);
             yLimNew = uim.interface.internal.clampRangeWithin(yLimNew, obj.YLimOrig);

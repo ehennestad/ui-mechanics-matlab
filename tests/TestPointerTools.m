@@ -18,8 +18,9 @@ classdef TestPointerTools < matlab.unittest.TestCase
         function toolNotifiesOnActivationChanges(testCase)
             [hFigure, hAxes] = createImageAxes(testCase);
             tool = uim.interface.pointertools.Pan(hAxes);
-            listener(tool, "ToggledPointerTool", ...
+            toggleListener = listener(tool, "ToggledPointerTool", ...
                 @(~, evt) setappdata(hFigure, "Toggled", evt.Value));
+            testCase.addTeardown(@delete, toggleListener);
 
             tool.activate()
             testCase.verifyTrue(logical(getappdata(hFigure, "Toggled")));
@@ -56,6 +57,23 @@ classdef TestPointerTools < matlab.unittest.TestCase
             testCase.verifyEqual(diff(hAxes.YLim), 50, "AbsTol", 1e-9);
             testCase.verifyGreaterThanOrEqual(hAxes.XLim(1), 0.5);
             testCase.verifyLessThanOrEqual(hAxes.XLim(2), 100.5);
+        end
+
+        function scrollZoomKeepsThePointUnderThePointer(testCase)
+            [hFigure, hAxes] = createImageAxes(testCase);
+            tool = uim.interface.pointertools.ZoomIn(hAxes);
+
+            % The axes spans figure pixels 50..350 on both axes and shows
+            % 0.5..100.5 with y reversed, so figure pixel (125, 275) is
+            % over data point (25.5, 25.5).
+            hFigure.CurrentPoint = [125, 275];
+            tool.imageZoom('in')
+
+            testCase.verifyLessThan(diff(hAxes.XLim), 100, "The view zoomed in.");
+            dataUnderPointer = [ ...
+                hAxes.XLim(1) + 75/300*diff(hAxes.XLim), ...
+                hAxes.YLim(1) + 75/300*diff(hAxes.YLim)];
+            testCase.verifyEqual(dataUnderPointer, [25.5, 25.5], "AbsTol", 0.5);
         end
 
         function zoomInHonoursHostCallbacks(testCase)
@@ -243,18 +261,24 @@ classdef TestPointerTools < matlab.unittest.TestCase
                 "Crop needs Image Processing Toolbox ROI objects.");
             [hFigure, hAxes] = createImageAxes(testCase);
             crop = uim.interface.pointertools.Crop(hAxes);
-            listener(crop, "CropLimitChanged", ...
+            cropListener = listener(crop, "CropLimitChanged", ...
                 @(~, evt) setappdata(hFigure, "CropLimits", [evt.XLim, evt.YLim]));
+            testCase.addTeardown(@delete, cropListener);
 
             % A preset region creates the ROI immediately; a timer ends the
-            % modal wait that activate() enters in place of the user.
+            % modal wait that activate() enters in place of the user. It
+            % repeats, because a resume that arrives before the wait
+            % starts has no effect.
             crop.CurrentXLim = [11, 30];
             crop.CurrentYLim = [21, 60];
-            resumeTimer = timer("StartDelay", 1, "TimerFcn", @(~, ~) uiresume(hFigure));
+            resumeTimer = timer("StartDelay", 0.5, "Period", 0.5, ...
+                "ExecutionMode", "fixedSpacing", ...
+                "TimerFcn", @(~, ~) uiresume(hFigure));
             testCase.addTeardown(@() cleanupTimer(resumeTimer));
             start(resumeTimer)
 
             crop.activate()
+            stop(resumeTimer)
 
             testCase.verifyEqual(crop.CurrentXLim, [11, 30]);
             testCase.verifyEqual(crop.CurrentYLim, [21, 60]);
