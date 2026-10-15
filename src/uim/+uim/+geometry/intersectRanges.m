@@ -1,9 +1,10 @@
 function range = intersectRanges(range, bounds)
 %intersectRanges Clip each end of a [min, max] range to bounds
 %
-%   range = uim.interface.internal.intersectRanges(range, bounds) raises
+%   range = uim.geometry.intersectRanges(range, bounds) raises
 %   the lower end to bounds(1) and lowers the upper end to bounds(2) as
-%   needed. Unlike clampRangeWithin, the range shrinks rather than shifts.
+%   needed. Unlike uim.geometry.fitRangeInside, the range shrinks rather
+%   than shifts.
 
     arguments
         range (1,2) double

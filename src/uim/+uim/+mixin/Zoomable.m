@@ -74,20 +74,20 @@ classdef Zoomable < handle
 
             axPos = getpixelposition(obj.Axes, true); % Need axes position in figure
 
-            isInsideAxes = uim.interface.internal.isPointInsideLimits(...
+            isInsideAxes = uim.geometry.isPointInsideLimits(...
                 pointerFigurePixel, axPos(1) + [0, axPos(3)], axPos(2) + [0, axPos(4)]);
 
             if isInsideAxes
-                [xLimNew, yLimNew] = uim.interface.internal.zoomLimitsAboutPoint(...
+                [xLimNew, yLimNew] = uim.geometry.internal.zoomLimitsAboutPoint(...
                     xLim, yLim, zoomF, pointerFigurePixel - axPos(1:2), ...
                     axPos(3:4), pointerData, obj.Axes.YDir);
             else
-                xLimNew = uim.interface.internal.scaleLimits(xLim, zoomF);
-                yLimNew = uim.interface.internal.scaleLimits(yLim, zoomF);
+                xLimNew = uim.geometry.scaleLimits(xLim, zoomF);
+                yLimNew = uim.geometry.scaleLimits(yLim, zoomF);
             end
 
-            xLimNew = uim.interface.internal.clampRangeWithin(xLimNew, obj.XLimOrig);
-            yLimNew = uim.interface.internal.clampRangeWithin(yLimNew, obj.YLimOrig);
+            xLimNew = uim.geometry.fitRangeInside(xLimNew, obj.XLimOrig);
+            yLimNew = uim.geometry.fitRangeInside(yLimNew, obj.YLimOrig);
 
             setNewImageLimits(obj, xLimNew, yLimNew)
         end
@@ -104,12 +104,12 @@ classdef Zoomable < handle
             % An axes collapsed to zero width or height has no aspect to
             % fill, so its limits are only clamped.
             if axesAspectRatio > 0 && isfinite(axesAspectRatio)
-                [xLimNew, yLimNew] = uim.interface.internal.fitLimitsToAspectRatio(...
+                [xLimNew, yLimNew] = uim.geometry.fitLimitsToAspectRatio(...
                     xLimNew, yLimNew, axesAspectRatio);
             end
 
-            xLimNew = uim.interface.internal.clampRangeWithin(xLimNew, obj.XLimOrig);
-            yLimNew = uim.interface.internal.clampRangeWithin(yLimNew, obj.YLimOrig);
+            xLimNew = uim.geometry.fitRangeInside(xLimNew, obj.XLimOrig);
+            yLimNew = uim.geometry.fitRangeInside(yLimNew, obj.YLimOrig);
 
             set(obj.Axes, 'XLim', xLimNew, 'YLim', yLimNew)
             %plotZoomRegion(obj, xLimNew, yLimNew)
@@ -126,7 +126,7 @@ classdef Zoomable < handle
             end
 
             % Todo: Make sure XLim2 > XLim1
-            newLimits = uim.interface.internal.intersectRanges(newLimits, obj.XLimOrig);
+            newLimits = uim.geometry.intersectRanges(newLimits, obj.XLimOrig);
             set(obj.Axes, 'XLim', newLimits);
 
             drawnow limitrate
@@ -138,7 +138,7 @@ classdef Zoomable < handle
                 newLimits = obj.YLimOrig;
             end
 
-            newLimits = uim.interface.internal.intersectRanges(newLimits, obj.YLimOrig);
+            newLimits = uim.geometry.intersectRanges(newLimits, obj.YLimOrig);
             set(obj.Axes, 'YLim', newLimits);
         end
     end

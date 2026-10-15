@@ -112,7 +112,7 @@ classdef OverviewIndicator < uim.abstract.Control
         %centerViewOn Center the view on a data point and notify the host
 
             viewSize = diff(obj.ViewLimits, 1, 2);
-            newLimits = uim.widget.internal.centeredLimits([x, y], viewSize');
+            newLimits = uim.geometry.centeredLimits([x, y], viewSize');
             obj.applyViewFromUser(newLimits)
         end
     end
@@ -177,7 +177,7 @@ classdef OverviewIndicator < uim.abstract.Control
             paddingSize = obj.Padding(1:2) + obj.Padding(3:4);
             maxInnerSize = max(obj.ConfiguredSize - paddingSize, 0);
 
-            [obj.LocalScale, frameSize] = uim.widget.internal.letterboxFit(...
+            [obj.LocalScale, frameSize] = uim.geometry.letterboxFit(...
                 dataSize', maxInnerSize);
 
             % Shrink the widget box to hug the letterboxed frame, so the
@@ -284,9 +284,9 @@ classdef OverviewIndicator < uim.abstract.Control
         end
 
         function applyViewFromUser(obj, newLimits)
-        %applyViewFromUser Clamp to the data extent, update and notify
+        %applyViewFromUser Shift the view inside the data extent, update and notify
 
-            newLimits = uim.widget.internal.clampLimitsToExtent(...
+            newLimits = uim.geometry.internal.shiftLimitsInside(...
                 newLimits, obj.DataLimits);
 
             if isequal(newLimits, obj.ViewLimits); return; end

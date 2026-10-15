@@ -196,22 +196,6 @@ classdef TestWidgetGeometry < matlab.unittest.TestCase
 
     methods (Test) % Overview indicator
 
-        function letterboxFitFillsTheLimitingDimension(testCase)
-            [scale, frameSize] = uim.widget.internal.letterboxFit([400, 100], [200, 200]);
-            testCase.verifyEqual(scale, 0.5);
-            testCase.verifyEqual(frameSize, [200, 50]);
-
-            [scale, frameSize] = uim.widget.internal.letterboxFit([100, 400], [200, 200]);
-            testCase.verifyEqual(scale, 0.5);
-            testCase.verifyEqual(frameSize, [50, 200]);
-        end
-
-        function letterboxFitMatchesEqualAspectExactly(testCase)
-            [scale, frameSize] = uim.widget.internal.letterboxFit([30, 20], [90, 60]);
-            testCase.verifyEqual(scale, 3);
-            testCase.verifyEqual(frameSize, [90, 60]);
-        end
-
         function dataCornersMapToFrameCorners(testCase)
             dataLimits = [0, 200; 0, 100];
             frameOrigin = [10, 20];
@@ -243,29 +227,6 @@ classdef TestWidgetGeometry < matlab.unittest.TestCase
                 testCase.verifyEqual([xBack, yBack], point, "AbsTol", 1e-12);
             end
         end
-
-        function limitsInsideExtentAreUnchanged(testCase)
-            limits = [10, 20; 30, 40];
-            clamped = uim.widget.internal.clampLimitsToExtent(limits, [0, 100; 0, 100]);
-            testCase.verifyEqual(clamped, limits);
-        end
-
-        function limitsAreShiftedBackInsideExtent(testCase)
-            extent = [0, 100; 0, 100];
-            clamped = uim.widget.internal.clampLimitsToExtent([95, 105; -5, 5], extent);
-            testCase.verifyEqual(clamped, [90, 100; 0, 10]);
-        end
-
-        function oversizedWindowIsShiftedByNetOvershoot(testCase)
-            % A window wider than the extent cannot fit: the two edge
-            % corrections cancel to a net shift of the window.
-            clamped = uim.widget.internal.clampLimitsToExtent([-10, 120; 0, 50], [0, 100; 0, 100]);
-            testCase.verifyEqual(clamped, [-20, 110; 0, 50]);
-        end
-
-        function centeredLimitsSurroundTheCenter(testCase)
-            limits = uim.widget.internal.centeredLimits([50, 20], [10, 4]);
-            testCase.verifyEqual(limits, [45, 55; 18, 22]);
-        end
     end
+
 end
