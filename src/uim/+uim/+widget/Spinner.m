@@ -4,12 +4,12 @@ classdef Spinner < uim.abstract.Control
 %   spinner = uim.widget.Spinner(hParent) creates a spinner in hParent
 %   (a figure, panel, axes or uim canvas).
 %
-%   spinner = uim.widget.Spinner(hParent, Name, Value, ...) also sets
+%   spinner = uim.widget.Spinner(hParent, Name=Value) also sets
 %   property values, for example:
 %
-%       spinner = uim.widget.Spinner(hAxes, 'Value', 5, ...
-%           'Minimum', 0, 'Maximum', 10, 'Step', 1, ...
-%           'ValueChangedFcn', @(src, evt) disp(evt.NewValue));
+%       spinner = uim.widget.Spinner(hAxes, Value=5, ...
+%           Minimum=0, Maximum=10, Step=1, ...
+%           ValueChangedFcn=@(src, evt) disp(evt.NewValue));
 %
 %   Clicking the -/+ buttons steps the value by Step; clicking the value
 %   itself opens a temporary edit box (when Editable is 'on') for typing
@@ -17,28 +17,31 @@ classdef Spinner < uim.abstract.Control
 %   notify the host through ValueChangedFcn with a
 %   uim.event.ValueChangedEventData (OldValue/NewValue). Programmatic
 %   assignment to Value updates the display without firing the callback
-%   (push model: the host owns the state it pushes).
+%   (push model: the host owns the state it pushes), and is not clamped.
 %
 %   Note: the edit box is a classic uicontrol; direct editing requires a
 %   figure that supports uicontrol (traditional figures, or uifigures in
 %   recent MATLAB releases). The -/+ buttons work everywhere.
+%
+%   See also uim.widget.Readout, uim.widget.DropDown,
+%   uim.event.ValueChangedEventData
 
     properties (Constant) % Inherited from Component
-        Type = 'Spinner'
+        Type = 'Spinner' % Component type name
     end
 
     properties
-        Value (1,1) double = 0
-        Step (1,1) double {mustBePositive} = 1
-        Minimum (1,1) double = -inf
-        Maximum (1,1) double = inf
+        Value (1,1) double = 0      % Displayed value
+        Step (1,1) double {mustBePositive} = 1  % Amount added or subtracted by the +/- buttons
+        Minimum (1,1) double = -inf % Lower bound for values entered by the user
+        Maximum (1,1) double = inf  % Upper bound for values entered by the user
         Format (1,:) char = '%g'    % sprintf-style format for the displayed value
-        Editable (1,:) char {mustBeMember(Editable, {'on', 'off'})} = 'on'
+        Editable (1,:) char {mustBeMember(Editable, {'on', 'off'})} = 'on' % Open an edit box when the value is clicked
 
         ValueChangedFcn = []        % Fired on user interaction. (src, uim.event.ValueChangedEventData)
 
-        FontName = 'helvetica'
-        FontSize = 12
+        FontName = 'helvetica'      % Font of the value and buttons; used at construction
+        FontSize = 12               % Font size in pixels; used at construction
     end
 
     properties (Access = protected, Transient)
@@ -52,6 +55,10 @@ classdef Spinner < uim.abstract.Control
     methods % Structors
 
         function obj = Spinner(hParent, varargin)
+        %Spinner Create a spinner
+        %
+        %   spinner = uim.widget.Spinner(hParent, Name=Value). See the
+        %   class help for the inputs.
 
             obj@uim.abstract.Control(hParent, varargin{:})
 
@@ -279,6 +286,11 @@ classdef Spinner < uim.abstract.Control
     methods (Static)
 
         function S = getTypeDefaults()
+        %getTypeDefaults Default property values for this component type
+        %
+        %   S = uim.widget.Spinner.getTypeDefaults() returns a struct of
+        %   property values used at construction. A name-value pair for
+        %   the same property replaces the default.
             S.IsFixedSize = [true, true];
             % Dark chip chrome so the control is visible on any plot.
             S.BackgroundColor = 'k';

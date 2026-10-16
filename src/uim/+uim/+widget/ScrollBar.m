@@ -1,14 +1,43 @@
 classdef ScrollBar < uim.Handle
-%ScrollBar A very simple scrollerbar that can be made to look awesome.
+%ScrollBar A scrollbar drawn in its own axes inside a panel
 %
-%   h = uim.widget.ScrollBar(hParent) creates a scrollbar in hParent.
-%   hParent should be a panel exclusively made for the scrollerbar. The
-%   scrollerbar will fill the panel, so the panel position determines the
-%   size and location of the scrollerbar.
+%   h = uim.widget.ScrollBar(hParent) creates a scrollbar in hParent, a
+%   panel (or other container) reserved for the scrollbar. With the
+%   default Position of [0, 0, 1, 1] in normalized Units, the scrollbar
+%   fills the container, so the container's position sets its size and
+%   location.
 %
-%   h = uim.widget.ScrollBar(hParent, Name, Value) creates the
-%   scrollbar and specifies one or more scrollbar property names and
-%   corresponding values. All properties of the scrollbar can be set.
+%   h = uim.widget.ScrollBar(hParent, Name=Value) also sets public
+%   properties. Names must match the property names exactly; they are
+%   assigned in the order given.
+%
+%   The orientation follows the shape of the scrollbar's axes at
+%   construction: horizontal when it is wider than tall, vertical
+%   otherwise. The scroll range runs from 0 to Maximum, and the bar
+%   spans VisibleAmount of it. Value is the position of the bar's
+%   leading edge; the bar is drawn within [0, Maximum - VisibleAmount]
+%   even when Value lies outside that range. With the default Direction
+%   'normal', a vertical bar starts at the top.
+%
+%   Dragging the bar or pressing the track moves it. Every change of
+%   Value calls Callback(h, []), whether from interaction or from an
+%   assignment (resetValue is the silent exception). When a drag ends,
+%   or after a track press, StopMoveCallback(h, change) is called with
+%   the movement as a fraction of Maximum. With EnableMouseScroll 'on',
+%   the figure's scroll wheel also moves the bar. Assigning Visible or
+%   VisibleAmount hides the bar when VisibleAmount is not smaller than
+%   Maximum.
+%
+%   Assigning a Maximum that is not a positive scalar raises
+%   uim:ScrollBar:InvalidMaximum; a Visible value that contains neither
+%   'on' nor 'off' raises uim:ScrollBar:InvalidVisible.
+%
+%   Example:
+%       hPanel = uipanel(figure, Units="pixels", Position=[10, 10, 20, 200]);
+%       h = uim.widget.ScrollBar(hPanel, Maximum=10, VisibleAmount=2, ...
+%           Callback=@(src, ~) disp(src.Value));
+%
+%   See also uim.widget.Slider
 %
 %   Written by Eivind Hennestad | Vervaeke Lab
 
@@ -19,28 +48,32 @@ classdef ScrollBar < uim.Handle
     %   [x] Make sure bar stays in right position when the barlength is
     %       updated. Done. (Need to properly debug)
     %
-    %   [ ] Redraw scrollbar when container resizes.
     %   [ ] Change /xlim(horz) or ylim/ver only when maximum changes...
 
     properties
+        % 'horizontal' or 'vertical'. Set at construction from the axes
+        % shape (horizontal when wider than tall); an assigned value is
+        % overwritten there and should not be changed afterwards.
         Orientation = 'vertical' %Todo: Resolve automatically based on pos
-        Direction = 'normal' % normal or reverse
-        Position = [0,0,1,1]
-        Units = 'normalized'
+        Direction = 'normal' % 'normal' (vertical bar starts at the top) or 'reverse'; used at construction
+        Position = [0,0,1,1] % Position of the scrollbar's axes in its parent, in Units
+        Units = 'normalized' % Units of Position; used at construction
 
 %         Minimum = 0               % Minimum scrollbar value (Default = 0) % Note not implemented yet
-        Maximum = 1                 % Maximum scrollbar value (Default = 1)
-        Value = 0                   % Initial scrollbar value (Default = 0)
-        VisibleAmount = 0.5         % Fraction of scrollbar that is visible
+        Maximum = 1                 % Upper end of the scroll range, a positive scalar (default 1)
+        Value = 0                   % Position of the bar's leading edge, in the units of Maximum (default 0)
+        VisibleAmount = 0.5         % Length of the bar, in the units of Maximum; inf is treated as 0
 
-        BarWidth = 6;
+        BarWidth = 6;               % Thickness of the bar in pixels; also its minimum length
         BarColor = ones(1,3)*0.65;  % Color of the bar
         TrackColor = ones(1,3)*0.4; % Color of the track which the bar slides on
 
-        EnableMouseScroll matlab.lang.OnOffSwitchState = 'off'
-        Callback = []               % Callback function for when bar is moving.
-        StopMoveCallback = []       % Callback function for when bar stops moving.
-        Visible = 'on'
+        EnableMouseScroll matlab.lang.OnOffSwitchState = 'off' % Move the bar with the figure's scroll wheel
+        Callback = []               % Called as Callback(h, []) whenever Value changes
+        % Called as StopMoveCallback(h, change) after a drag or a track
+        % press; change is the movement as a fraction of Maximum.
+        StopMoveCallback = []
+        Visible = 'on'              % 'on' or 'off'
     end % /properties
 
     properties (Access = private)
@@ -72,7 +105,10 @@ classdef ScrollBar < uim.Handle
     methods
 
         function obj = ScrollBar(parentContainer, varargin)
-        %ScrollBar Create a scrollerbar in a specified panel.
+        %ScrollBar Create a scrollbar in a panel
+        %
+        %   h = uim.widget.ScrollBar(hParent, Name=Value). See the class
+        %   help for the inputs.
 
             % make assertions, e.g. check that its a valid figure/panel.
             obj.Parent = parentContainer;
@@ -108,7 +144,10 @@ classdef ScrollBar < uim.Handle
         end
 
         function redraw(obj)
-        %redraw Redraw scrollbar.
+        %redraw Recompute the bar length and position, then draw
+        %
+        %   h.redraw() resizes the bar for the current axes size, Maximum
+        %   and VisibleAmount, moves it to Value and calls drawnow.
             obj.updateBarLength()
             drawnow
         end % /redraw
@@ -171,18 +210,27 @@ classdef ScrollBar < uim.Handle
         end
 
         function showTrack(obj)
-        %showTrack Show the track which the scrollbar slides on top.
+        %showTrack Show the track that the bar slides on
+        %
+        %   h.showTrack() shows the track, which is hidden by default.
             obj.Bar(1).Visible = 'on';
             obj.IsTrackVisible = true;
         end % /showTrack
 
         function hideTrack(obj)
-        %hideTrack Hide the track which the scrollbar slides on top.
+        %hideTrack Hide the track that the bar slides on
+        %
+        %   h.hideTrack() hides the track.
             obj.Bar(1).Visible = 'off';
             obj.IsTrackVisible = false;
         end % /hideTrack
 
         function show(obj)
+        %show Show the bar, and the track if it was shown with showTrack
+        %
+        %   h.show() shows the bar when VisibleAmount is smaller than
+        %   Maximum, and hides bar and track otherwise. Assigning
+        %   Visible='on' calls it.
             if obj.VisibleAmount < obj.Maximum
                 if obj.IsTrackVisible
                     obj.Bar(1).Visible = 'on';
@@ -195,6 +243,10 @@ classdef ScrollBar < uim.Handle
         end
 
         function hide(obj)
+        %hide Hide the bar and the track
+        %
+        %   h.hide() hides the bar and the track. Assigning Visible='off'
+        %   calls it.
 
             if obj.IsTrackVisible
                 obj.Bar(1).Visible = 'off';
@@ -203,7 +255,11 @@ classdef ScrollBar < uim.Handle
         end
 
         function setPointerBehavior(obj)
-        %setPointerBehavior Set pointer behavior of background.
+        %setPointerBehavior Highlight the bar while the pointer is on it
+        %
+        %   h.setPointerBehavior() registers pointer enter and exit
+        %   callbacks on the bar that call highlightBar and lowlightBar.
+        %   The constructor calls it.
 
             pointerBehavior.enterFcn    = @(s,e)obj.highlightBar;
             pointerBehavior.exitFcn     = @(s,e)obj.lowlightBar;
@@ -213,19 +269,28 @@ classdef ScrollBar < uim.Handle
         end
 
         function highlightBar(obj)
-        %highlightBar Change the barcolor (make lighter).
+        %highlightBar Show the bar in its highlighted state
+        %
+        %   h.highlightBar() raises the bar's FaceAlpha to 0.8.
             %obj.Bar(2).FaceColor = obj.BarColor*1.2;
             obj.Bar(2).FaceAlpha = 0.8;
         end % /highlightBar
 
         function lowlightBar(obj)
-        %lowlightBar Change the barcolor (make default color).
+        %lowlightBar Show the bar in its normal state
+        %
+        %   h.lowlightBar() sets the bar to BarColor with FaceAlpha 0.6.
             obj.Bar(2).FaceColor = obj.BarColor;
             obj.Bar(2).FaceAlpha = 0.6;
         end % /lowlightBar
 
         function hittest(obj, h)
-        %hittest Will change appearance and cursor mode if scrollbar is "hit".
+        %hittest Update appearance and pointer for the object under the pointer
+        %
+        %   h.hittest(hTarget) takes the graphics object hTarget under
+        %   the pointer. On the track it sets the figure pointer to 'hand' and
+        %   outlines the track; on the bar it highlights the bar. Leaving
+        %   either undoes the change and restores the 'arrow' pointer.
 
             if isequal(h, obj.Bar(1))
                 if ~obj.IsCursorOnTrack
@@ -264,7 +329,11 @@ classdef ScrollBar < uim.Handle
         end % /hittest
 
         function change = checkMoveLimits(obj, change, currentPosition)
-        %checkMoveLimits Check that bar will stay in range when moved
+        %checkMoveLimits Limit a bar movement so the bar stays on its track
+        %
+        %   change = h.checkMoveLimits(change, currentPosition) reduces
+        %   change so that a bar with its leading edge at currentPosition
+        %   ends within [0, Maximum - VisibleAmount].
 
             % Todo: Use obj.Minimum for the lower bound once implemented
             change = uim.widget.internal.clampScrollChange(...
@@ -272,7 +341,12 @@ classdef ScrollBar < uim.Handle
         end
 
         function startScrollbarMove(obj, src, ~)
-        %startScrollbarMove Prepare for scrollbar movement.
+        %startScrollbarMove Start dragging the bar
+        %
+        %   h.startScrollbarMove(src, evt) is the bar's ButtonDownFcn. It
+        %   stores the pointer and bar positions and replaces the figure's
+        %   WindowButtonMotionFcn and WindowButtonUpFcn with moveScrollbar
+        %   and stopScrollbarMove; stopScrollbarMove restores them.
 
             hFig = ancestor(src, 'figure');
 
@@ -298,7 +372,12 @@ classdef ScrollBar < uim.Handle
         end % /startScrollbarMove
 
         function moveScrollbar(obj, ~, event)
-        %moveScrollbar Callback to handle interactive movement of bar.
+        %moveScrollbar Move the bar during a drag or a scroll-wheel turn
+        %
+        %   h.moveScrollbar(src, event) sets Value from the pointer when
+        %   event is WindowMouseData, or steps it by Maximum/20 per scroll
+        %   count when event is ScrollWheelData. The bar is kept on its
+        %   track.
 
             % Todo: Make this more intuitive....
 
@@ -350,7 +429,12 @@ classdef ScrollBar < uim.Handle
         end % /moveScrollbar
 
         function stopScrollbarMove(obj, src, ~)
-        %stopScrollbarMove Callback for when bar stops moving.
+        %stopScrollbarMove End a bar drag
+        %
+        %   h.stopScrollbarMove(src, evt) restores the figure callbacks
+        %   replaced by startScrollbarMove, resets the bar color and calls
+        %   StopMoveCallback(h, change), where change is the movement since
+        %   the drag started as a fraction of Maximum.
 
             hFig = ancestor(src, 'figure');
 
@@ -387,10 +471,12 @@ classdef ScrollBar < uim.Handle
         end % /stopScrollbarMove
 
         function jumpToNewValue(obj, ~, ~)
-        %jumpToNewValue Callback for when mouse is pressed on track.
+        %jumpToNewValue Move the bar to a pressed point on the track
         %
-        %   This method will update the bar position based on mousepress on
-        %   the scroller track. The bar will jump to a new position.
+        %   h.jumpToNewValue(src, evt) is the track's ButtonDownFcn. It
+        %   moves the bar's leading edge to the pressed point, kept on the
+        %   track, and calls StopMoveCallback(h, change), where change is
+        %   the movement as a fraction of Maximum.
 
             % Get change of scroller
             newMousePointAx = get(obj.Axes, 'CurrentPoint');
@@ -419,6 +505,9 @@ classdef ScrollBar < uim.Handle
         end % /jumpToNewValue
 
         function resetValue(obj)
+        %resetValue Set Value to 0 without calling Callback
+        %
+        %   h.resetValue()
             obj.CallbacksEnabled = false;
             obj.Value = 0;
             obj.CallbacksEnabled = true;

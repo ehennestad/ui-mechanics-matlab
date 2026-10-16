@@ -1,5 +1,28 @@
 function propertyNames = findProperties(objectOrClassName, attributeName, attributeValue)
-%FINDPROPERTIES Find class properties matching a metadata attribute.
+%findProperties Names of class properties, optionally filtered by an attribute
+%
+%   propertyNames = uim.utility.findProperties(objectOrClassName) returns
+%   the names of all properties of an object or of the class named by a
+%   character vector or string, as a 1-by-n cell array of character
+%   vectors in class metadata order.
+%
+%   propertyNames = uim.utility.findProperties(objectOrClassName,
+%   attributeName) returns the properties whose meta.property attribute
+%   attributeName (for example "Transient" or "Dependent") is true.
+%
+%   propertyNames = uim.utility.findProperties(objectOrClassName,
+%   attributeName, attributeValue) returns the properties whose attribute
+%   equals attributeValue, for example "SetAccess" and "public".
+%
+%   Errors:
+%       uim:findProperties:InvalidInput     - Input is not an object or
+%                                             class name
+%       uim:findProperties:InvalidAttribute - attributeName is not a
+%                                             meta.property attribute,
+%                                             or the class has no
+%                                             properties
+%
+%   See also metaclass, meta.property
 
     arguments
         objectOrClassName

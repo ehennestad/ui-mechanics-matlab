@@ -1,23 +1,25 @@
 function varargout = rectangle(boxSize, cornerRadius, numCornerSegmentPoints)
-%uim.shape.rectangle Create edgecoordinates for outline of a rectangle
+%rectangle Outline coordinates of a rectangle, optionally with rounded corners
 %
-%   [edgeCoordinates] = uim.shape.rectangle(boxSize) creates
-%   edgeCoordinates for a box of size boxSize ([width, height]). This function
-%   creates edgeCoordinates for each unit length of width and height.
-%   edgeCoordinates is a nx2 vector of x and y coordinates where
-%   n = 2 x (height+1) + 2 x (width+1)
+%   edgeCoordinates = uim.shape.rectangle(boxSize) returns the four
+%   corners of a box of size boxSize ([width, height], rounded to whole
+%   numbers) with its lower-left corner at the origin, as a 4-by-2 array
+%   of [x, y] points. The last point is not repeated.
 %
-%   [xCoords, yCoords] = uim.shape.rectangle(boxSize) returns xCoords and
-%   yCoords are separate vectors.
+%   [xCoords, yCoords] = uim.shape.rectangle(boxSize) returns the x and
+%   y coordinates as separate row vectors.
 %
-%   [xCoords, yCoords] = createBox(boxSize, cornerRadius) creates the
-%   rectangle boundary coordinates with rounded corners.
+%   [...] = uim.shape.rectangle(boxSize, cornerRadius) rounds the
+%   corners with radius cornerRadius (default 0, square corners). The
+%   rounded outline has 4*numCornerSegmentPoints + 1 points and ends on
+%   its first point.
 %
-%   [xCoords, yCoords] = createBox(boxSize, cornerRadius, numCornerPoints)
-%   additionally specifies how many points to dra for round corners. Higher
-%   value gives a finer resolution (Default = 25)
+%   [...] = uim.shape.rectangle(boxSize, cornerRadius,
+%   numCornerSegmentPoints) sets the number of points per rounded corner
+%   (default 25). Higher values give smoother corners.
 %
-% Coordinates starts in the upper left corner and traverses the box ccw
+%   Coordinates start in the upper left corner and traverse the box
+%   counterclockwise:
 %
 %        <--
 %  ul _ _ _ _ _          y ^

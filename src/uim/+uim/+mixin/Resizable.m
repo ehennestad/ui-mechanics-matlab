@@ -1,5 +1,27 @@
 classdef Resizable < uim.Handle
-%Resizable
+%Resizable Mixin for an object moved and resized with an interactive rectangle
+%
+%   Gives a subclass an imrect (Image Processing Toolbox) that the user
+%   drags to move or resize the object in an axes. When the rectangle
+%   changes, the object's Position is updated, the subclass resize method
+%   runs, Children are rescaled to follow, and SizeChangedFcn is called.
+%   uim.widget.MessageBox uses this mixin.
+%
+%   Contract for subclasses:
+%       - Define the Position property ([x, y, width, height] in the
+%         units of the Parent axes).
+%       - Implement the protected methods
+%             setDefaultButtonDownFcn(obj, fcnHandle), called when
+%                 DefaultButtonDownFcn is set, and
+%             resize(obj, newPosition, oldPosition), called after
+%                 Position is updated from the rectangle.
+%       - Set Parent (the axes) before calling createInteractiveRectangle.
+%
+%   Children must be objects with a Position property and a
+%   setPosition(position, mode) method, for example other Resizable
+%   objects.
+%
+%   See also uim.widget.MessageBox
 
 % Todo:
 %   [ ] Generalize so that it can be used on any object that implements a
@@ -7,13 +29,14 @@ classdef Resizable < uim.Handle
 %   [ ] Update references in different apps/scripts/functions
 
     properties (Abstract)
-        Position
+        Position % [x, y, width, height] of the object; subclasses define it
     end
 
     properties
+        % Objects rescaled with this one when it is moved or resized.
         Children = []            % Should maybe not be transient
-        IsMovable = true
-        IsResizable = true
+        IsMovable = true % When true, showInteractiveRectangle makes the rectangle respond to clicks.
+        IsResizable = true % When true, showInteractiveRectangle shows the resize handles.
     end
 
     properties (Hidden, Transient)
@@ -52,6 +75,11 @@ classdef Resizable < uim.Handle
         end
 
         function createInteractiveRectangle(obj)
+        %createInteractiveRectangle Create the imrect that moves the object
+        %
+        %   obj.createInteractiveRectangle() replaces any existing
+        %   rectangle with an imrect at Position in the Parent axes.
+        %   Deleting the rectangle deletes the object.
 
             % Make an imrect for interactively moving and resizing the
             % virtualPanel.
@@ -100,6 +128,7 @@ classdef Resizable < uim.Handle
          end
 
         function hideInteractiveRectangle(obj)
+        %hideInteractiveRectangle Hide the rectangle and stop it taking clicks
             if isempty(obj.InteractiveRectangle); return; end
 
             imrectGroup = findobj(obj.InteractiveRectangle, ...
@@ -112,6 +141,10 @@ classdef Resizable < uim.Handle
         end
 
         function showInteractiveRectangle(obj)
+        %showInteractiveRectangle Show the rectangle and its handles
+        %
+        %   The resize handles are shown only when IsResizable is true. The
+        %   rectangle takes clicks when IsMovable or IsResizable is true.
             if isempty(obj.InteractiveRectangle); return; end
 
             if obj.IsResizable
@@ -128,10 +161,20 @@ classdef Resizable < uim.Handle
         end
 
         function setPositionConstraintFcn(obj, hFunc)
+        %setPositionConstraintFcn Set the imrect position constraint function
+        %
+        %   obj.setPositionConstraintFcn(fcn) passes fcn to the imrect
+        %   method of the same name.
             obj.InteractiveRectangle.setPositionConstraintFcn(hFunc);
         end
 
         function setPosition(obj, newPosition, mode)
+        %setPosition Move the rectangle, and with it the object
+        %
+        %   obj.setPosition(newPosition) moves the rectangle to
+        %   newPosition ([x, y, width, height]) within its position
+        %   constraint. obj.setPosition(newPosition, "unconstrained")
+        %   ignores the constraint. Any other mode does nothing.
 
             if nargin < 3 || isempty(mode)
                 mode = 'constrained';
@@ -150,20 +193,27 @@ classdef Resizable < uim.Handle
         end
 
         function pos = getPosition(obj)
+        %getPosition Current [x, y, width, height] of the rectangle
             pos = obj.InteractiveRectangle.getPosition();
         end
 
         function lim = getPositionLimits(obj)
+        %getPositionLimits Position as corner coordinates [x1, y1, x2, y2]
             lim = obj.Position([1,2,1,2]) + [0, 0, obj.Position(3:4)];
         end
 
         function pixelpos = getpixelposition(obj)
+        %getpixelposition Intended to return the position in pixels
+        %
+        %   This method multiplies two 1-by-4 vectors with the matrix
+        %   operator *, so every call raises a dimension error.
             pixelPosParent = getpixelposition(obj.Parent);
             pixelpos = pixelPosParent([1,2,1,2]) + ...
                             pixelPosParent([3,4,3,4])*obj.Position;
         end
 
         function hArray = getImrectHandles(obj)
+        %getImrectHandles Line and patch objects that make up the rectangle
             hArray = findobj( obj.InteractiveRectangle, ...
                                 'Type', 'line', '-or', 'Type', 'patch');
         end
@@ -181,6 +231,12 @@ classdef Resizable < uim.Handle
         end
 
         function resizeChildren(obj, newPosition, oldPosition)
+        %resizeChildren Rescale Children from the old to the new position
+        %
+        %   obj.resizeChildren(newPosition, oldPosition) maps each child's
+        %   Position from oldPosition to newPosition and applies it with
+        %   setPosition(..., "unconstrained"). A resize made while the
+        %   figure SelectionType is 'extend' leaves the children unchanged.
 
             hFig = ancestor(obj.Parent, 'figure');
 
@@ -261,6 +317,15 @@ classdef Resizable < uim.Handle
     methods (Static)
 
         function BW = rect2mask(rectCoords, maskSize)
+        %rect2mask Logical mask of a normalized rectangle
+        %
+        %   BW = uim.mixin.Resizable.rect2mask(rectCoords, maskSize)
+        %   returns a maskSize(2)-by-maskSize(1) logical array that is true
+        %   inside rectCoords. rectCoords is [x, y, width, height] as
+        %   fractions of maskSize ([width, height] in pixels); x indexes
+        %   columns and y indexes rows from the top. Corners are rounded to
+        %   whole pixels and clipped to the mask, and both end pixels are
+        %   included.
 
             maskSize = round(maskSize);
 

@@ -1,40 +1,71 @@
 classdef ZoomIn < uim.interface.PointerTool & uim.mixin.Zoomable & ...
         uim.interface.pointertools.mixin.DraggableRectangle
+%ZoomIn Pointer tool that zooms in on a click or to a dragged rectangle
+%
+%   tool = uim.interface.pointertools.ZoomIn(hAxes) creates the tool for
+%   hAxes. The axes limits at construction become XLimOrig and YLimOrig,
+%   the outer bounds for every zoom, so set the limits to the full view
+%   first. A PointerManager creates the tool for the key "zoomIn".
+%
+%   With the left mouse button:
+%     - A click (press and release less than 1% of the mean axis range
+%       apart) zooms in about the pointer: each end of the limits moves
+%       in by ZoomFactor times the width.
+%     - A drag draws a rectangle, and the release zooms to it.
+%   The new limits are widened to the axes aspect ratio and kept inside
+%   XLimOrig and YLimOrig, then ZoomFinishedFcn runs. Right-button
+%   presses are ignored. The drag rectangle is drawn with plot, so the
+%   axes must be held (PointerManager holds it).
+%
+%   A host can take over the zoom: ZoomInFcn() replaces the click zoom
+%   and RectangularZoomFcn(xLim, yLim) replaces the rectangle zoom.
+%   With RunDefault true the default zoom runs first.
+%
+%   ExitMode is 'previous'. The zoom methods (imageZoom,
+%   setNewImageLimits, ...) come from uim.mixin.Zoomable.
+%
+%   See also uim.interface.pointertools.ZoomOut, uim.mixin.Zoomable,
+%   uim.interface.PointerManager
 
     properties (Constant)
-        ExitMode = 'previous';
+        ExitMode = 'previous'; % On toggle-off, PointerManager makes the suspended previous tool current
     end
 
     properties % Tool specific
-        ZoomInFcn
-        RectangularZoomFcn
-        RunDefault = false;
+        ZoomInFcn % Host callback ZoomInFcn() run on a click instead of the default zoom
+        RectangularZoomFcn % Host callback RectangularZoomFcn(xLim, yLim) run on a drag instead of the default zoom
+        RunDefault = false; % If true, run the default zoom before ZoomInFcn or RectangularZoomFcn
     end
 
     properties % Implement abstract properties from zoom
-        ZoomFactor = 0.25
-        XLimOrig
-        YLimOrig
+        ZoomFactor = 0.25 % Fraction of the width each limit moves in per click; 0.25 halves the view
+        XLimOrig % [min, max] x bounds for zooming, taken from the axes at construction
+        YLimOrig % [min, max] y bounds for zooming, taken from the axes at construction
     end
 
     properties % Implement abstract properties hasDraggableRectangle
-        AnchorPoint = [nan, nan]
-        IsButtonDown = false
+        AnchorPoint = [nan, nan] % [x, y] press point in data units
+        IsButtonDown = false % True between a left press and its release
     end
 
     methods
 
         function obj = ZoomIn(hAxes)
+        %ZoomIn Create the tool for an axes
+        %
+        %   tool = uim.interface.pointertools.ZoomIn(hAxes)
             obj@uim.interface.PointerTool(hAxes)
             obj.XLimOrig = obj.Axes.XLim;
             obj.YLimOrig = obj.Axes.YLim;
         end
 
         function setPointerSymbol(obj)
+        %setPointerSymbol Set the figure pointer to a magnifier with a plus
             setptr(obj.Figure, 'glassplus');
         end
 
         function onButtonDown(obj, ~, evt)
+        %onButtonDown Start a click or a rectangle drag at the pointer
 
             if evt.Button==3; return; end
 
@@ -49,12 +80,14 @@ classdef ZoomIn < uim.interface.PointerTool & uim.mixin.Zoomable & ...
         end
 
         function onButtonMotion(obj, ~, ~)
+        %onButtonMotion Resize the drag rectangle while the button is down
             if obj.IsButtonDown
                 obj.updateRectangle()
             end
         end
 
         function onButtonUp(obj, ~, ~)
+        %onButtonUp Zoom in about the pointer (click) or to the rectangle (drag)
             if ~obj.IsButtonDown; return; end % MouseDown happened before tool was activated
 
             obj.IsButtonDown = false;

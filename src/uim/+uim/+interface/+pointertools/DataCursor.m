@@ -1,4 +1,24 @@
 classdef DataCursor < uim.interface.PointerTool
+%DataCursor Pointer tool that shows a crosshair following the pointer
+%
+%   tool = uim.interface.pointertools.DataCursor(hAxes) creates the tool
+%   for hAxes. The crosshair lines span the axes limits at construction
+%   (XLimOrig and YLimOrig). A PointerManager creates the tool for the
+%   key "dataCursor".
+%
+%   activate shows the crosshair at the pointer, or at the centre of the
+%   axes when the pointer is outside it. While the tool is active, every
+%   pointer motion inside the axes moves the crosshair to the pointer
+%   and then calls CursorMovedFcn. suspend and deactivate hide the
+%   crosshair. Mouse presses do nothing else.
+%
+%   The crosshair is drawn with plot, so the axes must be held
+%   (PointerManager holds it).
+%
+%   ExitMode is 'default': a 'previous' tool such as ZoomIn suspends it
+%   while on, and it becomes current again when that tool turns off.
+%
+%   See also uim.interface.PointerManager
 
     % Todo:
     %   1) Implement different modes.
@@ -8,13 +28,13 @@ classdef DataCursor < uim.interface.PointerTool
     %   3) Should it work on mouseover, or only on button click?
 
     properties (Constant)
-        ExitMode = 'default';
+        ExitMode = 'default'; % On toggle-off, PointerManager makes the manager's DefaultPointerTool current
     end
 
     properties
-        XLimOrig
-        YLimOrig
-        CursorColor = ones(1,3)*0.5
+        XLimOrig % [min, max] x extent of the horizontal line, taken from the axes at construction
+        YLimOrig % [min, max] y extent of the vertical line, taken from the axes at construction
+        CursorColor = ones(1,3)*0.5 % Crosshair color, an RGB triplet or color name
 
         % Fired on every cursor movement while the tool is active, after
         % the crosshair is updated. (src, evt) pass through from the
@@ -32,12 +52,16 @@ classdef DataCursor < uim.interface.PointerTool
     methods
 
         function obj = DataCursor(hAxes)
+        %DataCursor Create the tool for an axes
+        %
+        %   tool = uim.interface.pointertools.DataCursor(hAxes)
             obj@uim.interface.PointerTool(hAxes)
             obj.XLimOrig = obj.Axes.XLim;
             obj.YLimOrig = obj.Axes.YLim;
         end
 
         function activate(obj)
+        %activate Turn the tool on and show the crosshair
             activate@uim.interface.PointerTool(obj)
             obj.plotCrosshair()
 
@@ -46,25 +70,30 @@ classdef DataCursor < uim.interface.PointerTool
         end
 
         function suspend(obj)
+        %suspend Put the tool on hold and hide the crosshair
             suspend@uim.interface.PointerTool(obj)
             set(obj.Crosshair, 'Visible', 'off')
         end
 
         function deactivate(obj)
+        %deactivate Turn the tool off and hide the crosshair
             deactivate@uim.interface.PointerTool(obj)
             set(obj.Crosshair, 'Visible', 'off')
             obj.IsActive = false;
         end
 
         function setPointerSymbol(obj)
+        %setPointerSymbol Set the figure pointer to a circle
             obj.Figure.Pointer = 'circle';
         end
 
         function onButtonDown(obj, ~, ~)
+        %onButtonDown Record that the button is down
             obj.IsButtonDown = true;
         end
 
         function onButtonMotion(obj, src, evt)
+        %onButtonMotion Move the crosshair to the pointer and call CursorMovedFcn
 
             currentPoint = obj.Axes.CurrentPoint(1, 1:2);
 
@@ -79,6 +108,7 @@ classdef DataCursor < uim.interface.PointerTool
         end
 
         function onButtonUp(obj, ~, ~)
+        %onButtonUp Record that the button is up
             obj.IsButtonDown = false;
         end
 

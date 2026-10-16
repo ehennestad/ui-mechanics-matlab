@@ -1,4 +1,37 @@
 function hP = patchLineDrawing(ax, im, varargin)
+%patchLineDrawing Trace the dark shapes of a line drawing as filled polygons
+%
+%   hP = uim.graphics.patchLineDrawing(ax, im) traces the boundaries of
+%   the dark regions of the image im and plots them into the axes ax as
+%   one black polygon object. im is a grayscale or RGB image with values
+%   from 0 to 255; pixels whose mean over the color channels is below
+%   100 count as dark. Very short boundaries are dropped; with plotType
+%   'polygon' at least one boundary must remain.
+%
+%   Coordinates are image pixels centred on the image: x is the column
+%   and y is the row, each minus half the image size. y grows with the
+%   row number, so the drawing appears upright only in an axes with
+%   YDir 'reverse'.
+%
+%   hP = uim.graphics.patchLineDrawing(ax, im, Name=Value) sets options:
+%     SmoothIter   - Number of circular moving-mean passes over each
+%                    boundary. Default 2; 0 disables smoothing.
+%     SmoothWindow - Moving-mean window length in points. Default 10.
+%     cropImage    - If true (default), first trim the white (255)
+%                    border around the content.
+%     plotType     - 'polygon' (default) plots one
+%                    matlab.graphics.primitive.Polygon holding every
+%                    boundary. 'patch' plots one patch per outer
+%                    boundary, with the holes it contains cut out, and
+%                    returns a column of patch handles.
+%   Option names are case insensitive and may be abbreviated; unknown
+%   names are ignored. The function does not change the hold state of
+%   ax, so with plotType 'polygon' the plot replaces the axes content
+%   unless the axes is held.
+%
+%   The tracing uses bwboundaries from the Image Processing Toolbox.
+%
+%   See also uim.graphics.ImageVector, uim.style.IconSet
 
     def = struct('SmoothIter', 2, 'SmoothWindow', 10, 'cropImage', true, ...
         'plotType', 'polygon');

@@ -1,18 +1,38 @@
 classdef NameValueAssignable < uim.Handle & matlab.mixin.SetGet
-%NameValueAssignable Class interface for parsing inputs to properties.
+%NameValueAssignable Mixin that assigns name-value pairs to properties
 %
-%   Parse inputs in the form of either a) cell array of name value pairs or
-%   b) a struct of fields reflecting class properties. This class should
-%   also convert an object to a struct, or vice versa. This class ignores
-%   all transient properties.
+%   Subclasses call obj.parseInputs(varargin{:}) in their constructor to
+%   assign name-value pairs to properties. Most uim components and
+%   widgets get their Name=Value construction syntax from this class.
 %
-%   Dependencies: parsenvpairs
+%   Contract for subclasses:
+%       - Call parseInputs(obj, Name1, Value1, ...) from the constructor.
+%         Values are assigned to public, settable, non-transient
+%         properties in the order the properties appear in the class
+%         metadata, not in argument order. Names that match no such
+%         property are ignored without an error.
+%         Names are case-sensitive.
+%       - Optionally override the static, protected method
+%         getDefaultPropertyValues to return a struct of default values.
+%         These are merged in before the caller's name-value pairs, which
+%         take precedence.
+%
+%   Methods:
+%       toStruct   - Property values as a struct
+%       fromStruct - Not implemented; does nothing
+%
+%   See also uim.abstract.Component
 
 %   Todo: implement fromStruct method...
 
     methods (Access = protected)
 
         function parseInputs(obj, varargin)
+        %parseInputs Assign name-value pairs to public properties
+        %
+        %   obj.parseInputs(Name1, Value1, ...) merges the pairs into the
+        %   defaults from getDefaultPropertyValues and assigns the result to
+        %   public, settable, non-transient properties (see class help).
 
             % NOTE! It is important that the varargin inputs are set to
             % property values after default because some properties depend
@@ -48,6 +68,12 @@ classdef NameValueAssignable < uim.Handle & matlab.mixin.SetGet
         end
 
         function varargout = addComponentDefaultValues(obj, cellOfArgin)
+        %addComponentDefaultValues Merge name-value pairs into the defaults
+        %
+        %   C = obj.addComponentDefaultValues(nameValueCell) returns the
+        %   defaults from getDefaultPropertyValues, overridden by the pairs
+        %   in nameValueCell, as one name-value cell array.
+
             % Question: Are subclass defaults overriding superclass
             % defaults now?
 
@@ -72,7 +98,11 @@ classdef NameValueAssignable < uim.Handle & matlab.mixin.SetGet
     methods (Static, Access = protected)
 
         function S = getDefaultPropertyValues()
-            % Subclass may override
+        %getDefaultPropertyValues Default property values for parseInputs
+        %
+        %   S = getDefaultPropertyValues() returns a struct whose fields
+        %   are property names. This implementation returns an empty
+        %   struct; subclasses may override it.
             S = struct;
         end
     end
@@ -80,6 +110,14 @@ classdef NameValueAssignable < uim.Handle & matlab.mixin.SetGet
     methods
 
         function S = toStruct(obj)
+        %toStruct Property values as a struct
+        %
+        %   S = obj.toStruct() reads every property that is not Hidden,
+        %   including Dependent ones, with get and returns them as struct
+        %   fields. The read goes through the public get interface, so it
+        %   raises an error when the class has a private or protected
+        %   property that is not Hidden; uim components have such
+        %   properties.
 
             mc = metaclass(obj);
 
@@ -93,6 +131,7 @@ classdef NameValueAssignable < uim.Handle & matlab.mixin.SetGet
         end
 
         function fromStruct(obj)
+        %fromStruct Not implemented; does nothing
         end
 
 % % %         function saveobj()

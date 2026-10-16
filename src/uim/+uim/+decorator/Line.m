@@ -1,5 +1,24 @@
 classdef Line < uim.abstract.Control
-%Line A decorator for drawing a plain line in a widget.
+%Line Plain line drawn on a component canvas
+%
+%   A decorative line, for example a divider inside a widget. The
+%   component background is hidden; only the line is drawn.
+%
+%   ln = uim.decorator.Line(parent, Name=Value) creates the line in
+%   parent (a uim.UIComponentCanvas, a uim container, an axes or a
+%   graphics container) and sets public properties, for example
+%
+%       ln = uim.decorator.Line(canvas, XData=[5, 25], YData=[30, 30], ...
+%           Color=[1, 0, 0], LineWidth=2);
+%
+%   Without XData and YData the line runs from (Position(1),
+%   Position(2)) to (Position(3), Position(4)): the last two elements of
+%   Position are read as end coordinates, not as width and height.
+%
+%   Color and LineWidth are applied when the line is created; changing
+%   them afterwards does not update the line.
+%
+%   See also uim.decorator.Separator
 
     % Todo:
     %   [ ] Should there be a list of allowed parents?
@@ -8,17 +27,17 @@ classdef Line < uim.abstract.Control
     %   [ ] Subclass from Decorator instead of Control
 
     properties (Constant)
-        Type = 'Line'
+        Type = 'Line' % Component type name.
     end
 
     properties
-        XData
-        YData
+        XData % Line x-coordinates in canvas pixels. Empty uses Position (see class help).
+        YData % Line y-coordinates in canvas pixels. Empty uses Position (see class help).
     end
 
     properties
-        Color = ones(1,3) * 0.5
-        LineWidth = 0.5
+        Color = ones(1,3) * 0.5 % Line colour. Read at construction only.
+        LineWidth = 0.5 % Line width in points. Read at construction only.
     end
 
     properties (Access = protected, Transient)
@@ -27,6 +46,9 @@ classdef Line < uim.abstract.Control
 
     methods
         function obj = Line(varargin)
+        %Line Create a line decorator
+        %
+        %   ln = uim.decorator.Line(parent, Name=Value)
 
             obj@uim.abstract.Control(varargin{:})
 

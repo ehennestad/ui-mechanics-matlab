@@ -1,13 +1,13 @@
 classdef DropDown < uim.abstract.Control
 %DropDown A popup selector for choosing one item from a list
 %
-%   dropdown = uim.widget.DropDown(hParent, Name, Value, ...) creates a
+%   dropdown = uim.widget.DropDown(hParent, Name=Value) creates a
 %   dropdown in hParent (a figure, panel, axes or uim canvas), e.g.:
 %
 %       dropdown = uim.widget.DropDown(hAxes, ...
-%           'Items', ["gray", "jet", "parula"], 'Value', "gray", ...
-%           'Location', 'northwest', ...
-%           'ValueChangedFcn', @(src, evt) colormap(hAxes, evt.NewValue));
+%           Items=["gray", "jet", "parula"], Value="gray", ...
+%           Location="northwest", ...
+%           ValueChangedFcn=@(src, evt) colormap(hAxes, char(evt.NewValue)));
 %
 %   Clicking the control opens a list below it; clicking an item selects
 %   it, closes the list, and notifies the host through ValueChangedFcn
@@ -25,13 +25,21 @@ classdef DropDown < uim.abstract.Control
 %   open list uses ListBackgroundColor/ListBackgroundAlpha/
 %   ListBorderColor, and the row fills use HighlightColor (hover) and
 %   SelectionColor (selected item). Text and the arrow follow
-%   ForegroundColor.
+%   ForegroundColor. FontName and FontSize apply at construction and to
+%   the list rows each time the list opens.
 %
+%   Assigning a Value that is not in Items, or Items that do not contain
+%   the current Value, raises uim:DropDown:InvalidValue. Value "" (no
+%   selection) is always accepted; assigning Items while Value is ""
+%   selects the first item.
+%
+%   See also uim.widget.Spinner, uim.event.ValueChangedEventData
+
 %   Todo:
 %       [ ] Open upward when there is no room below the control.
 
     properties (Constant) % Inherited from Component
-        Type = 'DropDown'
+        Type = 'DropDown' % Component type name
     end
 
     properties
@@ -42,8 +50,8 @@ classdef DropDown < uim.abstract.Control
 
         ValueChangedFcn = []    % Fired when the user selects an item. (src, uim.event.ValueChangedEventData)
 
-        FontName = 'helvetica'
-        FontSize = 12
+        FontName = 'helvetica'  % Font of the value and list rows
+        FontSize = 12           % Font size in pixels
     end
 
     properties % List appearance
@@ -52,6 +60,7 @@ classdef DropDown < uim.abstract.Control
         % List colors take effect the next time the list opens.
 
         ListBackgroundColor = []        % Background of the open list. Empty: follow BackgroundColor
+        % Opacity of the open list background, 0 (transparent) to 1 (opaque)
         ListBackgroundAlpha (1,1) double ...
             {mustBeGreaterThanOrEqual(ListBackgroundAlpha, 0), ...
              mustBeLessThanOrEqual(ListBackgroundAlpha, 1)} = 0.9
@@ -80,6 +89,10 @@ classdef DropDown < uim.abstract.Control
     methods % Structors
 
         function obj = DropDown(hParent, varargin)
+        %DropDown Create a dropdown
+        %
+        %   dropdown = uim.widget.DropDown(hParent, Name=Value). See the
+        %   class help for the inputs.
 
             obj@uim.abstract.Control(hParent, varargin{:})
 
@@ -108,6 +121,10 @@ classdef DropDown < uim.abstract.Control
 
         function open(obj)
         %open Show the item list below the control
+        %
+        %   dropdown.open() draws the list and closes it again on the next
+        %   click outside the widget. It does nothing when the list is
+        %   already open or Items is empty.
 
             if obj.IsOpen || isempty(obj.Items); return; end
 
@@ -121,6 +138,9 @@ classdef DropDown < uim.abstract.Control
 
         function close(obj)
         %close Remove the item list
+        %
+        %   dropdown.close() deletes the list graphics. It does nothing when
+        %   the list is not open.
 
             if ~isempty(obj.WindowMousePressListener)
                 delete(obj.WindowMousePressListener)
@@ -407,6 +427,11 @@ classdef DropDown < uim.abstract.Control
     methods (Static)
 
         function S = getTypeDefaults()
+        %getTypeDefaults Default property values for this component type
+        %
+        %   S = uim.widget.DropDown.getTypeDefaults() returns a struct of
+        %   property values used at construction. A name-value pair for
+        %   the same property replaces the default.
             S.IsFixedSize = [true, true];
             S.BackgroundColor = 'k';
             S.BackgroundAlpha = 0.6;

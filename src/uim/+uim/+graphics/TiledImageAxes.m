@@ -1,74 +1,109 @@
 classdef TiledImageAxes < uim.Handle
-%TiledImageAxes Class for creating image tiles in an axes
+%TiledImageAxes Grid of image tiles drawn in a single axes
 %
-%   Create an axes with a grid of tiles, where each tile can hold an image,
-%   a line/patch and a text object. Additionally tiles can be selected
-%   and it is possible to add custom callback functions to the action of
-%   selecting a tile.
+%   A TiledImageAxes works like a grid of small subplots inside one
+%   axes. Each tile can show an image, a line drawing (patch) and a text
+%   label, and can be selected with a click. All tile images share one
+%   image object, so a grid of hundreds of tiles updates much faster
+%   than a figure with as many real subplots.
 %
-%   This class will function like a virtual subplot in the sense that you
-%   can plot into multiple small subplots whereas the actual axes object is
-%   one "matlab.graphics.axis.Axes" object. This means that the class is
-%   much less flexible than having a figure with real subplots, but on the
-%   other hand it can provide a powerful engine for plotting e.g. 100s of
-%   images in a montage/mosaic, with added functionality like plotting
-%   something on top and adding textlabels. And as stated before, tiles can
-%   be selected and trigger custom callback functions.
+%   obj = uim.graphics.TiledImageAxes() creates the tiled axes in a new
+%   figure.
 %
-%   Making a figure with 10s to hundreds of subplots in a figure, would
-%   update much slower than what is possible with this class.
+%   obj = uim.graphics.TiledImageAxes(parent) creates it in parent, a
+%   figure, uipanel or uitab.
 %
+%   obj = uim.graphics.TiledImageAxes(parent, Name=Value) also sets
+%   GridSize, ImageSize, NumChannels, NormalizedPadding, TileUnits,
+%   Visible, TileConfiguration or Padding. Names are case insensitive;
+%   other names are ignored.
 %
-%   Examples:
-%       See mclassifier.manualClassifier &
-%       imviewer.widgets.ThumbnailSelector for practical examples.
-
-% Todo:
-%   [ ] Make TileCallbackFcn a property and invoke it internally whenever a
-%       tile is selected. Define eventdata that has the tile number as a
-%       property.
+%   Tiles are numbered row by row, from the upper-left tile. The axes
+%   has YDir 'reverse' and is invisible. With TileUnits 'pixel', axes
+%   coordinates are pixels of the composite image. With 'scaled', they
+%   are pixels of the original images (see setOriginalImageSize), which
+%   are resized to ImageSize for display.
+%
+%   Changing GridSize or ImageSize rebuilds the tiles, and so does a
+%   change of TileUnits or of the original image size that changes the
+%   axes scale. Rebuilding clears tile images and plots, and gives the
+%   outlines their default color and click callback (selectTile) back.
+%
+%   Deleting the object deletes its axes.
+%
+%   TiledImageAxes methods:
+%     updateTileImage         - Show image data in tiles
+%     removeTileImage         - Clear the image of tiles
+%     updateTileText          - Set the text label of tiles
+%     updateTilePlot          - Draw a line drawing in tiles
+%     resetTile               - Clear image, plot, text and color of tiles
+%     resetAxes               - Clear all tiles
+%     selectTile              - Select a tile, as a click on it does
+%     setTileOutlineColor     - Color the outline of a tile
+%     tileCallbackFcn         - Replace the click callback of a tile
+%     hittest                 - Tile number at a point
+%     getTileCenterAxesCoords - Axes coordinate of a tile's centre
+%
+%   Example:
+%       hFigure = figure;
+%       tiles = uim.graphics.TiledImageAxes(hFigure, GridSize=[2, 3], ...
+%           ImageSize=[64, 64]);
+%       tiles.updateTileImage(uint8(255 * rand(64, 64)), 1)
+%       tiles.updateTileText('Tile 1', 1)
+%       tiles.TileCallbackFcn = @(~, ~, tileNum) disp(tileNum);
+%
+%   See also uim.graphics.internal.computeTileLayout
 
 % "Persistent settings" Consider if it should be configurable for objects.
 properties (Constant = true)
-    PlotOrder = 'rowwise'       % rowwise | columnwise
+    PlotOrder = 'rowwise'       % Tile numbering order: rowwise | columnwise
 end
 
 properties % Properties to configure axes layout (Default values are preset)
     GridSize = [3, 5]           % [nRows, nCols]
     ImageSize = [128, 128]      % [imHeight, imWidth] Size (Reso) in px per tile
-    Padding = 10                % Number of pixels between each tile. Todo: Rename to spacing. Note: not in use
-    NumChannels = 1;            % Number of color channels.
+    Padding = 10                % Not used; see NormalizedPadding.
+    NumChannels = 1;            % Color channels per tile: 1 (colormapped) or 3 (RGB). Set at construction.
 
-    NormalizedPadding = 0.012;  % Padding between tiles in normalized units.
-    TileUnits = 'pixel'         % pixel | scaled. scaled units will set axes coordinates in a scaled unit vis a vis pixels.
+    % Gap between tiles as a fraction of the grid height in pixels
+    % (NumRows * ImageSize(1)). Set at construction.
+    NormalizedPadding = 0.012;
+    TileUnits = 'pixel'         % pixel | scaled: axes coordinates in composite-image or original-image pixels
 
-    Visible = 'on'
+    Visible = 'on'              % on | off: visibility of the tile graphics
 end
 
 properties % Properties for configuration of appearance
 
+    % Tile appearance: outline colors, the colormap applied at
+    % construction, the text color for new labels, and the face alpha of
+    % a selected tile.
     TileConfiguration = struct('DefaultTileColor', ones(1,3)*0.7, ...
                                'SelectedTileColor', ones(1,3)*0.5, ...
                                'DefaultColorMap', 'parula', ...
                                'TextColor', ones(1,3)*0.8, ...
                                'SelectedTileAlpha', 0.4)
 
+    % If true, brighten a tile outline while the pointer is over it.
+    % Needs the Image Processing Toolbox; without it nothing happens.
     HighlightTileOnMouseOver = false
+
+    % Called as TileCallbackFcn([], [], tileNum) after a tile is selected
     TileCallbackFcn
 end
 
 properties (SetAccess = protected) % Properties for public access
-    SelectedTiles  % Number of tiles that are selected
-    AxesRange      % Store the range of axes limits for quick retrieval ([x,y])
+    SelectedTiles  % Number of the selected tile, or empty
+    AxesRange      % Width and height of the axes limits, [xRange, yRange]
 end
 
 properties (Dependent = true) % General info about class objects
-    Figure
-    Axes
-    NumTiles
-    NumRows
-    NumColumns
-    Position
+    Figure      % Figure that contains the axes
+    Axes        % Axes that holds the tiles
+    NumTiles    % Number of tiles in the grid
+    NumRows     % Number of tile rows, GridSize(1)
+    NumColumns  % Number of tile columns, GridSize(2)
+    Position    % Position of the axes in its parent; setting it moves the axes
 end
 
 % Properties that are used internally
@@ -115,21 +150,22 @@ methods %Structors
 
     % % Constructor
     function obj = TiledImageAxes(varargin)
-    %TiledImageAxes Create and configure the TiledImageAxes object
+    %TiledImageAxes Create a tiled image axes
     %
-    %   TiledImageAxes Creates a tiled image axes in a new figure.
+    %   obj = uim.graphics.TiledImageAxes()
+    %   obj = uim.graphics.TiledImageAxes(parent)
+    %   obj = uim.graphics.TiledImageAxes(parent, Name=Value)
     %
-    %   TiledImageAxes(parent) Creates a tiled images axes in an existing
-    %   figure or uipanel.
-    %
-    %   TiledImageAxes(..., Name, Value) creates a tiled images given
-    %   additional parameters.
-    %
-    %   Parameters:
-    %       GridSize            : size of grid with tiles [nRows, nCols]
-    %       ImageSize           : nPixels for image in each tile [h, w]
-    %       Padding             : nPixels of padding between tiles (int) -- Not scale invariant :(
-    %       TileConfiguration   : 'rowwise' (default) | 'columnwise'
+    %   Name-Value arguments (see the class properties):
+    %       GridSize          - [nRows, nCols], default [3, 5]
+    %       ImageSize         - [height, width] of each tile in pixels,
+    %                           default [128, 128]
+    %       NumChannels       - 1 (default) or 3
+    %       NormalizedPadding - gap between tiles, default 0.012
+    %       TileUnits         - 'pixel' (default) or 'scaled'
+    %       Visible           - 'on' (default) or 'off'
+    %       TileConfiguration - struct of tile appearance settings
+    %       Padding           - not used
 
         isFigCreated = false;
         if nargin == 0
@@ -328,7 +364,7 @@ methods (Access = private) % Methods for setting up gui
     %   and handles for adding lines or text to the interior of each tile.
     %
     %   NOTE! This function will reset any tilecallback functions that are
-    %   assigned externally. % Todo: Should fix this...
+    %   assigned externally.
 
         if isempty(obj.Axes_); return; end % Skip during initialization
 
@@ -546,6 +582,10 @@ methods
 
     function tileNum = hittest(obj, x, y)
     %hittest Tile number at an axes coordinate (default: the pointer)
+    %
+    %   tileNum = obj.hittest() uses the axes CurrentPoint, rounded.
+    %   tileNum = obj.hittest(x, y) uses the axes coordinate (x, y).
+    %   tileNum is NaN outside the grid and in the gaps between tiles.
 
         if nargin < 3
             mousePoint = round(obj.Axes.CurrentPoint(1, 1:2));
@@ -602,6 +642,13 @@ methods
     end
 
     function setOriginalImageSize(obj, imageSize)
+    %setOriginalImageSize Set the size of the source images for scaled units
+    %
+    %   obj.setOriginalImageSize(imageSize) sets the [height, width] of
+    %   the images before they are resized to ImageSize. With TileUnits
+    %   'scaled', axes coordinates are pixels of images of this size.
+    %   updateTileImage sets it from the data it receives.
+
         % Quick fix. Not quite sure if this is actually the original image
         % size. Was needed to get the scalefactor correct, because the
         % hardcoded default value ([128,128]) of imageSize_ is not always
@@ -611,8 +658,11 @@ methods
     end
 
     function pos = getTileOffset(obj, tileNum)
-
-        %Position of tile center.
+    %getTileOffset Centre of a tile in composite-image pixels
+    %
+    %   pos = obj.getTileOffset(tileNum) returns the [x, y] mean of the
+    %   tile's pixel positions in the composite image, without the
+    %   conversion to axes coordinates that getTileCenter applies.
 
         fullSize = [obj.PixelHeight, obj.PixelWidth];
 
@@ -623,12 +673,21 @@ methods
     end
 
     function pixelpos = getpixelposition(obj)
+    %getpixelposition Position of the axes in pixels
+    %
+    %   pixelpos = obj.getpixelposition() returns getpixelposition of the
+    %   axes, [left, bottom, width, height] relative to its parent.
         pixelpos = getpixelposition(obj.Axes);
     end
 
     function pos = getTileCenter(obj, tileNum)
-
-        %Position of tile center.
+    %getTileCenter Centre of a tile in axes coordinates
+    %
+    %   pos = obj.getTileCenter(tileNum) returns the [x, y] mean of the
+    %   tile's pixel positions, divided by the scale factor between axes
+    %   units and composite-image pixels.
+    %
+    %   See also getTileCenterAxesCoords
 
         fullSize = [obj.PixelHeight, obj.PixelWidth];
 
@@ -640,6 +699,9 @@ methods
 
     function pos = getTileCenterAxesCoords(obj, tileNum)
     %getTileCenterAxesCoords Axes coordinate of a tile's centre
+    %
+    %   pos = obj.getTileCenterAxesCoords(tileNum) returns [x, y] in axes
+    %   units. hittest(pos(1), pos(2)) returns tileNum.
         pos = uim.graphics.internal.tileCenter(tileNum, obj.NumColumns, ...
             obj.ImageSize, obj.PixelPadding, obj.ScaleFactor);
     end
@@ -694,7 +756,12 @@ methods
 % % %     end
 
     function fitAxes(obj)
-    %fitAxes Todo: Rename, and make sure it does not exceed screen size...
+    %fitAxes Resize the axes to show one screen pixel per image pixel
+    %
+    %   obj.fitAxes() sets the axes width and height in pixels to the
+    %   size of the composite image, keeping its lower-left corner.
+
+    % Todo: Rename, and make sure it does not exceed screen size...
 
         fullSize = [obj.PixelWidth, obj.PixelHeight];
 
@@ -709,16 +776,22 @@ methods
 
 % % Reset imagedata, e.g before an update
     function resetAxes(obj)
-    %resetAxes Reset children of axes. Useful before running updates.
+    %resetAxes Clear the content of all tiles before an update
+    %
+    %   obj.resetAxes() sets every pixel of the composite image to 255
+    %   and clears all tile plots and text. Image transparency and
+    %   outline colors are unchanged.
         obj.Image.CData(:) = 255;
         set(obj.TilePlot, 'XData', nan, 'YData', nan)
         set(obj.TileText, 'String', '')
     end
 
     function resetTile(obj, tileNum)
-    %resetTile Reset graphic data in tiles given by tileNum
+    %resetTile Clear the image, plot, text and outline color of tiles
     %
-    %   tileNum can be a vector or tileNumbers.
+    %   obj.resetTile(tileNum) restores the default outline color, clears
+    %   and hides the image, and clears the plot and text of each tile in
+    %   tileNum, a row vector of tile numbers.
 
         % Todo: Avoid looping
         for i = tileNum
@@ -733,7 +806,18 @@ methods
 % % Update image or plot data within a tile.
 
     function updateTileImage(obj, imdata, tileNum)
-    %updateTileImage Update image data in given tile(s)
+    %updateTileImage Show image data in one or more tiles
+    %
+    %   obj.updateTileImage(imdata, tileNum) writes imdata into the tiles
+    %   listed in tileNum and makes them opaque. imdata is
+    %   height-by-width for one tile, height-by-width-by-n for n tiles
+    %   with NumChannels 1, and height-by-width-by-NumChannels-by-n
+    %   otherwise. The composite image is uint8, so values are converted
+    %   to uint8; with NumChannels 1 they index the axes colormap.
+    %
+    %   Data whose height and width differ from ImageSize is resized with
+    %   imresize (Image Processing Toolbox), and its size becomes the
+    %   original image size (see setOriginalImageSize).
 
         [h, w, ~] = size(imdata);
 
@@ -761,6 +845,10 @@ methods
     end
 
     function removeTileImage(obj, tileNum)
+    %removeTileImage Clear the image of one or more tiles
+    %
+    %   obj.removeTileImage(tileNum) sets the tiles' pixels to 0 and makes
+    %   them transparent.
 
         if obj.NumChannels == 1
             obj.Image.CData([obj.TileIndices{tileNum}]) = 0;
@@ -776,9 +864,17 @@ methods
     end
 
     function updateTileText(obj, textString, tileNum, varargin)
-    %updateTileText Update displayed text in given tile(s)
+    %updateTileText Set the text label of one or more tiles
     %
-    %   Input: textString : string or cell array of strings.
+    %   obj.updateTileText(textString, tileNum) sets the label of each
+    %   tile in tileNum. textString is a character vector for one tile,
+    %   or a cell array of character vectors with one element per tile.
+    %   A string scalar is not accepted.
+    %   Labels sit near the upper-left corner of their tile.
+    %
+    %   obj.updateTileText(textString, tileNum, Name, Value) also sets
+    %   text object properties, such as Color or FontSize, on those
+    %   labels.
 
         if isa(textString, 'cell') && isrow(textString)
             textString = textString';
@@ -794,10 +890,14 @@ methods
     end
 
     function updateTilePlot(obj, xData, yData, tileNum)
-    %updateTilePlot Update displayed plot in given tile(s)
+    %updateTilePlot Draw a line drawing in one or more tiles
     %
-    %   Input:  xData : vector or cell array of vectors.
-    %           yData : vector or cell array of vectors.
+    %   obj.updateTilePlot(xData, yData, tileNum) sets the patch of each
+    %   tile in tileNum to the vertices in xData and yData. Both are cell
+    %   arrays with one vector per tile, in axes units relative to the
+    %   tile centre. The patches have a white edge and a nearly
+    %   transparent face. The x and y range of each tile is stored in
+    %   the patch's UserData as the fields XLim and YLim.
 
         % Shift plot coordinates to center of current tile
         fullSize = [obj.PixelHeight, obj.PixelWidth];
@@ -826,22 +926,38 @@ methods
     end
 
     function updateTilePlotLinewidth(obj, tileNum, lineWidth)
+    %updateTilePlotLinewidth Set the line width of tile plots
+    %
+    %   obj.updateTilePlotLinewidth(tileNum, lineWidth) sets the patch
+    %   LineWidth, a scalar in points, for the tiles in tileNum.
         set(obj.TilePlot(tileNum), 'LineWidth', lineWidth')
     end
 
     % TODO: Rename these methods to setCallbacks
     function tileCallbackFcn(obj, funHandle, tileNum)
-    %tileCallbackFcn Add a callback to mouse press within given tile.
+    %tileCallbackFcn Replace the click callback of a tile outline
+    %
+    %   obj.tileCallbackFcn(funHandle, tileNum) sets the ButtonDownFcn of
+    %   the outline of tile tileNum, replacing the default selectTile.
+    %   Rebuilding the tiles restores the default.
         obj.TileOutline(tileNum).ButtonDownFcn = funHandle;
     end
 
     function tilePlotButtonDownFcn(obj, funHandle, tileNum)
+    %tilePlotButtonDownFcn Set the click callback of a tile plot
+    %
+    %   obj.tilePlotButtonDownFcn(funHandle, tileNum) sets the
+    %   ButtonDownFcn of the patch of tile tileNum.
         obj.TilePlot(tileNum).ButtonDownFcn = funHandle;
     end
 
     % % % Keypress callback
 
     function keypress(obj, ~, event)
+    %keypress End a uiwait on Return or Escape
+    %
+    %   The KeyPressFcn of the figure the object creates when no parent
+    %   is given.
 
         switch event.Key
             case 'return'
@@ -859,7 +975,12 @@ methods
     end
 
     function ind = uiwait(obj)
-    %uiwait Implements uiwait on the gui figure and returns selected tile ind
+    %uiwait Wait for the user to choose a tile in the object's own figure
+    %
+    %   ind = obj.uiwait() blocks until the user presses Return, then
+    %   closes the figure and returns SelectedTiles. If the figure is
+    %   closed instead, ind is NaN. Only an object created without a
+    %   parent has the key handler that ends the wait.
 
     % Dont remember what this is used for.
 
@@ -886,7 +1007,12 @@ methods
     % % % User callbacks
 
     function selectTile(obj, ~, ~, tileNum)
-    %selectTile Select tile on mousepress and change its color.
+    %selectTile Select a tile, as a click on its outline does
+    %
+    %   obj.selectTile(src, event, tileNum) restores the default color of
+    %   the previously selected tile, colors tile tileNum with
+    %   SelectedTileColor, sets SelectedTiles and calls TileCallbackFcn.
+    %   src and event are ignored.
 
         % Todo: toggle select/unselect
 
@@ -907,7 +1033,12 @@ methods
     end
 
     function setTileOutlineColor(obj, tileNum, color)
-    %setTileOutlineColor Set color of tile outline
+    %setTileOutlineColor Color the outline and face of one tile
+    %
+    %   obj.setTileOutlineColor(tileNum, color) colors the edge and face
+    %   of the tile with face alpha SelectedTileAlpha (at least 0.01).
+    %   obj.setTileOutlineColor(tileNum) restores DefaultTileColor with
+    %   face alpha 0.05. tileNum is a single tile number.
 
     % NB: Only works for one tile at a time.
     % Todo: Adapt to work for more than one tile.
@@ -930,15 +1061,18 @@ methods
     end
 
     function setTextColor(obj, newColor)
+    %setTextColor Set the color of all tile labels
         obj.TileConfiguration.TextColor = newColor;
         set(obj.TileText, 'Color', newColor)
     end
 
     function setPlotVisibility(obj, mode)
+    %setPlotVisibility Show ('on') or hide ('off') all tile plots
         set(obj.TilePlot, 'Visible', mode)
     end
 
     function setTileTransparency(obj, tileNum, alphaLevel)
+    %setTileTransparency Set the face alpha (0-1) of tile outlines
         set(obj.TileOutline(tileNum), 'FaceAlpha', alphaLevel)
     end
 end
@@ -964,13 +1098,10 @@ methods (Access = private) % Internal gui management
                 newScaleFactor = [1, 1];
         end
 
-        % This is a trainwreck solution. Calling change grid size will call
-        % updateGraphicsObjects which will reset any tileCallback assigned
-        % from external interface. Need to fix. BIG Todo!
+        % changeGridSize calls updateGraphicsObjects, which resets any tile
+        % callback assigned from an external interface.
         if any(obj.ScaleFactor ~= newScaleFactor)
             obj.ScaleFactor = newScaleFactor;
-            % Todo: Change this. Dont need to change the whole grid, just axes
-            % limits and update graphics object
             obj.changeGridSize()
         end
     end
@@ -1018,8 +1149,8 @@ methods(Static)
     function points = bbox2points(bbox)
         % BBOX2POINTS Convert a rectangle into a list of points
         %
-        %   points = BBOX2POINTS(rectangle) converts a bounding box
-        %   into a list of points. rectangle is either a single
+        %   points = uim.graphics.TiledImageAxes.bbox2points(bbox)
+        %   converts a bounding box into a list of points. bbox is either a single
         %   bounding box specified as a 4-element vector [x y w h],
         %   or a set of bounding boxes specified as an M-by-4 matrix.
         %   For a single bounding box, the function returns a list of 4 points

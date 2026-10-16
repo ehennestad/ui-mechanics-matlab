@@ -1,5 +1,22 @@
 classdef Separator < uim.abstract.Control
-%Separator A decorator for separating groups of controls in a widget.
+%Separator Vertical divider between groups of controls
+%
+%   A vertical line at the left edge of the component (x = Position(1)),
+%   centred vertically and spanning Height times the component height.
+%   uim.widget.Toolbar and uim.widget.TabBar create separators with
+%   their addSeparator methods; create one directly only for a custom
+%   container.
+%
+%   sep = uim.decorator.Separator(parent, Name=Value) creates the
+%   separator in parent and sets public properties, for example
+%
+%       sep = uim.decorator.Separator(canvas, Position=[100, 5, 0, 30], ...
+%           PositionMode="manual", SizeMode="manual", Height=0.6);
+%
+%   Color, LineWidth and Height are applied when the line is drawn or
+%   moved; changing Color or LineWidth afterwards does not update it.
+%
+%   See also uim.widget.Toolbar, uim.decorator.Line
 
     % Todo:
     %   [ ] Should there be a list of allowed parents?
@@ -8,13 +25,13 @@ classdef Separator < uim.abstract.Control
     %   [ ] Subclass from Decorator instead of Control
 
     properties (Constant)
-        Type = 'Separator'
+        Type = 'Separator' % Component type name.
     end
 
     properties
-        Color = ones(1,3) * 0.5
-        LineWidth = 1
-        Height = 0.8 % Fraction of toolbar height (0,1)
+        Color = ones(1,3) * 0.5 % Line colour. Read at construction only.
+        LineWidth = 1 % Line width in points. Read at construction only.
+        Height = 0.8 % Line length as a fraction (0 to 1) of the component height.
     end
 
     properties (Access = protected, Transient)
@@ -23,6 +40,9 @@ classdef Separator < uim.abstract.Control
 
     methods
         function obj = Separator(varargin)
+        %Separator Create a separator
+        %
+        %   sep = uim.decorator.Separator(parent, Name=Value)
 
             obj@uim.abstract.Control(varargin{:})
 

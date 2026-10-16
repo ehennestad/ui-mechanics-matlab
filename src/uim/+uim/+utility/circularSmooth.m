@@ -1,5 +1,17 @@
 function data = circularSmooth(data, windowSize, method)
-%CIRCULARSMOOTH Smooth a vector using circular boundary padding.
+%circularSmooth Smooth a vector that wraps around at its ends
+%
+%   data = uim.utility.circularSmooth(data, windowSize) smooths data with a
+%   moving mean over windowSize samples, treating the data as circular:
+%   samples near one end are averaged with samples from the other end.
+%   windowSize is a positive integer; a window longer than the data is
+%   reduced to the data length. Row vectors stay row vectors; any other
+%   shape is returned as a column vector. Empty data is returned as is.
+%
+%   data = uim.utility.circularSmooth(data, windowSize, method) uses
+%   another smoothdata method, for example "movmedian" or "gaussian".
+%
+%   See also smoothdata
 
     arguments
         data {mustBeNumeric}

@@ -1,9 +1,17 @@
 function pixelCoordinates = du2px(ax, dataUnits, recursive)
-%Convert data unit coordinates to pixel coordinates
+%du2px Convert axes data coordinates to pixel coordinates
 %
-%   pixelCoords = du2px(ax, dataUnits)
-
-% Todo: Does it need to change if axis are reversed... Probably
+%   pixelCoordinates = uim.utility.du2px(ax, dataUnits) converts the
+%   n-by-2 array of [x, y] points in data units of axes ax to pixels from
+%   the lower-left corner of the axes. XLim and YLim are mapped onto the
+%   axes pixel position from getpixelposition, and reversed axis
+%   directions (XDir or YDir 'reverse') are taken into account.
+%
+%   pixelCoordinates = uim.utility.du2px(ax, dataUnits, recursive) with
+%   recursive true returns pixels relative to the figure instead
+%   (default false).
+%
+%   See also uim.utility.px2du
 
     if nargin < 3
         recursive = false; % See getpixelposition doc

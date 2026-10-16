@@ -1,18 +1,52 @@
 classdef Control < uim.abstract.Component
+%Control Abstract base class for interactive components
+%
+%   A control is a uim.abstract.Component that reacts to the mouse, such
+%   as a button or a slider. It always draws on its parent's shared
+%   canvas.
+%
+%   Construction (through a concrete subclass):
+%       obj = SubclassName(hParent, Name=Value)
+%   accepts the parents and name-value arguments described in
+%   uim.abstract.Component. Passing CanvasMode raises an error.
+%
+%   Once constructed, a control
+%       - sets the figure pointer to 'hand' while the pointer is over
+%         its background patch, and to 'arrow' when the pointer leaves,
+%       - shows Tooltip, if not empty, centered about 15 pixels below
+%         its bottom edge while the pointer is over it,
+%       - records mouse presses: onMousePressed sets IsMousePressed and
+%         listens for the figure's WindowMouseRelease event, which
+%         clears it again.
+%
+%   Subclass contract:
+%       - Fulfil the uim.abstract.Component contract.
+%       - Set the ButtonDownFcn of the graphics object that receives
+%         clicks to @obj.onMousePressed. An override must call
+%         onMousePressed@uim.abstract.Control.
+%       - Override the protected method changeAppearance to update the
+%         look. It runs on pointer enter and exit, and on mouse press
+%         and release.
+%       - Call Callback when the control is activated. Each subclass
+%         defines the arguments it passes.
+%
+%   See also uim.abstract.Component, uim.control.Button
 
     % Add showTooltip and hideTooltip should be methods of this class?
 
     properties
 
-        Callback = []
+        Callback = []   % Function handle called when the control is activated. Arguments are defined by the subclass.
 
+        % Text label for subclasses that show one, such as
+        % uim.widget.Readout.
         Label (1,:) char = '' % Todo: Create label class
 
         %HorizontalAlignment
         %VerticalAlignment
 
-        Tooltip (1,:) char = ''
-        ContextMenu = []
+        Tooltip (1,:) char = ''     % Text shown below the control while the pointer is over it. '' shows no tooltip.
+        ContextMenu = []            % Context menu stored with the control. Control does not attach it to any graphics.
     end
 
     properties (Hidden)
@@ -31,6 +65,10 @@ classdef Control < uim.abstract.Component
 
     methods
         function obj = Control(varargin)
+        %Control Construct the control part of a subclass instance
+        %
+        %   obj@uim.abstract.Control(hParent, Name, Value, ...) is called
+        %   from a subclass constructor. See uim.abstract.Component.
             obj@uim.abstract.Component( varargin{:} )
         end
 

@@ -5,8 +5,9 @@
 %       wired through uim.interface.PointerToolBinding;
 %     - a uim.widget.OverviewIndicator (southeast) showing the full data
 %       extent and the current view. Drag the view rectangle (or click
-%       elsewhere in the frame) to move the view; zooming with the
-%       tools or keyboard shortcuts (q/w/y) updates the outline.
+%       elsewhere in the frame) to move the view; zooming or panning
+%       with the tools updates the outline. The keys q, w and y toggle
+%       the zoom in, zoom out and pan tools.
 %
 %   Run from anywhere in the repository; the script puts the toolbox
 %   source first on the path.

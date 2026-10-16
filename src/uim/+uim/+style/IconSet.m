@@ -1,17 +1,34 @@
 classdef IconSet < uim.Handle
-%IconSet Class for interfacing an icon library.
+%IconSet Library of vector icons stored in a folder
 %
-% How to use: Create a folder and add pngs with icons. Preferably high
-% resolution (Also, currently, only monocolor icons are supported).
-% Initialize the IconSet with a reference (path string) to the folder and
-% use the addIcon method to add icons to the library. New icons are
-% automatically saved in the library file.
+%   An IconSet reads and extends icon_library.mat in a folder. Each icon
+%   is vector data (a struct array with polyshape Shape and Color fields)
+%   that uim.graphics.ImageVector and the Icon property of
+%   uim.control.Button accept. New icons are traced from PNG files in
+%   the same folder; use high-resolution, single-colour drawings.
 %
-% IconData for an icon is received by calling iconSet.iconName where
-% iconName is the name of the icon.
+%   iconSet = uim.style.IconSet(folderPath) loads the library in
+%   folderPath. When the folder has no icon_library.mat, the set starts
+%   empty and addIcon creates the file.
+%
+%   iconSet.iconName returns the data of the icon called iconName, for
+%   example iconSet.zoomIn. A requested name is treated as an icon when
+%   any icon name is contained in it, so an icon whose name is part of a
+%   property or method name (for example an icon named "Icon") hides
+%   that property or method.
+%
+%   Methods:
+%       addIcon         - Trace a PNG in the folder and save it as an icon
+%       addIconFromFile - Add an icon from a .mat file with an imageVector
+%       removeIcon      - Remove an icon from the set in memory
+%       listIcons       - Print the icon names
+%       loadIcons       - Reload the library file
+%       saveIcons       - Save icons to the library file
+%       createIcon      - (Static) Trace PNG files into icon data
+%
+%   See also uim.style.getDefaultIcons, uim.graphics.ImageVector
 
 % Todo:
-%   Implement remove icons
 %   Add multiple icons in one go
 %   Create colorful icons
 
@@ -19,14 +36,14 @@ classdef IconSet < uim.Handle
         IconDir                 % Path to folder where icons are saved
         FilePath                % File path to the icon library file
         IconNames               % Name of icons in set
-        IconData = struct       % Data of icons in set
+        IconData = struct       % Struct with one field of vector icon data per icon
     end
 
     methods %Structors
         function obj = IconSet(pathStr)
-        %IconSet Initialize an IconSet for an icon library
+        %IconSet Create an IconSet for the library in a folder
         %
-        %   obj = IconSet(pathStr)
+        %   iconSet = uim.style.IconSet(folderPath)
 
             obj.IconDir = pathStr;
             obj.FilePath = fullfile(obj.IconDir, 'icon_library.mat');
@@ -38,6 +55,7 @@ classdef IconSet < uim.Handle
     methods
 
         function varargout = subsref(obj, s)
+        %subsref Return icon data for iconSet.iconName; otherwise index as usual
             varargout = cell(1, nargout);
 
             switch s(1).type
@@ -68,7 +86,10 @@ classdef IconSet < uim.Handle
         end
 
         function loadIcons(obj)
-        %LOADICONS Load icons from matfile
+        %loadIcons Reload the icons from the library file
+        %
+        %   iconSet.loadIcons() reads FilePath into IconData when the file
+        %   exists, and updates IconNames.
 
             if isfile(obj.FilePath)
                 obj.IconData = load(obj.FilePath);
@@ -78,7 +99,12 @@ classdef IconSet < uim.Handle
         end
 
         function saveIcons(obj, S)
-        %SAVEICONS Save icons to matfile
+        %saveIcons Save icons to the library file
+        %
+        %   iconSet.saveIcons() saves IconData to FilePath.
+        %   iconSet.saveIcons(S) saves the fields of the struct S, one per
+        %   icon. Icons are added to an existing file; icons already in
+        %   the file and not in S are kept.
 
             if nargin < 2
                 S = obj.IconData;
@@ -92,15 +118,22 @@ classdef IconSet < uim.Handle
         end
 
         function listIcons(obj)
+        %listIcons Print the icon names, one per line
             fprintf([strjoin(obj.IconNames, '\n'), '\n'])
         end
 
         function addIcon(obj, iconName, S)
-        %addIcon Add icon to the library
+        %addIcon Add an icon to the set and save it to the library file
         %
-        %   addIcon(obj, iconName) converts a png to matlab patch data and
-        %   saves it to the icon library. iconName must be the name of a
-        %   png-file in the iconSet's root directory.
+        %   iconSet.addIcon(iconName) traces iconName.png in IconDir with
+        %   createIcon, saves the result to the library file and adds it
+        %   to IconData. Nothing is added when no such PNG exists.
+        %
+        %   iconSet.addIcon(iconName, S) saves and adds the icons in the
+        %   struct S (one field per icon) instead; iconName is not used.
+        %
+        %   Calling addIcon without iconName raises an error, because
+        %   createIcon requires an icon name.
 
             if nargin < 2
                 S = obj.createIcon(obj.IconDir);
@@ -122,6 +155,14 @@ classdef IconSet < uim.Handle
         end
 
         function addIconFromFile(obj, iconName, filePath)
+        %addIconFromFile Add an icon from a .mat file holding an imageVector
+        %
+        %   iconSet.addIconFromFile(iconName, filePath) loads the variable
+        %   imageVector from the .mat file filePath and adds it as iconName
+        %   with addIcon, which also saves it to the library file.
+        %
+        %   iconSet.addIconFromFile(iconName) asks for the file in a file
+        %   dialog, and iconSet.addIconFromFile() also asks for the name.
 
             if nargin < 3
                 [fileName, folder] = uigetfile();
@@ -143,6 +184,13 @@ classdef IconSet < uim.Handle
         end
 
         function removeIcon(obj, iconName)
+        %removeIcon Remove an icon from the set in memory
+        %
+        %   iconSet.removeIcon(iconName) removes iconName from IconData and
+        %   IconNames. The library file is not changed, so loadIcons or a
+        %   new IconSet brings the icon back. A name that matches no icon
+        %   does nothing, but a name that is only part of an icon name
+        %   raises an error.
 
             isMatch = contains(obj.IconNames, iconName);
 
@@ -154,6 +202,9 @@ classdef IconSet < uim.Handle
         end
 
         function setSimplifyFalse(obj)
+        %setSimplifyFalse Rebuild every icon polyshape with Simplify false
+        %
+        %   Changes IconData in memory only; call saveIcons to keep it.
 
             names = obj.IconNames;
 
@@ -176,17 +227,20 @@ classdef IconSet < uim.Handle
     methods (Static)
 
         function S = createIcon(rootDir, iconName, plotType)
-        %createIcon Create icondata from a png file
+        %createIcon Trace a PNG file into vector icon data
         %
-        %   Loads the pngs, converts the shapes in the png to boundary
-        %   coordinates and creates a set of patch properties that can
-        %   later be plotted using the patch function.
+        %   S = uim.style.IconSet.createIcon(rootDir, iconName) reads
+        %   iconName.png from rootDir (an extension on iconName is
+        %   ignored), traces its shapes with uim.graphics.patchLineDrawing
+        %   and returns a struct with one field, iconName, holding the
+        %   vector data (polyshape Shape and Color), scaled to height 1.
+        %   S is empty when the PNG is not found. A hidden figure is
+        %   created for the tracing and closed afterwards.
         %
-        %   S = createIcon(rootDir, iconName, plotType) returns a struct of
-        %   patch properties (S) given rootDir (directory with png files) and
-        %   iconName (name of icon png file). plotType can be 'patch'
-        %   (default) or 'polygon'. Not sure why I would ever want to use
-        %   polygon...
+        %   S = uim.style.IconSet.createIcon(rootDir, iconName, plotType)
+        %   sets the trace type: 'polygon' (default) or 'patch'. The
+        %   'patch' path calls an ImageVector method that does not exist
+        %   and raises an error.
 
             % Preallocate output
             S = struct.empty();

@@ -1,4 +1,19 @@
 function [nRows, nCols] = findGridSize(n, ~, fullAr)
+%findGridSize Rows and columns of a landscape grid for n tiles
+%
+%   [nRows, nCols] = uim.utility.layout.findGridSize(n) returns a grid
+%   whose aspect ratio nCols/nRows lies strictly between 4/3 and 16/9.
+%   Only grids with at least two rows and two columns are considered.
+%   When no such grid has exactly n tiles, n is increased until one does,
+%   so the grid can have more tiles than n: findGridSize(6) gives 2-by-3,
+%   findGridSize(7) gives 3-by-5, and every n from 1 to 6 gives 2-by-3.
+%
+%   [nRows, nCols] = uim.utility.layout.findGridSize(n, [], aspectRatio)
+%   targets nCols/nRows within 0.2 of aspectRatio instead. The second
+%   input is ignored.
+%
+%   Example:
+%       [nRows, nCols] = uim.utility.layout.findGridSize(4, [], 1)  % 2, 2
 
 if nargin < 3
     lowerlim = 4/3;

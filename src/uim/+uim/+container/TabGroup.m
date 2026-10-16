@@ -1,23 +1,62 @@
 classdef TabGroup < uim.abstract.Container
-%TabGroup Mimic Matlab's tabgroup container class.
+%TabGroup Container with a bar of tab buttons that switch between pages
 %
-%   This tabgroup container has more flexibility in design, but is slower
-%   to update when being resized because the code is using axes and
-%   graphical objects for the components.
+%   A canvas-drawn counterpart of MATLAB's uitabgroup. Its look is more
+%   flexible, but it is slower to update on resize, because the tab bar
+%   and background are plotted graphics.
+%
+%   tabGroup = uim.container.TabGroup(hParent) creates a tab group in
+%   hParent. Add pages with uim.container.Tab(tabGroup, Title=title).
+%   Tabs place their panels in the tab group's Parent, so hParent must
+%   be a figure, uipanel or uitab for tabs to be added.
+%
+%   tabGroup = uim.container.TabGroup(hParent, Name=Value) also sets
+%   properties. Besides the properties below, the name-value arguments
+%   of uim.abstract.Component apply. The tab group's defaults differ
+%   from Component's: Margin [20, 20, 20, 20], CornerRadius 10, an
+%   opaque grey BackgroundColor ([0.39, 0.40, 0.41]) and MinimumSize
+%   [100, 100].
+%
+%   The tab bar is a uim.widget.Toolbar, 20 pixels high, along the top
+%   edge, with one toggle button per tab. Pressing the button of another
+%   tab shows that tab's panel, hides the previous one, raises
+%   SelectionChanged and then calls SelectionChangedFcn.
+%
+%   Example:
+%       hFigure = figure();
+%       tabGroup = uim.container.TabGroup(hFigure);
+%       tabOne = uim.container.Tab(tabGroup, Title="One");
+%       tabTwo = uim.container.Tab(tabGroup, Title="Two");
+%       tabGroup.SelectionChangedFcn = @(src, evt) disp(evt.NewValue.Title);
+%
+%   See also uim.container.Tab, uim.container.Panel,
+%   uim.event.TabSelectionChangedEvent, uitabgroup
 
     properties (Constant)
-        Type = 'TabGroup'
+        Type = 'TabGroup' % Component type name
     end
 
     properties (SetAccess = protected, Transient)
-        Children uim.abstract.Component
+        Children uim.abstract.Component % Not filled by TabGroup; stays empty
     end
 
     properties
+        % Not used; the tab bar is always drawn along the top edge.
         TabLocation = 'top' % Not priority.
+
+        % Index of the selected tab: 1 once the first tab is added, [] before.
+        % It is updated when the user presses a tab button. Setting it does
+        % not change the visible tab.
         SelectedTab = []
+
+        % Function called as fcn(tabGroup, evt) after the user selects
+        % another tab. evt is a uim.event.TabSelectionChangedEvent.
         SelectionChangedFcn = []
-        ToolbarCanvasMode = 'shared' % 'shared' or 'private'. Private gives the tab button bar its own axes, stacked on top - use for tabgroups whose own canvas is heavily used by other content.
+
+        % 'shared' or 'private'. Read at construction only. Private gives
+        % the tab button bar its own axes, stacked on top - use for
+        % tabgroups whose own canvas is heavily used by other content.
+        ToolbarCanvasMode = 'shared'
     end
 
     properties (Access = private, Hidden, Transient)
@@ -32,12 +71,16 @@ classdef TabGroup < uim.abstract.Container
     end
 
     events
-        SelectionChanged
+        SelectionChanged % User selected another tab. Data: uim.event.TabSelectionChangedEvent
     end
 
     methods %structor
 
         function obj = TabGroup(hParent, varargin)
+        %TabGroup Create a tab group
+        %
+        %   tabGroup = uim.container.TabGroup(hParent, Name=Value) See the
+        %   class help.
 
             obj@uim.abstract.Container(hParent, varargin{:})
 

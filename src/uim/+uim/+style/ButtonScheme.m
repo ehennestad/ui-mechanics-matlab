@@ -11,13 +11,25 @@ classdef ButtonScheme < handle
 %   Subclass this to define a new look, and assign an instance of the
 %   subclass to a control's Style property, for example
 %   'Style', uim.style.TabButton.
+%
+%   Fields of each state struct:
+%       ForegroundColor - Colour of the label text and icon
+%       BackgroundColor - Fill colour
+%       BackgroundAlpha - Fill opacity, 0 (transparent) to 1 (opaque)
+%       BorderColor     - Border colour, or 'none'
+%       BorderWidth     - Border line width
+%       FontWeight      - (Optional) 'normal' or 'bold' for the label
+%
+%   Colours are RGB triplets or colour names such as 'k'.
+%
+%   See also uim.control.Button, uim.style.ButtonDarkMode
 
     % Todo: Add disabled on and off
 
     properties (Abstract, Constant)
-        HighlightedOn
-        HighlightedOff
-        On
-        Off
+        HighlightedOn   % Button on with the pointer over it, or any button while pressed
+        HighlightedOff  % Button off with the pointer over it
+        On              % Button on
+        Off             % Button off
     end
 end

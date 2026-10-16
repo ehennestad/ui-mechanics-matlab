@@ -1,7 +1,18 @@
 function toggleUicontrolLabel(h, strA, strB)
-%toggleUicontrolLabel Toggle the text of a uihandle (ie menu item)
+%toggleUicontrolLabel Swap one word for another in a menu item label
 %
-% Interchange strA and strB in text label of given handle h.
+%   uim.utility.toggleUicontrolLabel(h, strA, strB) replaces strA with
+%   strB in h.Text, or strB with strA when the label contains strB but
+%   not strA. h is an object with a Text property, such as a uimenu.
+%   An empty h does nothing.
+%
+%   Example:
+%       menu = uimenu(hFigure, Text="Show grid");
+%       uim.utility.toggleUicontrolLabel(menu, "Show", "Hide")
+%       % menu.Text is now 'Hide grid'
+%
+%   A label that contains neither strA nor strB raises
+%   uim:toggleUicontrolLabel:LabelNotFound.
 
     if isempty(h); return; end
 

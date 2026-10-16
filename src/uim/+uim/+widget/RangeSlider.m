@@ -1,4 +1,51 @@
 classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
+%RangeSlider A horizontal slider with two knobs selecting a [Low, High] range
+%
+%   slider = uim.widget.RangeSlider(hParent) creates a range slider in
+%   hParent: a uim container or uim.UIComponentCanvas, an axes (the
+%   slider is drawn on an overlay canvas covering it), or a figure or
+%   panel.
+%
+%   slider = uim.widget.RangeSlider(hParent, Name=Value) also sets
+%   public properties, including the inherited layout properties such as
+%   Position, Size, Location, Margin and Padding (in pixels). Min and Max
+%   default to 0 and 1, Low and High to Min and Max. Name-value pairs
+%   are applied together, so their order does not matter; the resulting
+%   values must satisfy Min < Max and Min <= Low <= High <= Max.
+%
+%   The track runs along Position, inset by the left and right Padding.
+%   Dragging a knob moves Low or High; pressing the track moves the
+%   nearest knob to the pressed point. Values from the pointer are
+%   rounded to the nearest multiple of (Max - Min)/NumTicks, clamped to
+%   [Min, Max] and kept so that Low <= High. While a knob is pressed, a
+%   value label is shown above it (see ShowLabel). The inherited Label
+%   is drawn beside the track at LabelLocation.
+%
+%   Raising Min above Low, or lowering Max below High, moves the values
+%   along with the limit. Invalid assignments raise:
+%       uim:RangeSlider:InvalidLimits - Min >= Max
+%       uim:RangeSlider:InvalidLow    - Low < Min or Low > High
+%       uim:RangeSlider:InvalidHigh   - High > Max or High < Low
+%
+%   Callbacks receive (slider, evt), where evt is a struct with fields
+%   Low and High:
+%       ValueChangingFcn - on every change of Low or High, including
+%                          programmatic assignments
+%       Callback         - when a knob is released, when the track is
+%                          pressed, and on changes of Low or High (also
+%                          programmatic), at most CallbackRefreshRate
+%                          times a second
+%
+%   Subclasses can override the protected notifyValueChanged method to
+%   intercept Callback notifications; see uim.widget.ContrastSlider.
+%
+%   Example:
+%       hFigure = figure;
+%       slider = uim.widget.RangeSlider(hFigure, Min=0, Max=100, ...
+%           Low=20, High=80, Position=[20, 20, 200, 30], ...
+%           Callback=@(src, evt) disp([evt.Low, evt.High]));
+%
+%   See also uim.widget.ContrastSlider, uim.widget.Slider
 
     % Todo:
     %   [ ] add vertical orientation
@@ -6,7 +53,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
     %   position is set.
 
     properties (Constant)
-        Type = 'RangeSlider'
+        Type = 'RangeSlider' % Component type name
     end
 
     properties (Dependent)
@@ -17,31 +64,44 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
     end
 
     properties
+        % Number of value steps between Min and Max. Pointer values are
+        % rounded to multiples of (Max - Min)/NumTicks; no tick marks
+        % are drawn.
         NumTicks = 100
 
+        % Side of the track where Label is drawn: 'left', 'right', 'top'
+        % or 'bottom'. Read when the label is placed.
         LabelLocation = 'left'      % Todo: Add to superclass (a widget class)
 
-        TrackWidth = 2              % Width of the slider track
-        TrackColor = ones(1,3)*0.75;
-        KnobSize = 15
-        KnobMarkerStyle = 'round'   % Only round available should implement line/bar
+        TrackWidth = 2              % Line width of the track in points; used at construction
+        TrackColor = ones(1,3)*0.75; % Color of the track; used at construction
+        KnobSize = 15               % Knob diameter in pixels; also the gap between the track and Label
+        KnobMarkerStyle = 'round'   % Not used; knobs are always round. Todo: implement line/bar
 
         % Todo: move to uim.style definition....
-        KnobEdgeColorInactive = ones(1,3)*0.7;
-        KnobEdgeColorActive = [0.1195    0.6095    0.5395]; % ones(1,3)*0.3; %;
-        KnobFaceColorInactive = ones(1,3)*0.8;
-        KnobFaceColorActive = ones(1,3)*0.65;
+        % Knob colors. The inactive colors apply at construction and when
+        % a knob is released, the active colors while a knob is pressed.
+        % Hovering sets the knob fill to light grey (0.95) and leaving
+        % sets it to grey (0.8).
+        KnobEdgeColorInactive = ones(1,3)*0.7; % Knob edge at construction and after release
+        KnobEdgeColorActive = [0.1195    0.6095    0.5395]; % Knob edge while the knob is pressed
+        KnobFaceColorInactive = ones(1,3)*0.8; % Knob fill at construction and after release
+        KnobFaceColorActive = ones(1,3)*0.65; % Knob fill while the knob is pressed
 
-        TickLength = 5 % Length of tick marks
+        TickLength = 5 % Not used; the slider draws no tick marks
 
-        TextColor = ones(1,3)*0.8;
-        TextBackgroundColor = 'none';
+        TextColor = ones(1,3)*0.8;      % Color of Label and the value label; used at construction
+        TextBackgroundColor = 'none';   % Not applied to any graphics object
 
-        ShowLabel = true; % Show value label
+        ShowLabel = true; % Show the value label above a knob while it is pressed
 
-        ValueChangingFcn = []
+        ValueChangingFcn = [] % Called as ValueChangingFcn(slider, evt) on every change of Low or High
 
-        CallbackRefreshRate = inf % allowed number of updates per second. Useful for applications that do heavy computations.
+        % Maximum number of Callback calls per second caused by changes of
+        % Low or High (default inf: every change). Useful when the
+        % callback does heavy computation. The time of the last call is
+        % shared by all RangeSlider objects.
+        CallbackRefreshRate = inf
     end
 
     properties (Access = private, Transient = true)
@@ -71,6 +131,10 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
     methods % Structors
 
         function obj = RangeSlider(hParent, varargin)
+        %RangeSlider Create a range slider
+        %
+        %   slider = uim.widget.RangeSlider(hParent, Name=Value). See the
+        %   class help for the inputs.
 
             obj@uim.abstract.Control(hParent, varargin{:})
 
@@ -414,6 +478,12 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
     methods % Slider Interaction Callbacks
 
         function onSliderKnobPressed(obj, src, ~)
+        %onSliderKnobPressed Start dragging the pressed knob
+        %
+        %   slider.onSliderKnobPressed(src, evt) is the ButtonDownFcn of
+        %   both knobs; src is the knob patch. It listens to pointer
+        %   motion and release in the figure, shows the active knob colors
+        %   and, when ShowLabel is true, the value label.
 
             obj.IsKnobPressed = true;
 
@@ -445,6 +515,12 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         end
 
         function onSliderMoved(obj, src, ~)
+        %onSliderMoved Move a knob to the pointer position
+        %
+        %   slider.onSliderMoved(src, evt) moves the knob given by src
+        %   (a knob patch) to the pointer, or, when src is the track or
+        %   background, the knob nearest to the pointer. When src is the
+        %   track, it also calls Callback.
 
             mousePoint = obj.CanvasAxes.CurrentPoint(1, 1:2);
 
@@ -476,6 +552,11 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         end
 
         function onSliderKnobReleased(obj, src, ~)
+        %onSliderKnobReleased End a knob drag and notify through Callback
+        %
+        %   slider.onSliderKnobReleased(src) removes the drag listeners,
+        %   restores the inactive colors of knob src, hides the value
+        %   label and calls Callback.
 
             obj.IsKnobPressed = false;
 
@@ -503,6 +584,11 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         end
 
         function onValueChanging(obj, newValue, whichValue)
+        %onValueChanging Assign a knob value, clamped to the valid range
+        %
+        %   slider.onValueChanging(newValue, whichValue) sets Low
+        %   (whichValue 'low') or High ('high', case-insensitive) to
+        %   newValue, clamped to [Min, Max] and to the other knob.
 
             % Keep value within limits and range...
 
@@ -520,6 +606,11 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         end
 
         function onValueChanged(obj, ~, ~)
+        %onValueChanged Redraw the knobs and notify after Low or High changed
+        %
+        %   slider.onValueChanged() redraws the knobs, calls
+        %   ValueChangingFcn and, subject to CallbackRefreshRate, the
+        %   Callback notification. The Low and High set methods call it.
 
             persistent ticAtLastUpdate
             if isempty(ticAtLastUpdate); ticAtLastUpdate = tic; end
@@ -664,6 +755,11 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
     methods (Static)
         function S = getTypeDefaults()
+        %getTypeDefaults Default property values for this component type
+        %
+        %   S = uim.widget.RangeSlider.getTypeDefaults() returns a struct
+        %   of property values used at construction. A name-value pair for
+        %   the same property replaces the default.
             S.IsFixedSize = [true, true]; % No floating!
         end
     end

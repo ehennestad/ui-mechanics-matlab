@@ -1,7 +1,7 @@
 classdef ContrastSlider < uim.widget.RangeSlider
 %ContrastSlider A range slider speaking contrast/CLim semantics
 %
-%   slider = uim.widget.ContrastSlider(hParent, Name, Value, ...)
+%   slider = uim.widget.ContrastSlider(hParent, Name=Value)
 %   creates a contrast slider in hParent (a figure, panel, axes or uim
 %   canvas). It wraps RangeSlider with the push/notify contract used for
 %   image contrast control:
@@ -17,6 +17,8 @@ classdef ContrastSlider < uim.widget.RangeSlider
 %   increasing (the host never needs to guard against a collapsed
 %   range before assigning it to CLim). Programmatic assignment to
 %   Limits/DataLimits updates the display without firing the callback.
+%   Assigning the inherited Low or High directly, or a Min or Max that
+%   moves them, is not silent: it notifies like a user interaction.
 %
 %   The auto button (shown while ShowAutoButton is 'on') fires
 %   AutoRequestedFcn(src, evt): computing auto levels needs the image
@@ -46,10 +48,11 @@ classdef ContrastSlider < uim.widget.RangeSlider
 %
 %   Example:
 %       slider = uim.widget.ContrastSlider(hAxes, ...
-%           'Location', 'northeast', ...
-%           'DataLimits', [0, 255], 'Limits', [0, 255], ...
-%           'LimitsChangedFcn', ...
-%               @(src, evt) set(hAxes, 'CLim', evt.NewValue));
+%           Location="northeast", ...
+%           DataLimits=[0, 255], Limits=[0, 255], ...
+%           LimitsChangedFcn=@(src, evt) set(hAxes, "CLim", evt.NewValue));
+%
+%   See also uim.widget.RangeSlider, uim.event.ValueChangedEventData
 
     properties (Dependent)
         DataLimits (1,2) double  % [min, max] full range of the data
@@ -61,7 +64,9 @@ classdef ContrastSlider < uim.widget.RangeSlider
         AutoRequestedFcn = []       % Fired when the user presses the auto button. (src, uim.event.EventData)
         HistogramRequestedFcn = []  % Fired when the user toggles the histogram on. (src, uim.event.EventData)
 
+        % Show the auto button ('on' or 'off')
         ShowAutoButton (1,:) char {mustBeMember(ShowAutoButton, {'on', 'off'})} = 'on'
+        % Show the histogram toggle button ('on' or 'off')
         ShowHistogramButton (1,:) char {mustBeMember(ShowHistogramButton, {'on', 'off'})} = 'on'
 
         % Whether the pushed histogram is currently displayed. Toggled
@@ -74,7 +79,7 @@ classdef ContrastSlider < uim.widget.RangeSlider
         % scaling policy (e.g. sqrt to compress peaks) is the host's.
         % Empty hides the histogram.
         HistogramCounts (1,:) double {mustBeNonnegative} = []
-        HistogramColor = ones(1,3)*0.6
+        HistogramColor = ones(1,3)*0.6  % Fill color of the histogram area
     end
 
     properties (Access = private, Transient)
@@ -93,6 +98,10 @@ classdef ContrastSlider < uim.widget.RangeSlider
     methods % Structors
 
         function obj = ContrastSlider(hParent, varargin)
+        %ContrastSlider Create a contrast slider
+        %
+        %   slider = uim.widget.ContrastSlider(hParent, Name=Value). See
+        %   the class help for the inputs.
 
             obj@uim.widget.RangeSlider(hParent, varargin{:})
 
@@ -488,6 +497,11 @@ classdef ContrastSlider < uim.widget.RangeSlider
     methods (Static)
 
         function S = getTypeDefaults()
+        %getTypeDefaults Default property values for this component type
+        %
+        %   S = uim.widget.ContrastSlider.getTypeDefaults() returns the
+        %   RangeSlider defaults with a wider right padding for the glyph
+        %   buttons and a size of [200, 30] pixels.
             S = uim.widget.RangeSlider.getTypeDefaults();
             % The knobs overhang the track ends by KnobSize/2 (7.5 px
             % by default), so the visual margin is the padding minus the

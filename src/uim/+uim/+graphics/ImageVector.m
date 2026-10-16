@@ -1,39 +1,72 @@
 classdef ImageVector < handle
-%ImageVector Plot a set of polygons as one object.
+%ImageVector Vector image made of polygons that move and scale as one
 %
-%   Methods for placing and scaling all polygons belonging to the group.
+%   obj = uim.graphics.ImageVector(hParent, vectorData) plots each shape
+%   of vectorData as a filled polygon without an edge in hParent, an
+%   axes or an hggroup. vectorData is a struct array with the fields
+%   Shape (a polyshape) and Color (its face color), such as an icon from
+%   uim.style.getDefaultIcons, or the path (character vector) of a
+%   MAT-file holding such a struct in the variable imageVector. Any
+%   other parent raises uim:ImageVector:InvalidParent.
+%
+%   Each shape is drawn with plot. For an hggroup parent the constructor
+%   holds the ancestor axes. An axes parent must already be held:
+%   otherwise each shape replaces the axes content, including the
+%   shapes plotted before it. The object is stored in
+%   hParent.UserData.Handles, so it lives as long as the parent;
+%   hParent.UserData must be empty or a struct.
+%
 %   Position is the point named by HorizontalAlignment and
 %   VerticalAlignment (for example the bottom-left corner); changing an
 %   alignment keeps Position and moves the image around it. scale (and
 %   Width and Height) resizes about the axes origin and rotate turns about
 %   the box centre; both leave Position at the anchor's new location.
+%
+%   ImageVector methods:
+%     translate       - Move the image by [dx, dy]
+%     scale           - Resize about the axes origin
+%     rotate          - Turn about the bounding box centre
+%     fliplr, flipud  - Mirror the image within its bounding box
+%     getVectorStruct - Current shapes and colors as a struct array
+%
+%   Example:
+%       icons = uim.style.getDefaultIcons();
+%       hAxes = axes(figure);
+%       hold(hAxes, "on")
+%       axis(hAxes, "equal")
+%       icon = uim.graphics.ImageVector(hAxes, icons.zoomIn);
+%       icon.Height = 1;
+%       icon.Position = [0, 0];
+%
+%   See also uim.style.getDefaultIcons, uim.graphics.patchLineDrawing,
+%   polyshape
 
     properties
 
-        HorizontalAlignment = 'center' % left | center | right
-        VerticalAlignment = 'middle' % bottom | middle | top
+        HorizontalAlignment = 'center' % left | center | right: x of the box point that Position names
+        VerticalAlignment = 'middle' % bottom | middle | top: y of the box point that Position names
 
-        Shape
-        Color
-        Alpha
-        Parent
+        Shape % Not used
+        Color % Face color applied to every polygon; empty until set
+        Alpha % Face alpha (0-1) applied to every polygon; empty until set
+        Parent % Not used
 
-        LockAspectRatio = true
-        PickableParts = 'visible'
-        HitTest = 'on'
+        LockAspectRatio = true % If true, setting Width or Height scales both dimensions
+        PickableParts = 'visible' % PickableParts of every polygon
+        HitTest = 'on' % HitTest of every polygon
     end
 
     properties (Dependent)
-        Position
-        Angle
-        Width
-        Height
-        Clipping
-        Visible
+        Position % [x, y] of the alignment point, in data units; setting it moves the image
+        Angle % Total rotation in degrees, counterclockwise; setting it rotates by the difference
+        Width % Bounding box width in data units; setting it scales about the axes origin
+        Height % Bounding box height in data units; setting it scales about the axes origin
+        Clipping % Clipping of the polygons ('on' or 'off'); reads the first polygon
+        Visible % Visibility of the polygons ('on' or 'off'); reads the first polygon
     end
 
     properties (SetAccess = private)
-        BoundingBox
+        BoundingBox % [x, y, width, height] of all polygons, in data units
     end
 
     properties (Access = private)
@@ -47,6 +80,12 @@ classdef ImageVector < handle
     methods
 
         function obj = ImageVector(hParent, pathStr, varargin)
+        %ImageVector Plot vector image data in an axes or hggroup
+        %
+        %   obj = uim.graphics.ImageVector(hParent, vectorData)
+        %   obj = uim.graphics.ImageVector(hParent, matFilePath)
+        %
+        %   Further inputs are ignored.
 
             assert(isa(hParent, 'matlab.graphics.axis.Axes') || ...
             isa(hParent, 'matlab.graphics.primitive.Group'), ...
@@ -101,6 +140,12 @@ classdef ImageVector < handle
         end
 
         function V = getVectorStruct(obj)
+        %getVectorStruct Current shapes and colors as a struct array
+        %
+        %   V = obj.getVectorStruct() returns a struct array with the
+        %   fields Shape (a polyshape of each polygon's current vertices)
+        %   and Color (its face color), in the form the constructor
+        %   accepts.
             polyShape = arrayfun(@(h) h.Shape, obj.Polygons, 'uni', 0);
             colors = arrayfun(@(h) h.FaceColor, obj.Polygons, 'uni', 0);
 
@@ -114,6 +159,11 @@ classdef ImageVector < handle
         end
 
         function rotate(obj, angle)
+        %rotate Turn the image about its bounding box centre
+        %
+        %   obj.rotate(angle) rotates every polygon by angle degrees,
+        %   counterclockwise, about the centre of the current bounding box
+        %   and adds angle to Angle.
 
             origBBox = obj.BoundingBox;
             %currentPosition = obj.CurrentPosition;
@@ -131,6 +181,9 @@ classdef ImageVector < handle
         end
 
         function fliplr(obj)
+        %fliplr Mirror the image left to right within its bounding box
+        %
+        %   obj.fliplr() keeps the bounding box and Position.
 
             warning('off', 'MATLAB:polyshape:repairedBySimplify')
 
@@ -156,6 +209,9 @@ classdef ImageVector < handle
         end
 
         function flipud(obj)
+        %flipud Mirror the image top to bottom within its bounding box
+        %
+        %   obj.flipud() keeps the bounding box and Position.
 
             warning('off', 'MATLAB:polyshape:repairedBySimplify')
 
@@ -182,6 +238,10 @@ classdef ImageVector < handle
         end
 
         function translate(obj, shift)
+        %translate Move the image by an offset
+        %
+        %   obj.translate(shift) moves every polygon and Position by
+        %   shift = [dx, dy] in data units.
 
             % if strcmp(mVer(1:5), '9.4.0')
                 for i = 1:obj.NumShapes
@@ -197,6 +257,12 @@ classdef ImageVector < handle
         end
 
         function scale(obj, scaleFactor)
+        %scale Resize the image about the axes origin
+        %
+        %   obj.scale(scaleFactor) multiplies all coordinates by
+        %   scaleFactor, a scalar or [sx, sy]. Points move towards or away
+        %   from (0, 0), so the image moves unless it contains the origin.
+        %   Position follows the alignment point.
 
             if isscalar(scaleFactor)
                 scaleFactor = repmat(scaleFactor, 1, 2);
@@ -211,9 +277,14 @@ classdef ImageVector < handle
         function reposition(obj, newAlignment)
         %reposition Shift the shapes so the new alignment anchor sits at Position
         %
+        %   obj.reposition(newAlignment) moves the image so the point
+        %   of the bounding box named by newAlignment lies at Position.
         %   newAlignment is one horizontal ('left', 'center', 'right') or
         %   vertical ('bottom', 'middle', 'top') alignment; only that
-        %   coordinate of the image moves, and Position stays put.
+        %   coordinate of the image moves, and Position stays put. The
+        %   alignment properties are not changed; setting
+        %   HorizontalAlignment or VerticalAlignment calls this method.
+        %   Any other value raises uim:ImageVector:InvalidAlignment.
 
             bbox = obj.BoundingBox;
             shift = [0, 0];
@@ -287,8 +358,6 @@ classdef ImageVector < handle
         end
 
         function set.HorizontalAlignment(obj, value)
-            % Todo validatestring ('left', 'center', 'right');
-
             oldValue = obj.HorizontalAlignment;
 
             if ~strcmp(oldValue, value)
@@ -298,8 +367,6 @@ classdef ImageVector < handle
         end
 
         function set.VerticalAlignment(obj, value)
-            % Todo validatestring ('top', 'middle', 'bottom');
-
             oldValue = obj.VerticalAlignment;
             obj.VerticalAlignment = value;
 

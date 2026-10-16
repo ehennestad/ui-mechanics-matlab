@@ -1,8 +1,58 @@
 classdef PointerManager < handle
-%PointerManager A manager for switching between different interactive
-% pointer tools in axes.
+%PointerManager Switcher that routes mouse input in an axes to one pointer tool
 %
-%   See also uim.interface.PointerTool
+%   manager = uim.interface.PointerManager(hFigure, hAxes) attaches a
+%   manager to the axes hAxes in the figure hFigure, with no tools.
+%
+%   manager = uim.interface.PointerManager(hFigure, hAxes, pointerNames)
+%   also creates the named tools. pointerNames is a tool key, a function
+%   handle to a uim.interface.PointerTool constructor, or a cell array of
+%   these. The built-in tool keys are "axisZoom", "crop", "dataCursor",
+%   "pan", "zoomIn" and "zoomOut"; an unknown key raises
+%   uim:PointerManager:UnknownPointerTool.
+%
+%   At most one tool is current. The manager listens to the figure's
+%   WindowMousePress, WindowMouseMotion and WindowMouseRelease events
+%   and forwards them to the current tool:
+%     - A press reaches the tool only when it lands on the managed axes,
+%       or on an object inside it that has no ButtonDownFcn of its own,
+%       and the pointer is inside the axes limits.
+%     - Motion and release events go to the current tool. After a
+%       press they go to the tool that received it until the button is
+%       released, even if the pointer leaves the axes.
+%   While a tool is current, the axes ButtonDownFcn is set aside and
+%   restored when no tool is current or the manager is deleted, so each
+%   click has one handler.
+%
+%   Construction holds the axes (hold on), and gives the figure a no-op
+%   WindowButtonMotionFcn if it has none, so CurrentPoint follows the
+%   mouse in java-based figures. Both remain after the manager is
+%   deleted.
+%
+%   Keyboard input is not captured. Forward key events from the host's
+%   key callback to onKeyPress and onKeyRelease.
+%
+%   PointerManager properties:
+%     DefaultPointerTool - Tool made current when a tool with ExitMode
+%                          'default' is toggled off
+%     Pointers           - Struct of tools, one field per tool key
+%     CurrentPointerTool - The tool that receives mouse input, or []
+%
+%   PointerManager methods:
+%     initializePointers - Create tools and add them to Pointers
+%     togglePointerMode  - Turn a tool on or off by its key
+%     onKeyPress         - Toggle a tool from a key press
+%     onKeyRelease       - Forward a key release to the current tool
+%
+%   Example:
+%       hFigure = figure;
+%       hAxes = axes(hFigure);
+%       imagesc(hAxes, magic(64))
+%       manager = uim.interface.PointerManager(hFigure, hAxes, ...
+%           {"zoomIn", "zoomOut", "pan"});
+%       manager.togglePointerMode("zoomIn")
+%
+%   See also uim.interface.PointerTool, uim.interface.PointerToolBinding
 
 % List of things to implement
 %   Keypress sequences should be read from settings somehow
@@ -11,17 +61,20 @@ classdef PointerManager < handle
 %   [x] use listeners instead of attaching mouse function to figure handle
 
     properties
+        % Tool made current when a tool with ExitMode 'default' is
+        % toggled off; a uim.interface.PointerTool or [] (no tool).
         DefaultPointerTool
     end
 
     properties (SetAccess = private)
-        Figure matlab.ui.Figure
-        Axes matlab.graphics.axis.Axes
+        Figure matlab.ui.Figure % Figure whose mouse events are routed
+        Axes matlab.graphics.axis.Axes % Axes the tools act on
 
+        % Struct of tool objects, one field per tool key (e.g. "zoomIn")
         Pointers struct = struct()
-        SupportedTools
+        SupportedTools % Not used
 
-        CurrentPointerTool
+        CurrentPointerTool % Tool that receives mouse input, or []
 
     end
 
@@ -51,7 +104,10 @@ classdef PointerManager < handle
     methods % Structors
 
         function obj = PointerManager(hFigure, hAxes, pointerNames)
-        %PointerManager Attach a PointerManager to a figure
+        %PointerManager Attach a PointerManager to an axes in a figure
+        %
+        %   manager = uim.interface.PointerManager(hFigure, hAxes)
+        %   manager = uim.interface.PointerManager(hFigure, hAxes, pointerNames)
 
             obj.Figure = hFigure;
             obj.Axes = hAxes;
@@ -149,6 +205,19 @@ classdef PointerManager < handle
     methods
 
         function initializePointers(obj, hAxes, pointerRef)
+        %initializePointers Create pointer tools and add them to Pointers
+        %
+        %   manager.initializePointers(hAxes, pointerRef) creates one tool
+        %   on hAxes for each entry of pointerRef and stores it in
+        %   manager.Pointers. pointerRef is a tool key ("zoomIn", "pan",
+        %   ...), a function handle to a PointerTool constructor, or a
+        %   cell array of these. A function handle is stored under its
+        %   class name with the first letter lowercased, e.g.
+        %   @uim.interface.pointertools.ZoomIn under "zoomIn". A tool with
+        %   an existing key replaces the stored tool.
+        %
+        %   An unknown tool key raises
+        %   uim:PointerManager:UnknownPointerTool.
 
             if ~isa(pointerRef, 'cell'); pointerRef = {pointerRef}; end
 
@@ -174,6 +243,15 @@ classdef PointerManager < handle
         end
 
         function wasCaptured = onKeyPress(obj, src, event)
+        %onKeyPress Toggle a tool from a key press and forward the key
+        %
+        %   wasCaptured = manager.onKeyPress(src, event) toggles the tool
+        %   bound to event.Key when no modifier is held and that tool is
+        %   in Pointers. The built-in tools are bound to x (crop), q
+        %   (zoomIn), w (zoomOut), y (pan) and i (dataCursor). The key is then passed to the current tool's onKeyPress.
+        %   wasCaptured is true when the manager or the tool handled the
+        %   key. Call this from the host's key press callback; event is
+        %   the KeyData of a figure KeyPressFcn or WindowKeyPress event.
 
             % Todo: Make a system for having unique key shortcuts and
             % setting/changing them from one location..
@@ -201,6 +279,12 @@ classdef PointerManager < handle
         end
 
         function wasCaptured = onKeyRelease(obj, src, event)
+        %onKeyRelease Forward a key release to the current tool
+        %
+        %   wasCaptured = manager.onKeyRelease(src, event) returns the
+        %   current tool's onKeyRelease result, or false when no tool is
+        %   current.
+
             wasCaptured = false;
             if ~isempty(obj.CurrentPointerTool)
                 wasCaptured = obj.CurrentPointerTool.onKeyRelease(src, event);
@@ -208,7 +292,22 @@ classdef PointerManager < handle
         end
 
         function togglePointerMode(obj, pointerName)
-            % button press from toolbar or keypress callback.
+        %togglePointerMode Turn a pointer tool on or off by its key
+        %
+        %   manager.togglePointerMode(pointerName) turns the tool stored
+        %   under pointerName on, or off when it is already current. A key
+        %   that is not in Pointers is ignored. What happens to the other
+        %   tools depends on the toggled tool's ExitMode:
+        %     'default'  - Turning it on deactivates the current tool.
+        %                  Turning it off makes DefaultPointerTool
+        %                  current.
+        %     'previous' - Turning it on suspends a current 'default'
+        %                  tool (or deactivates a current 'previous'
+        %                  tool). Turning it off makes the suspended tool
+        %                  current again, or no tool.
+        %   The new current tool is activated. With no current tool the
+        %   figure pointer is reset to an arrow. Activating Crop blocks
+        %   until its selection ends.
 
             % If the pointerName refers to the current pointer tool, it
             % should be turned off.

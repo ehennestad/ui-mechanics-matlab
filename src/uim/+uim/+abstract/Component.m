@@ -1,18 +1,58 @@
 classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameValueAssignable
-%uim.Component Abstract class for ui components to place in a uim.Canvas
-% This class provides basic positioning (layout) and style methods.
+%Component Abstract base class for components drawn on a UIComponentCanvas
 %
-%   The component class provides a mix of functionality for positioning a
-%   component and for giving it a background and border appearance, i.e
-%   layout and style. In the ideal world, these would be separate classes.
+%   A component is a graphical element plotted in the axes of a
+%   uim.UIComponentCanvas. This class gives every component its layout
+%   (position and size in pixels, relative to the parent container) and
+%   its basic style (a background patch with optional border). Do not
+%   subclass Component directly: derive from uim.abstract.Control for
+%   interactive elements or uim.abstract.Container for components that
+%   hold other components.
 %
-%   The layout of a component is a bit more advanced than the standard
-%   matlab Position property.
-%       1. A component can be placed relative to a location in the parent
-%          container. The margin is used to offset the component from
-%          this location.
-%       2. A component can have a floating size in one or both dimensions.
-%          I.e it will stretch to fill up available space.
+%   Construction (through a concrete subclass):
+%       obj = SubclassName(hParent)
+%       obj = SubclassName(hParent, Name=Value)
+%
+%   hParent is one of:
+%       - a uim.UIComponentCanvas: the component draws on that canvas.
+%       - a figure, uipanel or uitab: the component draws on the
+%         container's canvas, created by
+%         uim.UIComponentCanvas.getOrCreate if it does not exist.
+%       - an axes: the component draws on an overlay canvas covering the
+%         axes (see uim.UIComponentCanvas).
+%       - a uim.abstract.Container: the component is placed in the
+%         container's graphics container (see getGraphicsContainer) and,
+%         when the container has a private canvas, draws in it.
+%   Name-value arguments set public properties. Names that do not match
+%   a public property are ignored. Defaults returned by the subclass's
+%   getTypeDefaults are merged with the name-value arguments; an argument
+%   for the same property replaces the default. The merged values are
+%   assigned in the order the properties are declared, not in argument
+%   order.
+%
+%   Layout:
+%   All positions and sizes are in pixels. Position is
+%   [x, y, width, height] relative to the parent container, with [1, 1]
+%   at the bottom left.
+%
+%   With PositionMode 'auto', the location is computed from Location,
+%   Margin, HorizontalAlignment and VerticalAlignment, and recomputed when
+%   the parent is resized. Location picks a reference point in the
+%   parent: a corner, the middle of an edge, or the center. Margin keeps
+%   the component away from the edges named by Location; at a centered
+%   reference point, Margin(1) shifts it right ('center' also shifts it
+%   up by Margin(2)). Then HorizontalAlignment 'center' or 'right' shifts
+%   it left by half or all of its width, and VerticalAlignment 'middle'
+%   or 'top' shifts it down by half or all of its height. Setting
+%   Position switches PositionMode to 'manual'. After construction,
+%   setting Location, Margin, HorizontalAlignment or VerticalAlignment
+%   switches it back to 'auto'.
+%
+%   With SizeMode 'auto', the width and height follow the parent size
+%   minus the Margin on both sides, except in the dimensions where
+%   IsFixedSize is true. Setting Size switches SizeMode to 'manual';
+%   setting Position does not change SizeMode. Every size is clamped to
+%   the range [MinimumSize, MaximumSize].
 %
 %   Illustration showing layout of a component:
 %
@@ -37,15 +77,29 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 %  o = Location (south, east, north, west)
 %
 %
-% Two subclasses are implemented, Control and Container. The Control is
-% always drawn in the parent's (shared) canvas while a container can create
-% its own private canvas. See Container for details.
+%   A Control is always drawn in the parent's (shared) canvas, while a
+%   Container can create its own private canvas. See
+%   uim.abstract.Container for details.
 %
+%   Events:
+%       SizeChanged     - Size changed. Data: uim.event.SizeChangedData.
+%       LocationChanged - Position(1:2) changed. Data:
+%                         uim.event.LocationChangedData.
+%   Both are raised only while CanvasMode is 'shared'.
 %
-%   ABSTRACT PROPERTIES:
-%       Type (Constant) : A name to describe the component type
+%   Subclass contract:
+%       - Define the constant property Type, a character vector naming
+%         the component type.
+%       - Pass hParent and the name-value arguments on to the superclass
+%         constructor, create the subclass graphics, then set
+%         obj.IsConstructed = true. That runs the first layout, style
+%         and draw pass (onConstructed).
+%       - Optionally override the protected methods createBackground,
+%         redraw, resize, relocate, onStyleChanged, onShapeChanged and
+%         onVisibleChanged, and the static method getTypeDefaults.
 %
-%   ABSTRACT METHODS:
+%   See also uim.abstract.Control, uim.abstract.Container,
+%   uim.UIComponentCanvas
 
 % Questions:
 %       [ ] Should there be an allowed subclasses attribute? I.e Control and
@@ -65,29 +119,49 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 %           backgroundstyles...
 
     properties (Abstract, Constant)
+        % Name of the component type, a character vector defined by each
+        % subclass.
         Type % Should rename to name????
     end
 
     properties (Transient) % Todo, this should not be transient. Actually, why not...
+        % UIComponentCanvas the component draws on, or the private canvas
+        % axes of its parent container. Set by the constructor.
         Canvas = [] % Rename to virtualParent? Hide?
+
+        % Graphics container or UIComponentCanvas the component is placed
+        % in. Set by the constructor; assigning a new value does not move
+        % the component.
         Parent = [] % Rename / make sure this is a matlab graphical container
     end
 
     properties (Dependent)
+        % [x, y, width, height] in pixels, relative to the parent
+        % container. Setting it switches PositionMode to 'manual'.
         Position (1,4) double = [1,1,10,10]     % Dependent?
     end
 
     properties (Dependent) % SetAccess = private?
+        % [width, height] in pixels. Setting it switches SizeMode to
+        % 'manual'.
         Size (1,2) double = [0, 0] % necessary??
     end
 
     properties % Position properties
 
-        PositionMode (1,:) char {mustBeMember(PositionMode, {'auto', 'manual'})} = 'auto'  % Calculate position based on layout or use the values of the Position property.
-        SizeMode (1,:) char {mustBeMember(SizeMode, {'auto', 'manual'})} = 'auto'          % Calculate size based on layout or used the values of the Position property.
+        % 'auto' computes the location from Location, Margin and the
+        % alignment properties; 'manual' keeps Position(1:2).
+        PositionMode (1,:) char {mustBeMember(PositionMode, {'auto', 'manual'})} = 'auto'
 
-        Margin (1,4) double = [0,0,0,0]           % In pixels (left, bottom, right, top)
-        Padding (1,4) double = [0,0,0,0]          % In pixels (left, bottom, right, top)
+        % 'auto' fills the parent minus Margin (see IsFixedSize);
+        % 'manual' keeps Size.
+        SizeMode (1,:) char {mustBeMember(SizeMode, {'auto', 'manual'})} = 'auto'
+
+        Margin (1,4) double = [0,0,0,0]           % Space around the component, [left, bottom, right, top] in pixels
+
+        % Space inside the border, [left, bottom, right, top] in pixels.
+        % Used by subclasses that lay out content.
+        Padding (1,4) double = [0,0,0,0]
 
         % Location of component in the parent container. See layout
         % description above. Compass points (compound or bare) plus 'center'.
@@ -95,32 +169,48 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
             'east', 'west', 'northeast', 'northwest', 'southeast', ...
             'southwest', 'center'})} = 'southwest'
 
-        % Anchor points....
-        HorizontalAlignment (1,:) char {mustBeMember(HorizontalAlignment, {'left', 'center', 'right'})} = 'left'    % Horizontal reference point (anchor point) in the parent container. See layout description above.
-        VerticalAlignment (1,:) char {mustBeMember(VerticalAlignment, {'bottom', 'middle', 'top'})} = 'bottom'      % Vertical reference point (anchor point) in the parent container. See layout description above.
+        % Horizontal anchor point of the component: 'left', 'center' or
+        % 'right'. 'center' and 'right' shift the component left by half
+        % or all of its width. See layout description above.
+        HorizontalAlignment (1,:) char {mustBeMember(HorizontalAlignment, {'left', 'center', 'right'})} = 'left'
 
-        IsFixedSize (1,2) logical = [false, false]     % True/false (x, y) Is size fixed?
+        % Vertical anchor point of the component: 'bottom', 'middle' or
+        % 'top'. 'middle' and 'top' shift the component down by half or
+        % all of its height. See layout description above.
+        VerticalAlignment (1,:) char {mustBeMember(VerticalAlignment, {'bottom', 'middle', 'top'})} = 'bottom'
 
-        MinimumSize (1,2) double = [10, 10]
-        MaximumSize (1,2) double = [inf, inf]
+        IsFixedSize (1,2) logical = [false, false]     % [x, y] true keeps the current width/height when SizeMode is 'auto'
+
+        MinimumSize (1,2) double = [10, 10]     % Smallest allowed [width, height] in pixels
+        MaximumSize (1,2) double = [inf, inf]   % Largest allowed [width, height] in pixels
     end
 
     properties % Style properties
-        BackgroundColor = 'none'
-        ForegroundColor = 'w'
+        BackgroundColor = 'none'    % Fill color of the background (color name, RGB triplet or 'none')
+        ForegroundColor = 'w'       % Color of content drawn by subclasses (text, icons)
+        % Background opacity, from 0 (transparent) to 1 (opaque)
         BackgroundAlpha (1,1) double {mustBeGreaterThanOrEqual(BackgroundAlpha, 0), mustBeLessThanOrEqual(BackgroundAlpha, 1)} = 0.3
-        BorderColor = 'none'
+        BorderColor = 'none'        % Color of the background outline, or 'none' for no border
+
+        % Line width of the background outline. A new value is drawn at
+        % the next style update, e.g. when a color property changes.
         BorderWidth (1,1) double {mustBeNonnegative} = 0.5
-        CornerRadius (1,1) double {mustBeNonnegative} = 0
+
+        CornerRadius (1,1) double {mustBeNonnegative} = 0   % Corner radius of the background, in pixels
     end
 
     properties % Graphics objects properties
+        % 'on' or 'off'. Subclasses apply it to their graphics.
         Visible (1,:) char {mustBeMember(Visible, {'on', 'off'})} = 'on'
-        Tag (1,:) char = ''
-        UserData = []
+        Tag (1,:) char = ''     % Identifier for the component
+        UserData = []           % Any data to store with the component
     end
 
     properties (SetAccess = protected)
+        % 'shared' draws on the parent's canvas; 'private' gives a
+        % container its own canvas axes. Set with the CanvasMode
+        % name-value argument at construction; only containers accept
+        % 'private'.
         CanvasMode (1,:) char = 'shared' % vs 'private' % Should be container property.
     end
 
@@ -149,14 +239,19 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
     end
 
     events
-        LocationChanged
-        SizeChanged
-        StyleChanged
+        LocationChanged % Position(1:2) changed (shared canvas mode only). Data: uim.event.LocationChangedData
+        SizeChanged     % Size changed (shared canvas mode only). Data: uim.event.SizeChangedData
+        StyleChanged    % Declared but never raised by Component
     end
 
     methods % Structors
 
         function obj = Component(hParent, varargin)
+        %Component Construct the component part of a subclass instance
+        %
+        %   obj@uim.abstract.Component(hParent, Name, Value, ...) is called
+        %   from a subclass constructor. See the class help for hParent
+        %   and the name-value arguments.
 
             if isa(hParent, 'uim.abstract.Container')
                 obj.Parent = hParent.getGraphicsContainer();
@@ -772,10 +867,28 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
     methods % Wrappers for placing matlab components
 
         function hContainer = getGraphicsContainer(obj)
+        %getGraphicsContainer Return the graphics container for child components
+        %
+        %   hContainer = obj.getGraphicsContainer() returns the object that
+        %   components created with obj as their parent are placed in.
+        %   Component returns its own Parent; subclasses that own a
+        %   graphics container, such as uim.container.Panel, return that.
             hContainer = obj.Parent;
         end
 
         function pos = getpixelposition(obj, recursive)
+        %getpixelposition Return the component position in pixels
+        %
+        %   pos = obj.getpixelposition() returns Position, offset by the
+        %   pixel position of the graphics container returned by
+        %   getGraphicsContainer (for a UIComponentCanvas, by the position
+        %   of its axes) within that container's parent.
+        %
+        %   pos = obj.getpixelposition(recursive) with recursive true
+        %   offsets by the container's position relative to the figure
+        %   instead. pos is [x, y, width, height] in pixels.
+        %
+        %   See also getpixelposition
             if nargin < 2; recursive=false; end
 
             hContainer = obj.getGraphicsContainer();
@@ -826,12 +939,27 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
     methods (Static)
 
         function S = getTypeDefaults() % Subclasses can override
+        %getTypeDefaults Return default property values for the component type
+        %
+        %   S = uim.abstract.Component.getTypeDefaults() returns a struct
+        %   whose field names are property names and whose values are the
+        %   defaults the constructor uses. A name-value argument for the
+        %   same property replaces the default. Component returns an empty struct; subclasses
+        %   override it to give type-specific defaults.
             S = struct();
         end
 
         function locationPoint = location2point(containerSize, locationKey)
-        %location2point Convert a location key (e.g. 'northeast') to a
-        %point within a container of the given size.
+        %location2point Convert a location key to a point in a container
+        %
+        %   locationPoint = uim.abstract.Component.location2point(
+        %       containerSize, locationKey) returns the [x, y] reference
+        %   point, in pixels and rounded to integers, that locationKey
+        %   names in a container of size containerSize ([width, height]).
+        %   Keys containing 'north' give y = height and keys containing
+        %   'east' give x = width; otherwise x and y are 1. 'north' and
+        %   'south' center x, 'east' and 'west' center y, and 'center'
+        %   returns containerSize/2.
         %
         %   Also used by uim.UIComponentCanvas.getLocationPoint.
 
@@ -863,7 +991,11 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
         end
 
         function tf = isMatlabGraphicsParent(h)
-        %isMatlabGraphicsParent Test if handle h can contain graphics.
+        %isMatlabGraphicsParent Test if a handle is a supported graphics container
+        %
+        %   tf = uim.abstract.Component.isMatlabGraphicsParent(h) returns
+        %   true if h is a figure, axes, uipanel or uitab, and false
+        %   otherwise.
 
         % Todo: Can I generalize this... Is there a shared superclass? Are
         % there any obvious types missing from the list?

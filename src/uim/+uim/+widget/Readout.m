@@ -4,31 +4,35 @@ classdef Readout < uim.abstract.Control
 %   readout = uim.widget.Readout(hParent) creates a readout in hParent
 %   (a figure, panel, axes or uim canvas).
 %
-%   readout = uim.widget.Readout(hParent, Name, Value, ...) also sets
+%   readout = uim.widget.Readout(hParent, Name=Value) also sets
 %   property values, for example:
 %
-%       readout = uim.widget.Readout(hAxes, 'Label', 'Frame', ...
-%           'Format', '%d', 'Location', 'southeast');
+%       readout = uim.widget.Readout(hAxes, Label="Frame", ...
+%           Format="%d", Location="southeast");
 %       readout.Value = 42;   % Displays "Frame: 42"
 %
 %   The Value property accepts a numeric scalar (rendered with the
 %   sprintf-style Format property) or text. When the inherited Label
-%   property is nonempty, the displayed text is "<Label>: <value>".
+%   property is nonempty, the displayed text is "<Label>: <value>". The
+%   text is rebuilt when Value or Format is assigned; assigning Label
+%   alone does not update it.
 %
 %   The readout is display-only: it captures no mouse events beyond the
 %   inherited tooltip behavior.
+%
+%   See also uim.widget.Spinner
 
     properties (Constant) % Inherited from Component
-        Type = 'Readout'
+        Type = 'Readout' % Component type name
     end
 
     properties
         Value = []                  % Numeric scalar or text to display
         Format (1,:) char = '%g'    % sprintf-style format for numeric values
 
-        FontName = 'helvetica'
-        FontSize = 12
-        FontWeight = 'normal'
+        FontName = 'helvetica'      % Font of the displayed text
+        FontSize = 12               % Font size in pixels
+        FontWeight = 'normal'       % 'normal' or 'bold'
     end
 
     properties (Dependent, Transient)
@@ -42,6 +46,10 @@ classdef Readout < uim.abstract.Control
     methods % Structors
 
         function obj = Readout(hParent, varargin)
+        %Readout Create a readout
+        %
+        %   readout = uim.widget.Readout(hParent, Name=Value). See the
+        %   class help for the inputs.
 
             obj@uim.abstract.Control(hParent, varargin{:})
 
@@ -190,6 +198,11 @@ classdef Readout < uim.abstract.Control
     methods (Static)
 
         function S = getTypeDefaults()
+        %getTypeDefaults Default property values for this component type
+        %
+        %   S = uim.widget.Readout.getTypeDefaults() returns a struct of
+        %   property values used at construction. A name-value pair for
+        %   the same property replaces the default.
             S.IsFixedSize = [true, true];
             % Dark chip chrome so the readout is visible on any plot.
             S.BackgroundColor = 'k';

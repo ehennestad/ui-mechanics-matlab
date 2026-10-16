@@ -1,4 +1,18 @@
 classdef TabBar < uim.widget.Toolbar
+%TabBar Toolbar variant with short, light separators
+%
+%   A uim.widget.Toolbar whose addSeparator draws a short, thin, light
+%   grey line centred on the button row instead of the toolbar's default
+%   separator. Everything else, including construction, options
+%   and addButton, is inherited from uim.widget.Toolbar.
+%
+%   tabBar = uim.widget.TabBar(parent)
+%   tabBar = uim.widget.TabBar(parent, Name=Value)
+%
+%   Unlike Toolbar.addSeparator, TabBar.addSeparator takes no options
+%   and returns no output.
+%
+%   See also uim.widget.Toolbar
 
     % Todo: Create customized versions for addButton and addSeparator
     % methods
@@ -8,10 +22,20 @@ classdef TabBar < uim.widget.Toolbar
     methods
 
         function obj = TabBar(hParent, varargin)
+        %TabBar Create an empty tab bar
+        %
+        %   tabBar = uim.widget.TabBar(parent, Name=Value) accepts the same
+        %   parents and options as uim.widget.Toolbar.
+
             obj@uim.widget.Toolbar(hParent, varargin{:})
         end
 
         function addSeparator(obj)
+        %addSeparator Add a short separator at the end of the tab bar
+        %
+        %   tabBar.addSeparator() adds a uim.decorator.Separator after the
+        %   last button: a light grey line with LineWidth 0.5 in a
+        %   10-pixel-high slot, centred vertically on the button row.
 
             separatorPosition = obj.NextButtonPosition;
             % todo: switch orientation...

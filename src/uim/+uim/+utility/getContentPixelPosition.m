@@ -1,5 +1,9 @@
 function pixelPosition = getContentPixelPosition(hParent)
-%getContentPixelPosition Return the drawable content area of a UI container.
+%getContentPixelPosition Return the drawable content area of a UI container
+%
+%   pixelPosition = uim.utility.getContentPixelPosition(hParent) returns
+%   [x, y, width, height] in pixels of the area where children of
+%   hParent are laid out.
 %
 %   For most containers, getpixelposition returns the usable content bounds.
 %   For tabs, getpixelposition can include the tab header while normalized

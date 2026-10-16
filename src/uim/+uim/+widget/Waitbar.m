@@ -1,22 +1,44 @@
 classdef Waitbar < uim.mixin.NameValueAssignable
+%Waitbar Thin progress bar drawn as two lines in an axes
+%
+%   progressBar = uim.widget.Waitbar(hAxes, Name=Value) draws a progress
+%   bar in hAxes: a line for the whole bar and a thicker line on top of
+%   it for the completed part. Name-value arguments set the public
+%   properties of the same name; other names are ignored. A parent that
+%   is not an axes raises an error.
+%
+%   Position is given in pixels and converted to data units of the axes.
+%   The horizontal extent is recomputed when Status or Position changes
+%   and when the axes is resized. The vertical position and the line
+%   styles are set at construction.
+%
+%   Example:
+%       hAxes = axes(figure, XLim=[0, 1], YLim=[0, 1]);
+%       progressBar = uim.widget.Waitbar(hAxes, Position=[10, 10, 200, 10]);
+%       progressBar.Status = 0.4;
+%
+%   See also uim.widget.MessageBox
 
     properties (Dependent)
+        % [x, y, width, height] in pixels from the lower left corner of
+        % the axes. The height is not used. Normalized positions are not
+        % supported.
         Position (1,4) double
     end
 
     properties
-        Message = ''
-        Status = 0 % Number in range 0 - 1;
+        Message = ''    % Not used by the widget
+        Status = 0      % Fraction completed, from 0 to 1. Other values raise an error.
 
-        Enabled matlab.lang.OnOffSwitchState = 'on'
-        Visible matlab.lang.OnOffSwitchState = 'on'
+        Enabled matlab.lang.OnOffSwitchState = 'on'     % Not used by the widget
+        Visible matlab.lang.OnOffSwitchState = 'on'     % Show ("on") or hide ("off") the bar
 
-        BarWidthCompleted = 2;
-        BarWidthRemaining = 1;
-        BarColorCompleted = [74,86,99]/125
-        BarColorRemaining = [0.5, 0.5, 0.5];
+        BarWidthCompleted = 2;                  % Line width of the completed part. Set at construction.
+        BarWidthRemaining = 1;                  % Line width of the whole bar. Set at construction.
+        BarColorCompleted = [74,86,99]/125      % Color of the completed part. Set at construction.
+        BarColorRemaining = [0.5, 0.5, 0.5];    % Color of the whole bar. Set at construction.
 
-        Margins = 1; % pixels in length direction.
+        Margins = 1; % Pixels left free at each end of the bar
     end
 
     properties (Access = private)
@@ -30,6 +52,9 @@ classdef Waitbar < uim.mixin.NameValueAssignable
     methods % Structors
 
         function obj = Waitbar(hParent, varargin)
+        %Waitbar Create a progress bar in an axes
+        %
+        %   progressBar = uim.widget.Waitbar(hAxes, Name=Value)
 
             if isa(hParent, 'matlab.graphics.axis.Axes')
                 obj.Axes = hParent;

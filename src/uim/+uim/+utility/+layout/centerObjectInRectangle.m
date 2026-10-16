@@ -1,11 +1,21 @@
 function centerObjectInRectangle(hContainer, position)
-%CENTEROBJECTINRECTANGLE Center a graphics object in a rectangle
+%centerObjectInRectangle Center a graphics object in a rectangle
 %
-%   centerObjectInRectangle(hContainer, position) centers the object
-%   hContainer within the rectangle specified by position. hContainer must
-%   be a graphics object that has a Position property, and the position
-%   input should be specified as [x, y, w, h] where x and y is the bottom
-%   left position.
+%   uim.utility.layout.centerObjectInRectangle(hContainer, position)
+%   moves hContainer, keeping its size, so it is centred in position.
+%   hContainer is a graphics object with a Position property. position is
+%   [x, y, width, height] with [x, y] the lower-left corner, in the same
+%   units as hContainer.Position, or an object whose Position property
+%   gives that rectangle.
+%
+%   When hContainer is a figure, its lower-left corner is kept on the
+%   monitor that uim.utility.getCurrentScreenSize reports for it; the top
+%   and right edges are not checked.
+%
+%   A non-numeric position without a Position property raises
+%   uim:centerObjectInRectangle:InvalidPosition.
+%
+%   See also uim.utility.centerFigureOnScreen, uim.utility.layout.place
 
     if ~isnumeric(position)
         try

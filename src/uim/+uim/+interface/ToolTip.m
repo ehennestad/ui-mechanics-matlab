@@ -1,22 +1,34 @@
 classdef ToolTip < uim.Handle
-%ToolTip A tooltip display for a component canvas.
+%ToolTip Tooltip text box drawn in the axes of a component canvas
 %
-%   tooltip = uim.interface.ToolTip(canvasObj) creates a tooltip that
-%   draws into the axes of the given uim.UIComponentCanvas. The tooltip
-%   deletes itself when the axes it draws into is destroyed.
+%   tooltip = uim.interface.ToolTip(canvasObj) creates a hidden tooltip
+%   that draws into the axes of the given uim.UIComponentCanvas. The
+%   tooltip deletes itself when the axes it draws into is destroyed.
+%   uim.UIComponentCanvas creates one for its controls; use its
+%   showTooltip method rather than constructing a ToolTip directly.
+%
+%   The tooltip is a text object that ignores mouse clicks and is moved
+%   to the top of the axes children whenever a child is added, so it
+%   stays above other graphics.
 %
 %   Style properties (colors, font) can be changed at any time and take
 %   effect immediately.
+%
+%   ToolTip methods:
+%     showTooltip - Show text at a position in the axes
+%     hideTooltip - Hide the tooltip
+%
+%   See also uim.UIComponentCanvas
 
     properties
-        BackgroundColor = ones(1,3) * 0.2
-        ForegroundColor = ones(1,3) * 0.8
-        EdgeColor = 'none'
+        BackgroundColor = ones(1,3) * 0.2 % Box fill color; any text BackgroundColor value
+        ForegroundColor = ones(1,3) * 0.8 % Text color
+        EdgeColor = 'none' % Box outline color, or 'none'
 
         % Note: Falls back to MATLAB's default font on systems where this
         % font is unavailable. Todo: Move default to a shared style/theme.
-        FontName = 'Avenir Next'
-        FontSize = 12
+        FontName = 'Avenir Next' % Font name
+        FontSize = 12 % Font size in points
     end
 
     properties (Access = private)
@@ -37,6 +49,9 @@ classdef ToolTip < uim.Handle
     methods
 
         function obj = ToolTip(canvasObj)
+        %ToolTip Create a hidden tooltip in the canvas axes
+        %
+        %   tooltip = uim.interface.ToolTip(canvasObj)
 
             obj.Axes = canvasObj.Axes;
 
@@ -64,6 +79,13 @@ classdef ToolTip < uim.Handle
     methods
 
         function showTooltip(obj, text, position)
+        %showTooltip Show text with its upper-left corner at a position
+        %
+        %   tooltip.showTooltip(text, position) shows text (character
+        %   vector, string or cell array of lines) with its upper-left
+        %   corner at position, an [x, y] point in data units of the
+        %   canvas axes. The x position is adjusted so the text does not
+        %   extend past the left or right edge of the axes limits.
 
             if ~isempty(obj.TooltipHandle) && isvalid(obj.TooltipHandle)
 
@@ -91,6 +113,7 @@ classdef ToolTip < uim.Handle
         end
 
         function hideTooltip(obj)
+        %hideTooltip Hide the tooltip and clear its text
             if ~isempty(obj.TooltipHandle) && isvalid(obj.TooltipHandle)
                 obj.TooltipHandle.String = '';
                 obj.TooltipHandle.Visible = 'off';
