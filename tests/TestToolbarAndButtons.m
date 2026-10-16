@@ -11,6 +11,53 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
 
     methods (Test) % Toolbar
 
+        function rightAlignedRunIncludesSpacing(testCase)
+            [~, canvas] = createCanvas(testCase);
+            toolbar = uim.widget.Toolbar(canvas, "Location", "northwest");
+            testCase.addTeardown(@deleteValid, toolbar);
+            buttons = cell(1, 4);
+            for k = 1:4
+                buttons{k} = toolbar.addButton("Text", string(char('A' + k - 1)));
+            end
+            toolbar.Spacing = 8;
+            toolbar.ComponentAlignment = "right";
+            rightEdge = @(h) h.Position(1) + h.Position(3);
+
+            % removeButton lays the buttons out again with repositionButtons
+            toolbar.removeButton(buttons{1})
+
+            testCase.verifyEqual(rightEdge(buttons{4}), rightEdge(toolbar) - toolbar.Padding(3), ...
+                "AbsTol", 1e-9, "The last button ends at the padded right edge.");
+            testCase.verifyEqual(buttons{3}.Position(1), rightEdge(buttons{2}) + 8, "AbsTol", 1e-9);
+        end
+
+        function buttonAddedAfterSpacingChangeFollowsTheLast(testCase)
+            [~, canvas] = createCanvas(testCase);
+            toolbar = uim.widget.Toolbar(canvas, "Location", "northwest", ...
+                "BarExtensionMode", "expanded");
+            testCase.addTeardown(@deleteValid, toolbar);
+            toolbar.addButton("Text", "A");
+            second = toolbar.addButton("Text", "B");
+
+            toolbar.Spacing = 40;
+            third = toolbar.addButton("Text", "C");
+
+            testCase.verifyEqual(third.Position(1), second.Position(1) + second.Position(3) + 40, ...
+                "AbsTol", 1e-9, "The new button is placed one Spacing after the last one.");
+        end
+
+        function separatorCanBeTheFirstItem(testCase)
+            [~, canvas] = createCanvas(testCase);
+            toolbar = uim.widget.Toolbar(canvas, "Location", "northwest");
+            testCase.addTeardown(@deleteValid, toolbar);
+
+            separator = toolbar.addSeparator();
+            button = toolbar.addButton("Text", "A");
+
+            testCase.verifyEqual(toolbar.NumButtons, 2);
+            testCase.verifyGreaterThan(button.Position(1), separator.Position(1));
+        end
+
         function toolbarLaysOutButtonsAndSeparators(testCase)
             [~, canvas] = createCanvas(testCase);
             toolbar = uim.widget.Toolbar(canvas, "Location", "northwest");
