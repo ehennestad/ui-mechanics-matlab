@@ -220,6 +220,33 @@ classdef TestSliderDetails < matlab.unittest.TestCase
             testCase.verifyEqual(scrollBar.Orientation, 'vertical');
         end
 
+        function scrollBarIsSizedFromItsNewPosition(testCase)
+            hFigure = createHiddenFigure(testCase);
+            hPanel = uipanel(hFigure, "Units", "pixels", "Position", [10, 10, 20, 200]);
+            scrollBar = uim.widget.ScrollBar(hPanel, "Maximum", 10, "VisibleAmount", 2);
+            testCase.addTeardown(@deleteValid, scrollBar);
+
+            scrollBar.Position = [0, 0, 0.5, 1];
+
+            hAxes = findall(hFigure, "Tag", "Scrollbar Axes");
+            hBar = findobj(hAxes, "Tag", "Scrollbar");
+            axesPosition = getpixelposition(hAxes);
+            barThickness = range(hBar.XData) / diff(hAxes.XLim) * axesPosition(3);
+            testCase.verifyEqual(barThickness, scrollBar.BarWidth, "AbsTol", 0.01, ...
+                "The bar keeps BarWidth pixels after the axes is resized.");
+        end
+
+        function scrollBarDeleteRemovesItsGraphics(testCase)
+            hFigure = createHiddenFigure(testCase);
+            hPanel = uipanel(hFigure, "Units", "pixels", "Position", [10, 10, 20, 200]);
+            scrollBar = uim.widget.ScrollBar(hPanel, "Maximum", 10, "VisibleAmount", 2);
+
+            delete(scrollBar)
+
+            testCase.verifyEmpty(findall(hFigure, "Tag", "Scrollbar Axes"), ...
+                "The scrollbar axes and its patches are deleted with the scrollbar.");
+        end
+
         function mouseScrollCanBeEnabledAndDisabled(testCase)
             hFigure = createHiddenFigure(testCase);
             hPanel = uipanel(hFigure, "Units", "pixels", "Position", [10, 10, 20, 200]);

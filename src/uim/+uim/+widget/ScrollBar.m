@@ -141,6 +141,11 @@ classdef ScrollBar < uim.Handle
             if isvalid(obj.ParentSizeChangedListener)
                 delete(obj.ParentSizeChangedListener)
             end
+            % The axes holds the track and bar patches, whose callbacks
+            % refer to this object
+            if ~isempty(obj.Axes) && isvalid(obj.Axes)
+                delete(obj.Axes)
+            end
         end
 
         function redraw(obj)
@@ -621,10 +626,12 @@ classdef ScrollBar < uim.Handle
 
         function onPositionChanged(obj)
             if obj.IsInitialized
-                if any( obj.Axes.Position(3:4) ~=  obj.Position(3:4))
+                isResized = any( obj.Axes.Position(3:4) ~=  obj.Position(3:4));
+                % Move the axes first: redraw sizes the bar from the axes
+                obj.Axes.Position = obj.Position;
+                if isResized
                     obj.redraw()
                 end
-                obj.Axes.Position = obj.Position;
             end
         end
 
