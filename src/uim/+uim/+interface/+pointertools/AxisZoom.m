@@ -18,8 +18,8 @@ classdef AxisZoom < uim.interface.PointerTool
 %     - dragXLimits() and dragYLimits(location) stretch the limits by
 %       the pointer distance from PreviousMousePoint.
 %   Pointer positions and distances are in pixels, whatever the figure
-%   and axes Units are. CurrentAxis ('x' or 'y') selects the pointer symbol. Right-button
-%   presses are ignored.
+%   and axes Units are. CurrentAxis ('x' or 'y') selects the pointer
+%   symbol. Right-button presses are ignored.
 %
 %   ExitMode is 'previous'.
 %
