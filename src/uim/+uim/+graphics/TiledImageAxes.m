@@ -499,8 +499,7 @@ methods (Access = private) % Methods for setting up gui
 
             case {'text', 'matlab.graphics.primitive.Text'}
 
-                h = text(ones(1,n), ones(1,n), '');
-                set(h, 'Parent', obj.Axes_)
+                h = text(obj.Axes_, ones(1,n), ones(1,n), '');
                 set(h, 'Color', obj.TileConfiguration.TextColor)
                 set(h, 'FontSize', 12)
                 set(h, 'VerticalAlignment', 'top')
@@ -509,12 +508,10 @@ methods (Access = private) % Methods for setting up gui
 
             case {'line', 'matlab.graphics.chart.primitive.Line'}
 
-                h = plot(nan(2,n), nan(2,n));
-                set(h, 'Parent', obj.Axes_)
+                h = plot(obj.Axes_, nan(2,n), nan(2,n));
 
             case {'patch', 'matlab.graphics.primitive.Patch'}
                 h = arrayfun(@(i) patch(obj.Axes_, nan, nan, 'w'), 1:n);
-                %set(h, 'Parent', obj.Axes_)
                 set(h, 'FaceAlpha', 0.01, 'LineWidth', 1, 'EdgeColor', 'w')
         end
 
