@@ -208,11 +208,7 @@ classdef Toolbar < uim.abstract.Container
 
             obj.AllButtonPosition(end+1, :) = hSep.Position;
 
-            try
-                obj.Buttons(end+1) = hSep;
-            catch
-                obj.Buttons = cat(2, obj.Buttons, hSep);
-            end
+            obj.Buttons(end+1) = hSep;
 
             obj.NumButtons = obj.NumButtons+1;
 
@@ -513,13 +509,16 @@ classdef Toolbar < uim.abstract.Container
             if ~obj.IsConstructed; return; end
             if obj.NumButtons == 0; return; end
 
-            buttonExtents = sum(obj.AllButtonPosition(:, obj.DimL_+2), 1);
+            % The run is the buttons plus Spacing between neighbours
+            numItems = size(obj.AllButtonPosition, 1);
+            runLength = sum(obj.AllButtonPosition(:, obj.DimL_+2), 1) + ...
+                (numItems - 1) * obj.Spacing;
 
             toolbarLocation = obj.Position(obj.DimL_) + obj.Padding(obj.DimL_);
             toolbarSize = obj.Position(obj.DimL_+2) - obj.Padding(obj.DimL_) - obj.Padding(obj.DimL_+2);
 
             anchorPoint = uim.widget.internal.alignRunStart(...
-                toolbarLocation, toolbarSize, buttonExtents, obj.ComponentAlignment);
+                toolbarLocation, toolbarSize, runLength, obj.ComponentAlignment);
 
             % Start replacing buttons starting from left/top
             for i = 1:numel(obj.Buttons)
@@ -550,6 +549,8 @@ classdef Toolbar < uim.abstract.Container
             if strcmp(obj.BackgroundMode, 'wrap')
                 obj.redrawBackground()
             end
+
+            obj.setNextButtonPosition()
         end
 
         function shiftChildren(obj, shift)
@@ -652,8 +653,10 @@ classdef Toolbar < uim.abstract.Container
 
             if newValue ~= obj.Spacing
                 deltaSpacing = newValue - obj.Spacing;
-                obj.onSpacingChanged(deltaSpacing);
+                % Assign first: onSpacingChanged places the next button
+                % with the new Spacing
                 obj.Spacing = newValue;
+                obj.onSpacingChanged(deltaSpacing);
             end
         end
 
