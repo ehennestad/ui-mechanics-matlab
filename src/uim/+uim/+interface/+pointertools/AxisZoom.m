@@ -51,6 +51,12 @@ classdef AxisZoom < uim.interface.PointerTool
         PreviousMousePoint % Reference point for dragXLimits and dragYLimits, in figure units
     end
 
+    properties (Access = private)
+        % True while onButtonMotion handles a motion; motion events that
+        % arrive meanwhile are dropped
+        IsHandlingMotion (1,1) logical = false
+    end
+
     methods
 
         function obj = AxisZoom(hAxes)
@@ -91,28 +97,31 @@ classdef AxisZoom < uim.interface.PointerTool
         function onButtonMotion(obj, ~, ~)
         %onButtonMotion Call ButtonMotionFcn(shift) while dragging
 
-            persistent isBusy
-            if isempty(isBusy); isBusy = false; end
-
             if obj.IsButtonDown
-                if isBusy
+                if obj.IsHandlingMotion
                     return
                 end
-                isBusy = true;
+                obj.IsHandlingMotion = true;
                 currentPoint = obj.Figure.CurrentPoint;
                 shift = currentPoint - obj.PreviousPoint;
 
-                if ~isempty(obj.ButtonMotionFcn)
-                    obj.ButtonMotionFcn(shift)
-                else
-                    isBusy = false;
-                    error('Not implemented')
-                    % moveAxes(obj, shift) Possibly referring to method in
-                    % uim.interface.pointertools.Pan?
+                % Clear the flag even if ButtonMotionFcn errors, so the
+                % next motion is handled
+                try
+                    if ~isempty(obj.ButtonMotionFcn)
+                        obj.ButtonMotionFcn(shift)
+                    else
+                        error('Not implemented')
+                        % moveAxes(obj, shift) Possibly referring to method in
+                        % uim.interface.pointertools.Pan?
+                    end
+                catch ME
+                    obj.IsHandlingMotion = false;
+                    rethrow(ME)
                 end
 
                 obj.PreviousPoint = currentPoint;
-                isBusy = false;
+                obj.IsHandlingMotion = false;
             end
         end
 

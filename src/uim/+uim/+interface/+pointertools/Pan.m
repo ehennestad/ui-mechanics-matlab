@@ -38,6 +38,12 @@ classdef Pan < uim.interface.PointerTool
         IsButtonDown (1,1) logical = false % True between a left press and its release
     end
 
+    properties (Access = private)
+        % True while onButtonMotion handles a motion; motion events that
+        % arrive meanwhile are dropped
+        IsHandlingMotion (1,1) logical = false
+    end
+
     methods
 
         function obj = Pan(hAxes)
@@ -68,27 +74,29 @@ classdef Pan < uim.interface.PointerTool
         function onButtonMotion(obj, ~, ~)
         %onButtonMotion Move the view, or call ButtonMotionFcn, while dragging
 
-            persistent isBusy
-            if isempty(isBusy); isBusy=false; end
-
             if obj.IsButtonDown
-                if isBusy
+                if obj.IsHandlingMotion
                     return
                 end
-                isBusy = true;
+                obj.IsHandlingMotion = true;
                 currentPoint = obj.Figure.CurrentPoint;
                 shift = currentPoint - obj.PreviousPoint;
 
-                if ~isempty(obj.ButtonMotionFcn)
-                    obj.ButtonMotionFcn(shift)
-                else
-                    moveAxes(obj, shift)
+                % Clear the flag even if ButtonMotionFcn errors, so the
+                % next motion is handled
+                try
+                    if ~isempty(obj.ButtonMotionFcn)
+                        obj.ButtonMotionFcn(shift)
+                    else
+                        moveAxes(obj, shift)
+                    end
+                catch ME
+                    obj.IsHandlingMotion = false;
+                    rethrow(ME)
                 end
 
-                %moveAxes(obj, shift)
-
                 obj.PreviousPoint = currentPoint;
-                isBusy = false;
+                obj.IsHandlingMotion = false;
             end
         end
 
