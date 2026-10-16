@@ -253,6 +253,41 @@ classdef TestPointerTools < matlab.unittest.TestCase
             tool.onButtonUp([], [])
             testCase.verifyFalse(tool.IsButtonDown);
         end
+
+        function axisZoomMeasuresFirstMotionFromThePress(testCase)
+            [hFigure, hAxes] = createImageAxes(testCase);
+            tool = uim.interface.pointertools.AxisZoom(hAxes);
+            tool.ButtonMotionFcn = @(shift) setappdata(hFigure, "AxisShift", shift);
+
+            for pressPoint = {[100, 100], [250, 150]}
+                hFigure.CurrentPoint = pressPoint{1};
+                tool.onButtonDown([], struct("Button", 1))
+                hFigure.CurrentPoint = pressPoint{1} + [5, -3];
+                tool.onButtonMotion([], [])
+                tool.onButtonUp([], [])
+
+                testCase.verifyEqual(getappdata(hFigure, "AxisShift"), [5, -3], ...
+                    "The first motion of each drag is measured from its press.");
+            end
+        end
+
+        function axisZoomHonoursConstrainFlags(testCase)
+            [hFigure, hAxes] = createImageAxes(testCase);
+            tool = uim.interface.pointertools.AxisZoom(hAxes);
+            tool.ConstrainX = false;
+            tool.onButtonDown([], struct("Button", 1))
+
+            % Dragging 60 px away from the origin widens the 100-unit
+            % range by 20 units on each side (300 px axes).
+            tool.PreviousMousePoint = hFigure.CurrentPoint - [60, 60];
+            tool.dragXLimits()
+            tool.dragYLimits('left')
+
+            testCase.verifyEqual(hAxes.XLim, [-19.5, 120.5], "AbsTol", 1e-9, ...
+                "With ConstrainX false the x limits may pass XLimOrig.");
+            testCase.verifyEqual(hAxes.YLim, [0.5, 100.5], "AbsTol", 1e-9, ...
+                "With ConstrainY true the y limits stay clipped.");
+        end
     end
 
     methods (Test) % Crop
