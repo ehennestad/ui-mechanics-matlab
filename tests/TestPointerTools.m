@@ -214,6 +214,49 @@ classdef TestPointerTools < matlab.unittest.TestCase
             testCase.verifyFalse(tool.IsButtonDown, "Right button is ignored.");
         end
 
+        function panFollowsThePointerInAnyFigureUnits(testCase)
+            [hFigure, hAxes] = createImageAxes(testCase);
+            tool = uim.interface.pointertools.Pan(hAxes);
+            set(hAxes, "XLim", [25.5, 75.5], "YLim", [25.5, 75.5])
+
+            for figureUnits = ["centimeters", "normalized"]
+                hFigure.Units = figureUnits;
+                xLimBefore = hAxes.XLim;
+
+                hFigure.CurrentPoint = pixelsToFigureUnits(hFigure, [200, 200]);
+                tool.onButtonDown([], struct("Button", 1))
+                hFigure.CurrentPoint = pixelsToFigureUnits(hFigure, [230, 200]);
+                tool.onButtonMotion([], [])
+                tool.onButtonUp([], [])
+
+                % 300 px axes showing 50 units: a 30 px drag is 5 units.
+                testCase.verifyEqual(hAxes.XLim, xLimBefore - 5, "AbsTol", 1e-6, ...
+                    "A 30 px drag moves the view by 30 px with figure Units " + figureUnits + ".");
+            end
+        end
+
+        function axisZoomStretchMatchesThePointerInAnyUnits(testCase)
+            hFigure = figure("Visible", "off", "Units", "centimeters");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "XLim", [0, 100], "YLim", [0, 100]);
+            tool = uim.interface.pointertools.AxisZoom(hAxes);
+            axesPosition = getpixelposition(hAxes);
+
+            hFigure.CurrentPoint = pixelsToFigureUnits(hFigure, [200, 200]);
+            tool.onButtonDown([], struct("Button", 1))
+            hFigure.CurrentPoint = pixelsToFigureUnits(hFigure, [190, 190]);
+            tool.dragXLimits()
+            tool.dragYLimits('left')
+
+            % A drag of d px towards the origin moves each end inwards by
+            % range * d / axesLength.
+            expectedXShift = 100 * 10 / axesPosition(3);
+            expectedYShift = 100 * 10 / axesPosition(4);
+            testCase.verifyEqual(hAxes.XLim, [expectedXShift, 100 - expectedXShift], "AbsTol", 1e-6, ...
+                "The stretch uses pixel distances, not normalized axes units.");
+            testCase.verifyEqual(hAxes.YLim, [expectedYShift, 100 - expectedYShift], "AbsTol", 1e-6);
+        end
+
         function axisZoomDragStretchesLimitsWithinOriginal(testCase)
             [hFigure, hAxes] = createImageAxes(testCase);
             tool = uim.interface.pointertools.AxisZoom(hAxes);
@@ -373,6 +416,13 @@ function [hFigure, hAxes] = createImageAxes(testCase)
     image(hAxes, zeros(100, "uint8"))
     set(hAxes, "XLim", [0.5, 100.5], "YLim", [0.5, 100.5], "YDir", "reverse")
     hold(hAxes, "on")
+end
+
+function point = pixelsToFigureUnits(hFigure, pixelPoint)
+%pixelsToFigureUnits Express a figure point given in pixels in the figure Units
+    pointPosition = hgconvertunits(hFigure, [pixelPoint, 0, 0], ...
+        "pixels", hFigure.Units, hFigure);
+    point = pointPosition(1:2);
 end
 
 function cleanupTimer(resumeTimer)
