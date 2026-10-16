@@ -231,7 +231,7 @@ classdef TestSliderDetails < matlab.unittest.TestCase
             hAxes = findall(hFigure, "Tag", "Scrollbar Axes");
             hBar = findobj(hAxes, "Tag", "Scrollbar");
             axesPosition = getpixelposition(hAxes);
-            barThickness = range(hBar.XData) / diff(hAxes.XLim) * axesPosition(3);
+            barThickness = (max(hBar.XData) - min(hBar.XData)) / diff(hAxes.XLim) * axesPosition(3);
             testCase.verifyEqual(barThickness, scrollBar.BarWidth, "AbsTol", 0.01, ...
                 "The bar keeps BarWidth pixels after the axes is resized.");
         end
