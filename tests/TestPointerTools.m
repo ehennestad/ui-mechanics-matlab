@@ -214,6 +214,31 @@ classdef TestPointerTools < matlab.unittest.TestCase
             testCase.verifyFalse(tool.IsButtonDown, "Right button is ignored.");
         end
 
+        function dragToolsRecoverAfterButtonMotionFcnError(testCase)
+            for toolName = ["Pan", "AxisZoom"]
+                [hFigure, hAxes] = createImageAxes(testCase);
+                toolClass = "uim.interface.pointertools." + toolName;
+                failingTool = feval(toolClass, hAxes);
+                failingTool.ButtonMotionFcn = @(shift) error("test:motionFailed", "Motion failed");
+                failingTool.PreviousPoint = [0, 0];
+                failingTool.onButtonDown([], struct("Button", 1))
+                testCase.verifyError(@() failingTool.onButtonMotion([], []), "test:motionFailed");
+
+                otherTool = feval(toolClass, hAxes);
+                otherTool.ButtonMotionFcn = @(shift) setappdata(hFigure, "Shift", shift);
+                otherTool.PreviousPoint = [0, 0];
+                otherTool.onButtonDown([], struct("Button", 1))
+                otherTool.onButtonMotion([], [])
+                testCase.verifyTrue(isappdata(hFigure, "Shift"), ...
+                    toolName + ": an error in one tool's ButtonMotionFcn does not block another tool.");
+
+                failingTool.ButtonMotionFcn = @(shift) setappdata(hFigure, "Recovered", true);
+                failingTool.onButtonMotion([], [])
+                testCase.verifyTrue(isappdata(hFigure, "Recovered"), ...
+                    toolName + ": the tool handles the next motion after an error.");
+            end
+        end
+
         function axisZoomDragStretchesLimitsWithinOriginal(testCase)
             [hFigure, hAxes] = createImageAxes(testCase);
             tool = uim.interface.pointertools.AxisZoom(hAxes);
