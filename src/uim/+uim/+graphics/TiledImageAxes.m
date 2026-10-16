@@ -14,9 +14,10 @@ classdef TiledImageAxes < uim.Handle
 %   figure, uipanel or uitab.
 %
 %   obj = uim.graphics.TiledImageAxes(parent, Name=Value) also sets
-%   GridSize, ImageSize, NumChannels, NormalizedPadding, TileUnits,
-%   Visible, TileConfiguration or Padding. Names are case insensitive;
-%   other names are ignored.
+%   GridSize, ImageSize, NumChannels, NormalizedPadding, Spacing,
+%   TileUnits, Visible or TileConfiguration. Names are case insensitive;
+%   other names are ignored. Without a parent, the options also apply to
+%   the new figure (for example Visible).
 %
 %   Tiles are numbered row by row, from the upper-left tile. The axes
 %   has YDir 'reverse' and is invisible. With TileUnits 'pixel', axes
@@ -24,10 +25,11 @@ classdef TiledImageAxes < uim.Handle
 %   are pixels of the original images (see setOriginalImageSize), which
 %   are resized to ImageSize for display.
 %
-%   Changing GridSize or ImageSize rebuilds the tiles, and so does a
-%   change of TileUnits or of the original image size that changes the
-%   axes scale. Rebuilding clears tile images and plots, and gives the
-%   outlines their default color and click callback (selectTile) back.
+%   Changing GridSize, ImageSize or Spacing rebuilds the tiles, and so
+%   does a change of TileUnits or of the original image size that changes
+%   the axes scale. Rebuilding clears tile images and plots and gives the
+%   outlines their default color back. Click callbacks set with
+%   tileCallbackFcn are kept.
 %
 %   Deleting the object deletes its axes.
 %
@@ -62,12 +64,16 @@ end
 properties % Properties to configure axes layout (Default values are preset)
     GridSize = [3, 5]           % [nRows, nCols]
     ImageSize = [128, 128]      % [imHeight, imWidth] Size (Reso) in px per tile
-    Padding = 10                % Not used; see NormalizedPadding.
     NumChannels = 1;            % Color channels per tile: 1 (colormapped) or 3 (RGB). Set at construction.
 
     % Gap between tiles as a fraction of the grid height in pixels
-    % (NumRows * ImageSize(1)). Set at construction.
+    % (NumRows * ImageSize(1)). Used when Spacing is empty. Set at
+    % construction.
     NormalizedPadding = 0.012;
+
+    % Gap between tiles in pixels of the composite image, the unit of
+    % ImageSize. When empty (the default), NormalizedPadding sets the gap.
+    Spacing double {mustBeScalarOrEmpty, mustBeNonnegative, mustBeInteger} = []
     TileUnits = 'pixel'         % pixel | scaled: axes coordinates in composite-image or original-image pixels
 
     Visible = 'on'              % on | off: visibility of the tile graphics
@@ -121,6 +127,10 @@ properties (Access = private, Hidden)
 
     AxesPositionChangedListener
 
+    % Click callbacks set with tileCallbackFcn, by tile number. An empty
+    % cell means the default callback, selectTile.
+    TileOutlineCallbacks = {}
+
     IsConstructed = false
 end
 
@@ -162,22 +172,17 @@ methods %Structors
     %                           default [128, 128]
     %       NumChannels       - 1 (default) or 3
     %       NormalizedPadding - gap between tiles, default 0.012
+    %       Spacing           - gap between tiles in pixels, default []
     %       TileUnits         - 'pixel' (default) or 'scaled'
     %       Visible           - 'on' (default) or 'off'
     %       TileConfiguration - struct of tile appearance settings
-    %       Padding           - not used
 
-        isFigCreated = false;
-        if nargin == 0
-            createFigure(obj)
+        hasParent = nargin > 0 && ...
+            (isa(varargin{1}, 'matlab.ui.Figure') || ...
+             isa(varargin{1}, 'matlab.ui.container.Panel') || ...
+             isa(varargin{1}, 'matlab.ui.container.Tab'));
 
-        elseif ~isa(varargin{1}, 'matlab.ui.Figure') && ...
-                    ~isa(varargin{1}, 'matlab.ui.container.Panel') && ...
-                         ~isa(varargin{1}, 'matlab.ui.container.Tab')
-
-            createFigure(obj)
-            isFigCreated = true;
-        else
+        if hasParent
             parent = varargin{1};
             varargin = varargin(2:end);
 
@@ -185,8 +190,13 @@ methods %Structors
             obj.Parent = parent;
         end
 
-        if nargin > 0 && ~isempty(varargin)
+        if ~isempty(varargin)
             obj.parseVarargin(varargin)
+        end
+
+        % Options are parsed first so that they apply to a new figure
+        if ~hasParent
+            createFigure(obj)
         end
 
         createAxes(obj)
@@ -196,7 +206,6 @@ methods %Structors
         obj.updateScaleFactor()
         obj.changeGridSize()
 
-        if isFigCreated; obj.fitFigure; end
         obj.IsConstructed = true;
 
         if ~nargout
@@ -216,7 +225,7 @@ methods (Access = private) % Methods for setting up gui
 
     function parseVarargin(obj, cellOfVarargin)
 
-        fields = {'ImageSize', 'GridSize', 'Padding', 'TileConfiguration', ...
+        fields = {'ImageSize', 'GridSize', 'Spacing', 'TileConfiguration', ...
             'NumChannels', 'NormalizedPadding', 'TileUnits', 'Visible' };
 
         assert(mod(numel(cellOfVarargin), 2) == 0, ...
@@ -362,9 +371,8 @@ methods (Access = private) % Methods for setting up gui
     %   tiles. Creates CData of the image object which will contain image
     %   data for all the plotted tiles, as well as boxes around each tiles
     %   and handles for adding lines or text to the interior of each tile.
-    %
-    %   NOTE! This function will reset any tilecallback functions that are
-    %   assigned externally.
+    %   Outline click callbacks are reset to selectTile, except those set
+    %   with tileCallbackFcn.
 
         if isempty(obj.Axes_); return; end % Skip during initialization
 
@@ -437,7 +445,11 @@ methods (Access = private) % Methods for setting up gui
             yData{i} = coords(:, 2);
 
             % Set additional props while looping to create xdata/ydata
-            obj.TileOutline(i).ButtonDownFcn = {@obj.selectTile, i};
+            if i <= numel(obj.TileOutlineCallbacks) && ~isempty(obj.TileOutlineCallbacks{i})
+                obj.TileOutline(i).ButtonDownFcn = obj.TileOutlineCallbacks{i};
+            else
+                obj.TileOutline(i).ButtonDownFcn = {@obj.selectTile, i};
+            end
             setappdata(obj.TileOutline(i), 'OrigColor', ones(1,3)*0.7)
         end
 
@@ -626,7 +638,11 @@ methods
     end
 
     function pixelPadding = get.PixelPadding(obj)
-        pixelPadding = round(obj.NumRows .* obj.ImageSize(1) .* obj.NormalizedPadding);
+        if isempty(obj.Spacing)
+            pixelPadding = round(obj.NumRows .* obj.ImageSize(1) .* obj.NormalizedPadding);
+        else
+            pixelPadding = obj.Spacing;
+        end
     end
 
     function numTiles = get.NumTiles(obj)
@@ -721,6 +737,11 @@ methods
 
         obj.ImageSize = imageSize;
         obj.updateScaleFactor()
+        obj.changeGridSize()
+    end
+
+    function set.Spacing(obj, newValue)
+        obj.Spacing = newValue;
         obj.changeGridSize()
     end
 
@@ -893,11 +914,14 @@ methods
     %updateTilePlot Draw a line drawing in one or more tiles
     %
     %   obj.updateTilePlot(xData, yData, tileNum) sets the patch of each
-    %   tile in tileNum to the vertices in xData and yData. Both are cell
-    %   arrays with one vector per tile, in axes units relative to the
-    %   tile centre. The patches have a white edge and a nearly
+    %   tile in tileNum to the vertices in xData and yData, in axes units
+    %   relative to the tile centre. Each is a cell array with one vector
+    %   per tile, or a numeric vector that is used for every tile. The patches have a white edge and a nearly
     %   transparent face. The x and y range of each tile is stored in
     %   the patch's UserData as the fields XLim and YLim.
+
+        if ~iscell(xData); xData = repmat({xData}, 1, numel(tileNum)); end
+        if ~iscell(yData); yData = repmat({yData}, 1, numel(tileNum)); end
 
         % Shift plot coordinates to center of current tile
         fullSize = [obj.PixelHeight, obj.PixelWidth];
@@ -939,8 +963,9 @@ methods
     %
     %   obj.tileCallbackFcn(funHandle, tileNum) sets the ButtonDownFcn of
     %   the outline of tile tileNum, replacing the default selectTile.
-    %   Rebuilding the tiles restores the default.
+    %   The callback is kept when the tiles are rebuilt.
         obj.TileOutline(tileNum).ButtonDownFcn = funHandle;
+        obj.TileOutlineCallbacks{tileNum} = funHandle;
     end
 
     function tilePlotButtonDownFcn(obj, funHandle, tileNum)
@@ -970,6 +995,7 @@ methods
                 if isfield( obj.Figure_.UserData, 'uiwait') && obj.Figure_.UserData.uiwait
                     uiresume(obj.Figure_)
                     obj.Figure_.UserData.uiwait = false;
+                    obj.Figure_.UserData.lastKey = event.Key;
                 end
         end
     end
@@ -978,9 +1004,10 @@ methods
     %uiwait Wait for the user to choose a tile in the object's own figure
     %
     %   ind = obj.uiwait() blocks until the user presses Return, then
-    %   closes the figure and returns SelectedTiles. If the figure is
-    %   closed instead, ind is NaN. Only an object created without a
-    %   parent has the key handler that ends the wait.
+    %   closes the figure and returns SelectedTiles. Escape closes the
+    %   figure and returns NaN. If the figure is closed instead, ind is
+    %   NaN. Only an object created without a parent has the key handler
+    %   that ends the wait.
 
     % Dont remember what this is used for.
 
@@ -1098,8 +1125,6 @@ methods (Access = private) % Internal gui management
                 newScaleFactor = [1, 1];
         end
 
-        % changeGridSize calls updateGraphicsObjects, which resets any tile
-        % callback assigned from an external interface.
         if any(obj.ScaleFactor ~= newScaleFactor)
             obj.ScaleFactor = newScaleFactor;
             obj.changeGridSize()
