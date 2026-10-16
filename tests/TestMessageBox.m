@@ -117,6 +117,76 @@ classdef TestMessageBox < matlab.unittest.TestCase
             testCase.verifyTrue(contains(output, 'NoSuchProperty'));
             testCase.verifyError(@() uim.widget.MessageBox(hPanel, 1, 2), "uim:MessageBox:InvalidPairs");
         end
+
+        function constructorAcceptsNameValueSyntax(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+
+            messageBox = uim.widget.MessageBox(uipanel(hFigure), FontSize=10);
+            testCase.addTeardown(@deleteValid, messageBox);
+
+            testCase.verifyEqual(messageBox.FontSize, 10);
+        end
+
+        function resetCentersTheBoxInAPanel(testCase)
+            [hFigure, messageBox] = createMessageBox(testCase);
+
+            messageBox.resetAxesPosition()
+
+            % 380 x 180 px panel, 300 x 50 px box
+            testCase.verifyEqual(messageBoxAxes(hFigure).Position, [40, 65, 300, 50], "AbsTol", 1e-9, ...
+                "The box is centred in the panel, not offset by the panel position.");
+        end
+
+        function successiveLongMessagesKeepTheBoxSize(testCase)
+            [hFigure, messageBox] = createMessageBox(testCase);
+            messageBox.resetAxesPosition()
+            hAxes = messageBoxAxes(hFigure);
+            positionBefore = hAxes.Position;
+            twoLineMessage = repmat('lorem ipsum ', 1, 5);
+            longMessage = repmat('lorem ipsum ', 1, 60);
+
+            messageBox.displayMessage(longMessage)
+            positionForLongMessage = hAxes.Position;
+            messageBox.clearMessage()
+
+            messageBox.displayMessage(twoLineMessage)
+            testCase.assertGreaterThan(hAxes.Position(4), positionBefore(4), ...
+                "Precondition: the first message enlarges the box.");
+            messageBox.displayMessage(longMessage)
+            testCase.verifyEqual(hAxes.Position, positionForLongMessage, "AbsTol", 1e-9, ...
+                "A long message is sized from the original box, not from an enlarged one.");
+
+            messageBox.clearMessage()
+            testCase.verifyEqual(hAxes.Position, positionBefore, "AbsTol", 1e-9, ...
+                "Clearing restores the original box.");
+        end
+
+        function deleteStopsAPendingMessageTimer(testCase)
+            timersBefore = numel(timerfindall);
+            [~, messageBox] = createMessageBox(testCase);
+
+            messageBox.displayMessage('Brief', 0.5)
+            delete(messageBox)
+            pause(1)
+
+            testCase.verifyEqual(numel(timerfindall), timersBefore, ...
+                "No timer is left after the box is deleted.");
+        end
+
+        function pendingMessageIgnoresDeletedGraphics(testCase)
+            timersBefore = numel(timerfindall);
+            [hFigure, messageBox] = createMessageBox(testCase);
+
+            messageBox.displayMessage('Brief', 0.3)
+            delete(hFigure)
+            pause(0.8)
+
+            testCase.verifyEqual(numel(timerfindall), timersBefore, ...
+                "The timer deletes itself after firing.");
+            testCase.verifyWarningFree(@() messageBox.clearMessage(), ...
+                "Clearing after the figure is closed does nothing.");
+        end
     end
 end
 
