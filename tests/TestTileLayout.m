@@ -171,6 +171,89 @@ classdef TestTileLayout < matlab.unittest.TestCase
                 tiledAxes.getTileCenterAxesCoords(12) * [0; 1]), 12);
         end
 
+        function tiledAxesWithoutParentAppliesOptionsToItsFigure(testCase)
+            tiledAxes = uim.graphics.TiledImageAxes("GridSize", [2, 2], "Visible", "off");
+            testCase.addTeardown(@deleteValid, tiledAxes.Figure);
+
+            testCase.verifyEqual(tiledAxes.NumTiles, 4);
+            testCase.verifyEqual(char(tiledAxes.Figure.Visible), 'off', ...
+                "Options reach the figure the object creates.");
+        end
+
+        function escapeEndsUiwaitWithNaN(testCase)
+            tiledAxes = uim.graphics.TiledImageAxes("GridSize", [1, 2], "Visible", "off");
+            hFigure = tiledAxes.Figure;
+            testCase.addTeardown(@deleteValid, hFigure);
+            tiledAxes.selectTile([], [], 2)
+
+            for key = ["return", "escape"]
+                if ~isvalid(hFigure)
+                    tiledAxes = uim.graphics.TiledImageAxes("GridSize", [1, 2], "Visible", "off");
+                    hFigure = tiledAxes.Figure;
+                    testCase.addTeardown(@deleteValid, hFigure);
+                    tiledAxes.selectTile([], [], 2)
+                end
+                pressTimer = timer("StartDelay", 0.3, "TimerFcn", ...
+                    @(~, ~) tiledAxes.keypress([], struct("Key", key)));
+                testCase.addTeardown(@delete, pressTimer);
+                start(pressTimer)
+
+                ind = tiledAxes.uiwait();
+
+                if key == "return"
+                    testCase.verifyEqual(ind, 2, "Return returns the selected tile.");
+                else
+                    testCase.verifyTrue(isnan(ind), "Escape returns NaN.");
+                end
+                testCase.verifyFalse(isvalid(hFigure), "The figure is closed.");
+            end
+        end
+
+        function tileCallbacksSurviveAGridRebuild(testCase)
+            [hFigure, tiledAxes] = createTiledAxes(testCase, [2, 2], [8, 8]);
+            callback = @(~, ~) setappdata(hFigure, "Clicked", true);
+            tiledAxes.tileCallbackFcn(callback, 2)
+
+            tiledAxes.GridSize = [2, 3];
+
+            hOutline = findobj(tiledAxes.Axes, "Type", "patch", "Tag", "2");
+            testCase.verifyEqual(hOutline.ButtonDownFcn, callback, ...
+                "A callback set with tileCallbackFcn is kept.");
+            hOther = findobj(tiledAxes.Axes, "Type", "patch", "Tag", "3");
+            testCase.verifyClass(hOther.ButtonDownFcn, "cell", ...
+                "Other tiles keep the default selectTile callback.");
+        end
+
+        function spacingSetsTheGapInPixels(testCase)
+            hFigure = figure("Visible", "off", "Position", [100, 100, 400, 300]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            tiledAxes = uim.graphics.TiledImageAxes(hFigure, "GridSize", [2, 3], ...
+                "ImageSize", [16, 24], "Spacing", 3);
+            testCase.addTeardown(@deleteValid, tiledAxes);
+
+            % Tile 5 is row 2, column 2: one tile and one gap along each
+            % axis, plus half a tile and the half-pixel offset.
+            testCase.verifyEqual(tiledAxes.getTileCenterAxesCoords(5), [24 + 12, 16 + 8] + 3 + 0.5);
+
+            tiledAxes.Spacing = 0;
+            testCase.verifyEqual(tiledAxes.getTileCenterAxesCoords(5), [24 + 12, 16 + 8] + 0.5);
+            testCase.verifyEqual(tiledAxes.Axes.XLim, [0, 3*24] + 0.5, ...
+                "Changing Spacing rebuilds the grid.");
+        end
+
+        function tilePlotAcceptsANumericVector(testCase)
+            [~, tiledAxes] = createTiledAxes(testCase, [2, 2], [8, 8]);
+
+            tiledAxes.updateTilePlot([1, 2, 3], [1, 2, 3], [1, 4])
+
+            plotXData = get(findobj(tiledAxes.Axes, "Tag", "TilePlotHandle"), {'XData'});
+            for tileNum = [1, 4]
+                tileCenter = tiledAxes.getTileCenterAxesCoords(tileNum);
+                isTilePlot = cellfun(@(x) isequal(x(:), [1; 2; 3] + tileCenter(1)), plotXData);
+                testCase.verifyTrue(any(isTilePlot), sprintf("Tile %d gets the vector.", tileNum));
+            end
+        end
+
         function deletingTiledAxesRemovesItsAxes(testCase)
             [hFigure, tiledAxes] = createTiledAxes(testCase, [1, 2], [8, 8]);
             hAxes = tiledAxes.Axes;

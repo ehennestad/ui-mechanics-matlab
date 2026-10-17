@@ -179,6 +179,25 @@ classdef PointerTool < handle & matlab.mixin.Heterogeneous
         end
     end
 
+    methods (Access = protected)
+
+        function point = getCurrentPointInPixels(obj)
+        %getCurrentPointInPixels Figure CurrentPoint in pixels
+        %
+        %   point = tool.getCurrentPointInPixels() returns the figure
+        %   CurrentPoint as [x, y] in pixels, whatever the figure Units
+        %   are. Tools that convert a pointer distance with an axes size
+        %   in pixels need both in the same unit.
+
+            point = obj.Figure.CurrentPoint;
+            if ~strcmp(obj.Figure.Units, 'pixels')
+                pointPosition = hgconvertunits(obj.Figure, [point, 0, 0], ...
+                    obj.Figure.Units, 'pixels', obj.Figure);
+                point = pointPosition(1:2);
+            end
+        end
+    end
+
 % %     methods (Access = public) % These should not be public... Or there
 % %         %should be one method that can be accessed from Pointermanager and
 % %         %one method that can be overridden by subclasses...

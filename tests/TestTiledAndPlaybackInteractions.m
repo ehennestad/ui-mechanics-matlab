@@ -25,6 +25,25 @@ classdef TestTiledAndPlaybackInteractions < matlab.unittest.TestCase
             testCase.verifyEqual(hImage.AlphaData(centre(2), centre(1)), 0);
         end
 
+        function widgetsDrawOnlyInsideTheirParent(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 400, 300]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hOtherFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hOtherFigure);
+
+            set(groot, "CurrentFigure", hOtherFigure)
+            tiledAxes = uim.graphics.TiledImageAxes(hFigure, "GridSize", [2, 2]);
+            testCase.addTeardown(@deleteValid, tiledAxes);
+            hPanel = uipanel(hFigure, "Units", "pixels", "Position", [10, 10, 20, 200]);
+            scrollBar = uim.widget.ScrollBar(hPanel, "Maximum", 10, "VisibleAmount", 2);
+            testCase.addTeardown(@deleteValid, scrollBar);
+
+            testCase.verifyEmpty(findall(hOtherFigure, "Type", "axes"), ...
+                "Nothing is drawn into the current figure.");
+            testCase.verifyEqual(numel(findall(hFigure, "Type", "axes")), 2, ...
+                "The parent figure holds only the tile axes and the scrollbar axes.");
+        end
+
         function tilePlotsAreCentredOnTheirTile(testCase)
             [~, tiledAxes] = createTiledAxes(testCase, [2, 2], [8, 8]);
 

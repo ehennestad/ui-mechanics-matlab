@@ -7,16 +7,14 @@ classdef Pan < uim.interface.PointerTool
 %   PointerManager creates the tool for the key "pan".
 %
 %   Dragging with the left button moves the axes limits so the content
-%   follows the pointer. The pointer movement is read from the figure
-%   CurrentPoint, in the figure's Units, and converted with the axes
-%   size in pixels, so the content follows the pointer only when the
-%   figure Units are pixels. With ConstrainX (ConstrainY) true, a step
+%   follows the pointer. The pointer movement is measured in pixels,
+%   whatever the figure Units are. With ConstrainX (ConstrainY) true, a step
 %   that would bring the x (y) limits to or past XLimOrig (YLimOrig) is
 %   skipped on that axis. Right-button presses are ignored.
 %
 %   A host can take over the drag by setting ButtonMotionFcn, which is
 %   called as ButtonMotionFcn(shift) on each motion with the pointer
-%   movement [dx, dy] since the last motion, in figure units. The tool
+%   movement [dx, dy] since the last motion, in pixels. The tool
 %   then does not move the limits.
 %
 %   ExitMode is 'previous'.
@@ -34,7 +32,7 @@ classdef Pan < uim.interface.PointerTool
         ConstrainX = true; % If true, keep the x limits strictly inside XLimOrig
         ConstrainY = true; % If true, keep the y limits strictly inside YLimOrig
 
-        PreviousPoint (1,2) double = [nan, nan] % Figure CurrentPoint at the last press or motion
+        PreviousPoint (1,2) double = [nan, nan] % Pointer position in pixels at the last press or motion
         IsButtonDown (1,1) logical = false % True between a left press and its release
     end
 
@@ -68,7 +66,7 @@ classdef Pan < uim.interface.PointerTool
             obj.IsButtonDown = true;
             obj.IsActive = true;
 
-            obj.PreviousPoint = obj.Figure.CurrentPoint;
+            obj.PreviousPoint = obj.getCurrentPointInPixels();
         end
 
         function onButtonMotion(obj, ~, ~)
@@ -79,7 +77,7 @@ classdef Pan < uim.interface.PointerTool
                     return
                 end
                 obj.IsHandlingMotion = true;
-                currentPoint = obj.Figure.CurrentPoint;
+                currentPoint = obj.getCurrentPointInPixels();
                 shift = currentPoint - obj.PreviousPoint;
 
                 % Clear the flag even if ButtonMotionFcn errors, so the

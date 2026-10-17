@@ -176,6 +176,55 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
             testCase.verifyEqual(getappdata(hFigure, "Pressed"), 3);
         end
 
+        function switchUntilReleasedWorksInBothModes(testCase)
+            [hFigure, canvas] = createCanvas(testCase);
+            for mode = ["pushbutton", "togglebutton"]
+                button = uim.control.Button(canvas, "Text", "Go", "Position", [10, 10, 80, 30], ...
+                    "Size", [80, 30], "PositionMode", "manual", "Mode", mode, ...
+                    "MechanicalAction", "Switch until released");
+                testCase.addTeardown(@deleteValid, button);
+                button.Callback = @(source, ~) setappdata(hFigure, "Values", ...
+                    [getappdata(hFigure, "Values"), logical(source.Value)]);
+                setappdata(hFigure, "Values", logical.empty)
+
+                hBackground = findPressablePatch(canvas.Axes);
+                hBackground.ButtonDownFcn(hBackground, [])
+                testCase.verifyTrue(logical(button.Value), mode + ": Value is on while pressed.");
+                releaseButton(button)
+
+                testCase.verifyFalse(logical(button.Value), mode + ": Value is off after release.");
+                testCase.verifyEqual(getappdata(hFigure, "Values"), [true, false], ...
+                    mode + ": Callback runs on press and on release.");
+                delete(button)
+            end
+        end
+
+        function toggleReleasedOutsideKeepsItsValue(testCase)
+            [hFigure, canvas] = createCanvas(testCase);
+            button = uim.control.Button(canvas, "Text", "Go", "Position", [10, 10, 80, 30], ...
+                "Size", [80, 30], "PositionMode", "manual", "Mode", "togglebutton");
+            testCase.addTeardown(@deleteValid, button);
+            button.Callback = @(~, ~) setappdata(hFigure, "Pressed", getappdata(hFigure, "Pressed") + 1);
+            setappdata(hFigure, "Pressed", 0)
+            hBackground = findPressablePatch(canvas.Axes);
+
+            % The pointer is not over the button (no enter event).
+            hBackground.ButtonDownFcn(hBackground, [])
+            releaseButton(button)
+            testCase.verifyFalse(logical(button.Value), ...
+                "A release outside the button does not toggle it.");
+            testCase.verifyEqual(getappdata(hFigure, "Pressed"), 0);
+
+            testCase.assumeTrue(exist("iptGetPointerBehavior", "file") > 0, ...
+                "Hover needs the Image Processing Toolbox pointer manager.");
+            behavior = iptGetPointerBehavior(hBackground);
+            behavior.enterFcn(hFigure, [0, 0])
+            hBackground.ButtonDownFcn(hBackground, [])
+            releaseButton(button)
+            testCase.verifyTrue(logical(button.Value), "A release over the button toggles it.");
+            testCase.verifyEqual(getappdata(hFigure, "Pressed"), 1);
+        end
+
         function buttonFollowsToggledPointerTool(testCase)
             [hFigure, canvas] = createCanvas(testCase);
             hAxes = axes(hFigure, "Units", "pixels", "Position", [300, 300, 100, 80]);
@@ -218,6 +267,17 @@ function hPatch = findPressablePatch(hAxes)
     isPressable = arrayfun(@(h) isa(h.ButtonDownFcn, "function_handle") && ...
         contains(func2str(h.ButtonDownFcn), "onMousePressed"), patches);
     hPatch = patches(find(isPressable, 1));
+end
+
+function releaseButton(button)
+%releaseButton Run the figure mouse-release listener a press installed
+%
+%   A hidden figure cannot raise WindowMouseRelease, and the listener is a
+%   protected property, so it is read through struct().
+    warningState = warning("off", "MATLAB:structOnObject");
+    restoreWarning = onCleanup(@() warning(warningState));
+    buttonState = struct(button);
+    buttonState.MouseReleasedListener.Callback([], [])
 end
 
 function deleteValid(object)
