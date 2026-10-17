@@ -2,19 +2,19 @@ classdef AxisZoom < uim.interface.PointerTool
 %AxisZoom Pointer tool for stretching the x or y limits by dragging
 %
 %   tool = uim.interface.pointertools.AxisZoom(hAxes) creates the tool for
-%   hAxes. The axes limits at construction become XLimOrig and YLimOrig,
-%   which the stretched limits never exceed. A PointerManager creates the
+%   hAxes. The axes limits at construction become XLimOrig and YLimOrig.
+%   With ConstrainX (ConstrainY) true, the default, the stretched x (y)
+%   limits never exceed XLimOrig (YLimOrig). A PointerManager creates the
 %   tool for the key "axisZoom".
 %
 %   The tool provides the stretch operations, and the host drives them:
 %     - A left press records the pointer position in
-%       PreviousMouseClickPoint and PreviousMousePoint. The tool does not
-%       update PreviousMousePoint during the drag.
+%       PreviousMouseClickPoint, PreviousMousePoint and PreviousPoint.
+%       The tool does not update PreviousMousePoint during the drag.
 %     - Each motion while the button is down calls the host's
 %       ButtonMotionFcn(shift), with shift the pointer position minus
-%       PreviousPoint, the point of the last motion the tool handled.
-%       The press does not reset PreviousPoint. Without a
-%       ButtonMotionFcn a drag raises an error.
+%       PreviousPoint, the point of the press or of the last motion the
+%       tool handled. Without a ButtonMotionFcn a drag raises an error.
 %     - dragXLimits() and dragYLimits(location) stretch the limits by
 %       the pointer distance from PreviousMousePoint.
 %   Pointer positions and distances are in pixels, whatever the figure
@@ -37,8 +37,8 @@ classdef AxisZoom < uim.interface.PointerTool
         XLimOrig % [min, max] x bounds for the stretched limits, taken from the axes at construction
         YLimOrig % [min, max] y bounds for the stretched limits, taken from the axes at construction
 
-        ConstrainX = true; % Not used
-        ConstrainY = true; % Not used
+        ConstrainX = true; % If true, clip the x limits to XLimOrig
+        ConstrainY = true; % If true, clip the y limits to YLimOrig
 
         % Axis being dragged: 'x' (pointer 'left'), 'y' (pointer 'top'),
         % or '' (pointer unchanged)
@@ -90,6 +90,7 @@ classdef AxisZoom < uim.interface.PointerTool
                 obj.IsButtonDown = true;
                 obj.PreviousMouseClickPoint = obj.getCurrentPointInPixels();
                 obj.PreviousMousePoint = obj.PreviousMouseClickPoint;
+                obj.PreviousPoint = obj.PreviousMouseClickPoint;
             end
 
             obj.IsActive = true;
@@ -140,8 +141,8 @@ classdef AxisZoom < uim.interface.PointerTool
         %   the fraction dy/h of the current height, where dy is the
         %   vertical distance from PreviousMousePoint to the pointer and h
         %   is the axes height, both in pixels. Dragging up widens the
-        %   limits and dragging down narrows them. The result is clipped
-        %   to YLimOrig.
+        %   limits and dragging down narrows them. With ConstrainY true,
+        %   the result is clipped to YLimOrig.
         %
         %   location is 'left' or 'right'. When it differs from the axes
         %   YAxisLocation, the method calls yyaxis(hAxes, location) first,
@@ -175,8 +176,8 @@ classdef AxisZoom < uim.interface.PointerTool
         %   fraction dx/w of the current width, where dx is the horizontal
         %   distance from PreviousMousePoint to the pointer and w is the
         %   axes width, both in pixels. Dragging right widens the limits
-        %   and dragging left narrows them. The result is clipped to
-        %   XLimOrig.
+        %   and dragging left narrows them. With ConstrainX true, the
+        %   result is clipped to XLimOrig.
 
             currentPoint = obj.getCurrentPointInPixels();
             axesPosition = getpixelposition(obj.Axes);
@@ -190,16 +191,20 @@ classdef AxisZoom < uim.interface.PointerTool
     methods (Access = private)
 
         function setNewXLims(obj, newLimits)
-        % setNewXLims Set axes XLim, clamped to the original limits
+        % setNewXLims Set axes XLim, clamped to the original limits if ConstrainX
 
-            newLimits = uim.geometry.intersectRanges(newLimits, obj.XLimOrig);
+            if obj.ConstrainX
+                newLimits = uim.geometry.intersectRanges(newLimits, obj.XLimOrig);
+            end
             set(obj.Axes, 'XLim', newLimits);
         end
 
         function setNewYLims(obj, newLimits)
-        % setNewYLims Set axes YLim, clamped to the original limits
+        % setNewYLims Set axes YLim, clamped to the original limits if ConstrainY
 
-            newLimits = uim.geometry.intersectRanges(newLimits, obj.YLimOrig);
+            if obj.ConstrainY
+                newLimits = uim.geometry.intersectRanges(newLimits, obj.YLimOrig);
+            end
             set(obj.Axes, 'YLim', newLimits);
         end
     end
