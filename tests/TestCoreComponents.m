@@ -230,6 +230,31 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 "A second change within 1 s is not notified at a rate of 1.");
         end
 
+        function marginChangeKeepsAManualSize(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 600, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            components = {
+                uim.container.Panel(hFigure, BackgroundColor="w")
+                uim.decorator.Box(canvas, PositionMode="auto")
+                uim.widget.Toolbar(canvas, Location="northwest", BarExtensionMode="expanded")
+                uim.widget.RangeSlider(canvas, Min=0, Max=10)
+                };
+            for k = 1:numel(components)
+                component = components{k};
+                testCase.addTeardown(@deleteValid, component);
+                component.Size = [150, 60];
+
+                component.Margin = [5, 5, 5, 5];
+
+                testCase.verifyEqual(char(component.SizeMode), 'manual', ...
+                    class(component) + ": a Margin change keeps SizeMode 'manual'.");
+                testCase.verifyEqual(component.Size, [150, 60], ...
+                    class(component) + ": a Margin change keeps the manual Size.");
+            end
+        end
+
         function rangeSliderClampsValuesWhenLimitsChange(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
