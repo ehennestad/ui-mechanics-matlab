@@ -187,6 +187,17 @@ classdef TestMessageBox < matlab.unittest.TestCase
             testCase.verifyWarningFree(@() messageBox.clearMessage(), ...
                 "Clearing after the figure is closed does nothing.");
         end
+
+        function messagesAfterTheFigureClosesDoNothing(testCase)
+            [hFigure, messageBox] = createMessageBox(testCase);
+            messageBox.waitbar(0.2, 'Loading')
+            delete(hFigure)
+
+            testCase.verifyWarningFree(@() messageBox.displayMessage('Late message'), ...
+                "displayMessage does nothing once the figure is closed.");
+            testCase.verifyWarningFree(@() messageBox.waitbar(0.5, 'Still loading'), ...
+                "waitbar does nothing once the figure is closed.");
+        end
     end
 end
 

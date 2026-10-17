@@ -596,8 +596,10 @@ classdef MessageBox < uim.mixin.Resizable
         %   when the timer clears it. The default is false.
         %
         %   Showing a one-line message that is already shown does nothing.
+        %   Once the box graphics are deleted, for example with the
+        %   figure, displayMessage does nothing.
 
-            if isempty(obj); return; end
+            if isempty(obj) || ~isvalid(obj.Axes); return; end
 
             if nargin < 4; doFade = false; end
 
@@ -769,6 +771,10 @@ classdef MessageBox < uim.mixin.Resizable
         %   closes it.
         %
         %   The progress bar is a uim.widget.Waitbar created on first use.
+        %   Once the box graphics are deleted, for example with the
+        %   figure, waitbar does nothing.
+
+            if ~isvalid(obj.Axes); return; end
 
             if nargin < 3; message = ''; end
             if nargin < 4; action = 'set'; end
