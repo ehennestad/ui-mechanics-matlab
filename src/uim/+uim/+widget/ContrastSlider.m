@@ -17,6 +17,8 @@ classdef ContrastSlider < uim.widget.RangeSlider
 %   increasing (the host never needs to guard against a collapsed
 %   range before assigning it to CLim). Programmatic assignment to
 %   Limits/DataLimits updates the display without firing the callback.
+%   DataLimits that do not overlap the current Limits reset Limits to
+%   DataLimits.
 %   Assigning the inherited Low or High directly, or a Min or Max that
 %   moves them, is not silent: it notifies like a user interaction.
 %
@@ -134,6 +136,10 @@ classdef ContrastSlider < uim.widget.RangeSlider
     methods % Set/Get
 
         function set.DataLimits(obj, newValue)
+            % Limits wholly outside the new range would be clamped to a
+            % single value, so they are reset to the full range instead
+            isOutsideNewRange = obj.High <= newValue(1) || obj.Low >= newValue(2);
+
             % Assign in an order that keeps Min < Max at every step: a
             % range lying above the current one must raise Max first.
             if newValue(1) >= obj.Max
@@ -142,6 +148,11 @@ classdef ContrastSlider < uim.widget.RangeSlider
             else
                 obj.applySilently(@() set(obj, ...
                     'Min', newValue(1), 'Max', newValue(2)))
+            end
+
+            if isOutsideNewRange
+                obj.applySilently(@() set(obj, ...
+                    'Low', newValue(1), 'High', newValue(2)))
             end
         end
 
@@ -453,6 +464,13 @@ classdef ContrastSlider < uim.widget.RangeSlider
     end
 
     methods (Access = protected)
+
+        function redrawSliderParts(obj)
+        %redrawSliderParts Also move the auto/histogram buttons and histogram
+            redrawSliderParts@uim.widget.RangeSlider(obj)
+            obj.updateGlyphButtonLocations()
+            obj.updateHistogram()
+        end
 
         function notifyValueChanged(obj)
         %notifyValueChanged Clamp, then notify the host on both channels
