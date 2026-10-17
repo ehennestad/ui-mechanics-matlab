@@ -330,24 +330,28 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 
             S = obj.getTypeDefaults();
 
-            propNames = varargin(1:2:end);
-            propValues = varargin(2:2:end);
-
-            for i = 1:numel(propNames)
-                S.(propNames{i}) = propValues{i};
-            end
-
-            C = cat(1, fieldnames(S)', struct2cell(S)');
-            C = C(:)';
+            callerArgs = varargin;
+            callerNames = cellfun(@char, callerArgs(1:2:end), 'UniformOutput', false);
+            callerArgs(1:2:end) = callerNames;
 
             % Special treatment because this has protected setAccess
-            if any(strcmp('CanvasMode', C(1:2:end)))
-                ind = find(strcmp(C(1:2:end), 'CanvasMode'));
-                obj.CanvasMode = C{ind*2};
-                C(ind*2 - [1,0])=[];
+            isCanvasMode = strcmp(callerNames, 'CanvasMode');
+            if any(isCanvasMode)
+                obj.CanvasMode = callerArgs{find(isCanvasMode, 1, 'last')*2};
+            elseif isfield(S, 'CanvasMode')
+                obj.CanvasMode = S.CanvasMode;
             end
+            callerArgs(sort([find(isCanvasMode)*2-1, find(isCanvasMode)*2])) = [];
+            if isfield(S, 'CanvasMode'); S = rmfield(S, 'CanvasMode'); end
 
-            parseInputs@uim.mixin.NameValueAssignable(obj, C{:})
+            % Assign the type defaults first and the caller's options
+            % second. An option can set other properties in its set
+            % method (a Toolbar's Orientation sets IsFixedSize), and a
+            % type default assigned after it would undo that.
+            S = rmfield(S, intersect(fieldnames(S), callerNames));
+            defaultArgs = cat(1, fieldnames(S)', struct2cell(S)');
+            parseInputs@uim.mixin.NameValueAssignable(obj, defaultArgs{:})
+            parseInputs@uim.mixin.NameValueAssignable(obj, callerArgs{:})
         end
 
         function assignComponentCanvas(obj)
