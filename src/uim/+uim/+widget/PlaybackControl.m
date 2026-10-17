@@ -497,6 +497,8 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
             if obj.RangeSelectorEnabled
                 obj.drawActiveRangeBar()
+                % The handles take the drag, so they must follow the bar
+                obj.drawRangeButtons()
             end
         end
 
