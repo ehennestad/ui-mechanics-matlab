@@ -14,15 +14,16 @@ classdef MessageBox < uim.mixin.Resizable
 %   an imrect in that axes and needs the Image Processing Toolbox.
 %
 %   messageBox = uim.widget.MessageBox(hParent, Name, Value, ...) sets
-%   properties before the box is created. Names must be character
-%   vectors: string names, including Name=Value syntax, raise
+%   properties before the box is created. Names are character vectors or
+%   string scalars, so Name=Value syntax works; other names raise
 %   uim:MessageBox:InvalidPairs. A pair that can not be assigned is
 %   reported in the Command Window and skipped.
 %
 %   Use displayMessage and clearMessage to show and hide a message, and
 %   waitbar to show a progress bar along the bottom edge of the box. A
 %   long message wraps onto several lines, and the box grows in height
-%   to fit it until the message is cleared. The close button in the top
+%   to fit it. Each message is sized from the box size before the first
+%   long message, and clearMessage restores that size. The close button in the top
 %   right corner clears the message.
 %
 %   Example:
@@ -88,12 +89,13 @@ classdef MessageBox < uim.mixin.Resizable
         %   messageBox = uim.widget.MessageBox(hParent, Name, Value, ...)
 
             msg = 'Invalid Sequence of Name, Value Parameters';
-            assert(all(cellfun(@(arg) ischar(arg), varargin(1:2:end))), ...
+            isName = @(arg) ischar(arg) || (isstring(arg) && isscalar(arg));
+            assert(all(cellfun(isName, varargin(1:2:end))), ...
                 "uim:MessageBox:InvalidPairs", msg)
 
             for i = 1:2:numel(varargin)
                 try
-                    obj.(varargin{i}) = varargin{i+1};
+                    obj.(char(varargin{i})) = varargin{i+1};
                 catch
                     fprintf('Invalid Parameter Name (%s)\n', varargin{i})
                 end
@@ -111,6 +113,10 @@ classdef MessageBox < uim.mixin.Resizable
         end % \MessageBox (Constructor)
 
         function delete(obj)
+            if ~isempty(obj.MessageTimer) && isvalid(obj.MessageTimer)
+                stop(obj.MessageTimer)
+                delete(obj.MessageTimer)
+            end
             delete(obj.Axes)
         end % \delete
 
@@ -145,6 +151,15 @@ classdef MessageBox < uim.mixin.Resizable
     end
 
     methods (Access = private)
+
+        function tf = isBoxDeleted(obj)
+        %isBoxDeleted True if this box or its axes has been deleted
+        %
+        %   A host can delete the box, or close its figure, while a method
+        %   of the box is running, because drawing runs the event queue.
+        %   The method then has to stop before it touches its graphics.
+            tf = ~isvalid(obj) || isempty(obj.Axes) || ~isvalid(obj.Axes);
+        end
 
         function createAxes(obj)
 
@@ -347,6 +362,7 @@ classdef MessageBox < uim.mixin.Resizable
                 end
                 pause(0.01)
                 drawnow limitrate
+                if obj.isBoxDeleted(); return; end
             end
 
         end % \fadeIn
@@ -364,11 +380,21 @@ classdef MessageBox < uim.mixin.Resizable
                 end
                 pause(0.01)
                 drawnow limitrate
+                if obj.isBoxDeleted(); return; end
             end
 
         end % \fadeOut
 
         function foldMessage(obj)
+
+            % Size every message from the box before the first long
+            % message, not from a box already enlarged for an earlier one
+            if ~isempty(obj.OriginalPosition)
+                obj.Axes.Position([2,4]) = obj.OriginalPosition;
+                obj.OriginalPosition = [];
+                obj.setXbuttonPosition()
+                obj.updateTextboxCoords()
+            end
 
             msg = obj.MessageText.String;
 
@@ -461,14 +487,15 @@ classdef MessageBox < uim.mixin.Resizable
 
         function clearMessageByTimer(obj, t, doFade)
 
-            % Return if gui has been deleted
-            if ~isvalid(obj); return; end
-
-            if nargin >=2 && ~isempty(t) && isvalid(t)
-                stop(obj.MessageTimer)
-                delete(obj.MessageTimer)
-                obj.MessageTimer = [];
+            % The single-shot timer is done; delete it even when the box
+            % is gone, since nothing else holds it then
+            if isvalid(t)
+                stop(t)
+                delete(t)
             end
+
+            if ~isvalid(obj); return; end
+            obj.MessageTimer = [];
 
             obj.clearMessage(doFade)
         end
@@ -580,8 +607,10 @@ classdef MessageBox < uim.mixin.Resizable
         %   when the timer clears it. The default is false.
         %
         %   Showing a one-line message that is already shown does nothing.
+        %   Once the box or its graphics are deleted, for example when the
+        %   figure closes, displayMessage does nothing.
 
-            if isempty(obj); return; end
+            if isempty(obj) || obj.isBoxDeleted(); return; end
 
             if nargin < 4; doFade = false; end
 
@@ -617,6 +646,8 @@ classdef MessageBox < uim.mixin.Resizable
 
                 drawnow
             end
+            % Drawing runs the event queue, which can close the figure
+            if obj.isBoxDeleted(); return; end
             obj.showInteractiveRectangle()
 
             if isa(obj.ReferenceAxes, 'matlab.ui.container.Panel')
@@ -646,13 +677,17 @@ classdef MessageBox < uim.mixin.Resizable
         %
         %   messageBox.clearMessage(doFade) fades the box out first when
         %   doFade is true. The default is false.
+        %
+        %   Once the box or its graphics are deleted, for example when the
+        %   figure closes, clearMessage does nothing.
 
-            if isempty(obj); return; end
+            if isempty(obj) || obj.isBoxDeleted(); return; end
 
             if nargin < 2; doFade = false; end
 
             if doFade
                 obj.fadeOut();
+                if obj.isBoxDeleted(); return; end
                 obj.Background.FaceAlpha = obj.BackgroundAlpha;
             else
                 obj.MessageText.Visible = 'off';
@@ -707,8 +742,8 @@ classdef MessageBox < uim.mixin.Resizable
         %resetAxesPosition Restore the box to MinSize, centered on the parent
         %
         %   messageBox.resetAxesPosition() sizes the box to MinSize, or
-        %   less where the parent is smaller. Over an axes or in a figure
-        %   it centers the box on the parent.
+        %   less where the parent is smaller, and centers it on the
+        %   parent.
 
              % Get parent position
             origParentUnits = obj.ReferenceAxes.Units;
@@ -716,7 +751,9 @@ classdef MessageBox < uim.mixin.Resizable
             pos = obj.ReferenceAxes.Position;
             obj.ReferenceAxes.Units = origParentUnits;
 
-            if isa(obj.ReferenceAxes, 'matlab.ui.Figure')
+            % The box axes is a child of a figure or panel parent, so its
+            % position is relative to the parent's own origin
+            if isa(obj.ReferenceAxes, 'matlab.ui.Figure') || isa(obj.ReferenceAxes, 'matlab.ui.container.Panel')
                 pos(1:2)=0;
             end
 
@@ -748,6 +785,10 @@ classdef MessageBox < uim.mixin.Resizable
         %   closes it.
         %
         %   The progress bar is a uim.widget.Waitbar created on first use.
+        %   Once the box or its graphics are deleted, for example when the
+        %   figure closes, waitbar does nothing.
+
+            if obj.isBoxDeleted(); return; end
 
             if nargin < 3; message = ''; end
             if nargin < 4; action = 'set'; end
@@ -770,10 +811,13 @@ classdef MessageBox < uim.mixin.Resizable
                         obj.IsWaitbarActive = true;
                         obj.WaitbarHandle.Visible = 'on';
                         drawnow
+                        if obj.isBoxDeleted(); return; end
                     end
 
                     p = min([p,1]);
+                    % Setting Status redraws, which runs the event queue
                     obj.WaitbarHandle.Status = p;
+                    if obj.isBoxDeleted(); return; end
 
                     if ~isempty(message)
                         obj.displayMessage(message)

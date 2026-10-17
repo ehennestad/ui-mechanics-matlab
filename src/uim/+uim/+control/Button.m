@@ -23,8 +23,9 @@ classdef Button < uim.abstract.Control
 %       Callback runs. A push button ('pushbutton', the default) sets
 %       Value to true, runs Callback and resets Value to false. A toggle
 %       button ('togglebutton') flips Value and runs Callback. An action
-%       taken on release runs Callback only if the pointer is still over
-%       the button. Callback is called as Callback(button, eventData).
+%       taken on release happens only if the pointer is still over the
+%       button; otherwise Value is unchanged and Callback does not run.
+%       Callback is called as Callback(button, eventData).
 %
 %   Main properties:
 %       Text, Icon, Value, Mode, MechanicalAction, Callback, Style,
@@ -77,8 +78,9 @@ classdef Button < uim.abstract.Control
 
         % When Value changes: 'Switch when pressed', 'Switch when released'
         % or 'Switch until released'. A push button applies the matching
-        % 'Latch ...' action instead; it has no 'until released' variant,
-        % so 'Switch until released' makes a push button do nothing.
+        % 'Latch ...' action instead. 'Switch until released' flips Value
+        % on press and back on release, running Callback both times, in
+        % either Mode.
         MechanicalAction = 'Switch when released'
         % Switch = togglebutton, Latch = pushbutton
 
@@ -125,8 +127,6 @@ classdef Button < uim.abstract.Control
     end
 
     properties (Access = protected, Transient)
-
-        Foreground
 
         ButtonIcon = gobjects(0,1)
         ButtonText = gobjects(0,1)
@@ -197,11 +197,8 @@ classdef Button < uim.abstract.Control
             if nargin < 2; updateFlag = false; end
 
             if updateFlag
-                delete(obj.Foreground)
                 obj.plotButtonIcon();
             else
-                if ~isempty(obj.Foreground); return; end
-
                 if ~isempty(obj.Icon) % Give priority
                     obj.plotButtonIcon()
                 end
@@ -427,7 +424,9 @@ classdef Button < uim.abstract.Control
                     obj.Value = ~obj.Value;
                     obj.invokeCallback(event)
 
-                case 'Switch until released'
+                % MechanicalAction_ names this 'Latch until released' for
+                % a push button; both modes behave the same
+                case {'Switch until released', 'Latch until released'}
                     obj.Value = ~obj.Value;
                     obj.invokeCallback(event)
 
@@ -445,13 +444,14 @@ classdef Button < uim.abstract.Control
 
             switch obj.MechanicalAction_
 
-                case 'Switch until released'
+                case {'Switch until released', 'Latch until released'}
                     obj.Value = ~obj.Value;
                     obj.invokeCallback(event)
 
                 case 'Switch when released'
-                    obj.Value = ~obj.Value;
+                    % A release outside the button cancels the toggle
                     if obj.IsMouseOver
+                        obj.Value = ~obj.Value;
                         obj.invokeCallback(event)
                     end
 

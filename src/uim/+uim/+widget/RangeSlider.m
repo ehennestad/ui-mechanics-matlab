@@ -124,6 +124,10 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
         IsKnobPressed = false
 
+        % tic value of the last rate-limited Callback notification; empty
+        % until the first one, so the first change always notifies
+        TicAtLastCallback = []
+
         WindowButtonUpListener
         WindowMouseMotionListener
     end
@@ -612,9 +616,6 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         %   ValueChangingFcn and, subject to CallbackRefreshRate, the
         %   Callback notification. The Low and High set methods call it.
 
-            persistent ticAtLastUpdate
-            if isempty(ticAtLastUpdate); ticAtLastUpdate = tic; end
-
             if obj.IsConstructed
                 obj.plotKnobs()
 
@@ -623,9 +624,10 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
                     obj.ValueChangingFcn(obj, evtData)
                 end
 
-                if toc(ticAtLastUpdate) > 1/obj.CallbackRefreshRate
+                if isempty(obj.TicAtLastCallback) || ...
+                        toc(obj.TicAtLastCallback) > 1/obj.CallbackRefreshRate
                     obj.notifyValueChanged()
-                    ticAtLastUpdate = tic;
+                    obj.TicAtLastCallback = tic;
                 end
             end
         end
