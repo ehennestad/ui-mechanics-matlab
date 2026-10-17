@@ -585,10 +585,9 @@ classdef ScrollBar < uim.Handle
 
             % Plot the "scroller track" and the scrollerbar
             obj.Bar = gobjects(2,1);
-            obj.Bar(1) = patch(xDataTrack, yDataTrack, obj.TrackColor);
-            obj.Bar(2) = patch(xDataBar, yDataBar, obj.BarColor);
+            obj.Bar(1) = patch(obj.Axes, xDataTrack, yDataTrack, obj.TrackColor);
+            obj.Bar(2) = patch(obj.Axes, xDataBar, yDataBar, obj.BarColor);
             obj.Bar(2).FaceAlpha = 0.6;
-            set(obj.Bar, 'Parent', obj.Axes)
             set(obj.Bar, 'Visible', obj.Visible)
 
             % Tag scroller handles
