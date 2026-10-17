@@ -11,6 +11,21 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
 
     methods (Test) % Toolbar
 
+        function toolbarKeepsAHeightBelowThirtyPixels(testCase)
+            [~, canvas] = createCanvas(testCase);
+            toolbar = uim.widget.Toolbar(canvas, "Location", "northeast", ...
+                "Margin", [0, 0, 0, 0], "ComponentAlignment", "right", ...
+                "Size", [inf, 20], "NewButtonSize", 11, "Padding", [5, 3, 7, 5]);
+            testCase.addTeardown(@deleteValid, toolbar);
+            toolbar.addButton("Text", "A");
+
+            canvasTop = canvas.Axes.YLim(2) - 1;
+            testCase.verifyEqual(toolbar.Position(4), 20, ...
+                "A 20 px high toolbar keeps its height.");
+            testCase.verifyEqual(toolbar.Position(2) + toolbar.Position(4), canvasTop, ...
+                "AbsTol", 1e-9, "The toolbar stays anchored at the top edge.");
+        end
+
         function toolbarLaysOutButtonsAndSeparators(testCase)
             [~, canvas] = createCanvas(testCase);
             toolbar = uim.widget.Toolbar(canvas, "Location", "northwest");
