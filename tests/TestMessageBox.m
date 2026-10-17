@@ -198,6 +198,37 @@ classdef TestMessageBox < matlab.unittest.TestCase
             testCase.verifyWarningFree(@() messageBox.waitbar(0.5, 'Still loading'), ...
                 "waitbar does nothing once the figure is closed.");
         end
+
+        function callsOnADeletedBoxDoNothing(testCase)
+            [~, messageBox] = createMessageBox(testCase);
+            messageBox.waitbar(0.2, 'Loading')
+
+            % A host that quits deletes its widgets while it may still
+            % report progress
+            delete(messageBox)
+
+            testCase.verifyWarningFree(@() messageBox.waitbar(0.5, 'Still loading'));
+            testCase.verifyWarningFree(@() messageBox.displayMessage('Late message'));
+            testCase.verifyWarningFree(@() messageBox.clearMessage());
+        end
+
+        function boxDeletedWhileWaitbarRedrawsStopsQuietly(testCase)
+            [hFigure, messageBox] = createMessageBox(testCase);
+            messageBox.waitbar(0.1, 'Loading')
+
+            % A queued callback runs at the next drawnow, as a close
+            % request does; waitbar's redraw is the first one
+            setappdata(groot, "TestMessageBoxClosed", false)
+            testCase.addTeardown(@() rmappdata(groot, "TestMessageBoxClosed"));
+            closeTimer = timer("StartDelay", 0, "TimerFcn", @(~, ~) closeOnce(hFigure, messageBox));
+            testCase.addTeardown(@() delete(closeTimer));
+            start(closeTimer)
+
+            testCase.verifyWarningFree(@() messageBox.waitbar(0.6, 'Loading more'), ...
+                "waitbar stops once the box is deleted during its own redraw.");
+            testCase.assumeTrue(getappdata(groot, "TestMessageBoxClosed"), ...
+                "The close ran during the waitbar call.");
+        end
     end
 end
 
@@ -224,6 +255,13 @@ function lines = displayedLines(hFigure)
         value = value(~cellfun(@isempty, value));
         lines = [lines; value(:)]; %#ok<AGROW>
     end
+end
+
+function closeOnce(hFigure, messageBox)
+%closeOnce Delete the box and its figure, as quitting a host app does
+    if isvalid(messageBox); delete(messageBox); end
+    if isvalid(hFigure); delete(hFigure); end
+    setappdata(groot, "TestMessageBoxClosed", true)
 end
 
 function deleteValid(object)

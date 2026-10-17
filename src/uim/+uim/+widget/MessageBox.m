@@ -152,6 +152,15 @@ classdef MessageBox < uim.mixin.Resizable
 
     methods (Access = private)
 
+        function tf = isBoxDeleted(obj)
+        %isBoxDeleted True if this box or its axes has been deleted
+        %
+        %   A host can delete the box, or close its figure, while a method
+        %   of the box is running, because drawing runs the event queue.
+        %   The method then has to stop before it touches its graphics.
+            tf = ~isvalid(obj) || isempty(obj.Axes) || ~isvalid(obj.Axes);
+        end
+
         function createAxes(obj)
 
             % Add message axes...
@@ -353,6 +362,7 @@ classdef MessageBox < uim.mixin.Resizable
                 end
                 pause(0.01)
                 drawnow limitrate
+                if obj.isBoxDeleted(); return; end
             end
 
         end % \fadeIn
@@ -370,6 +380,7 @@ classdef MessageBox < uim.mixin.Resizable
                 end
                 pause(0.01)
                 drawnow limitrate
+                if obj.isBoxDeleted(); return; end
             end
 
         end % \fadeOut
@@ -596,10 +607,10 @@ classdef MessageBox < uim.mixin.Resizable
         %   when the timer clears it. The default is false.
         %
         %   Showing a one-line message that is already shown does nothing.
-        %   Once the box graphics are deleted, for example with the
-        %   figure, displayMessage does nothing.
+        %   Once the box or its graphics are deleted, for example when the
+        %   figure closes, displayMessage does nothing.
 
-            if isempty(obj) || ~isvalid(obj.Axes); return; end
+            if isempty(obj) || obj.isBoxDeleted(); return; end
 
             if nargin < 4; doFade = false; end
 
@@ -635,6 +646,8 @@ classdef MessageBox < uim.mixin.Resizable
 
                 drawnow
             end
+            % Drawing runs the event queue, which can close the figure
+            if obj.isBoxDeleted(); return; end
             obj.showInteractiveRectangle()
 
             if isa(obj.ReferenceAxes, 'matlab.ui.container.Panel')
@@ -665,15 +678,16 @@ classdef MessageBox < uim.mixin.Resizable
         %   messageBox.clearMessage(doFade) fades the box out first when
         %   doFade is true. The default is false.
         %
-        %   Once the box graphics are deleted, for example with the
-        %   figure, clearMessage does nothing.
+        %   Once the box or its graphics are deleted, for example when the
+        %   figure closes, clearMessage does nothing.
 
-            if isempty(obj) || ~isvalid(obj.Axes); return; end
+            if isempty(obj) || obj.isBoxDeleted(); return; end
 
             if nargin < 2; doFade = false; end
 
             if doFade
                 obj.fadeOut();
+                if obj.isBoxDeleted(); return; end
                 obj.Background.FaceAlpha = obj.BackgroundAlpha;
             else
                 obj.MessageText.Visible = 'off';
@@ -771,10 +785,10 @@ classdef MessageBox < uim.mixin.Resizable
         %   closes it.
         %
         %   The progress bar is a uim.widget.Waitbar created on first use.
-        %   Once the box graphics are deleted, for example with the
-        %   figure, waitbar does nothing.
+        %   Once the box or its graphics are deleted, for example when the
+        %   figure closes, waitbar does nothing.
 
-            if ~isvalid(obj.Axes); return; end
+            if obj.isBoxDeleted(); return; end
 
             if nargin < 3; message = ''; end
             if nargin < 4; action = 'set'; end
@@ -797,10 +811,13 @@ classdef MessageBox < uim.mixin.Resizable
                         obj.IsWaitbarActive = true;
                         obj.WaitbarHandle.Visible = 'on';
                         drawnow
+                        if obj.isBoxDeleted(); return; end
                     end
 
                     p = min([p,1]);
+                    % Setting Status redraws, which runs the event queue
                     obj.WaitbarHandle.Status = p;
+                    if obj.isBoxDeleted(); return; end
 
                     if ~isempty(message)
                         obj.displayMessage(message)
