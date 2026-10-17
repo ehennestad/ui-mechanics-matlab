@@ -206,6 +206,30 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 [0, 0, 1, 1]);
         end
 
+        function rangeSliderRateLimitsCallbackPerInstance(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            sliderA = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 10, ...
+                "CallbackRefreshRate", 1);
+            sliderB = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 10, ...
+                "CallbackRefreshRate", 1);
+            sliderA.Callback = @(~, evt) setappdata(hFigure, "LowA", evt.Low);
+            sliderB.Callback = @(~, evt) setappdata(hFigure, "LowB", evt.Low);
+
+            sliderA.Low = 2;
+            sliderB.Low = 3;
+
+            testCase.verifyEqual(getappdata(hFigure, "LowA"), 2, ...
+                "The first change of a slider notifies.");
+            testCase.verifyEqual(getappdata(hFigure, "LowB"), 3, ...
+                "A change on one slider does not delay another slider.");
+
+            sliderA.Low = 4;
+            testCase.verifyEqual(getappdata(hFigure, "LowA"), 2, ...
+                "A second change within 1 s is not notified at a rate of 1.");
+        end
+
         function rangeSliderClampsValuesWhenLimitsChange(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
