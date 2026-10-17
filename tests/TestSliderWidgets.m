@@ -386,6 +386,28 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
             testCase.verifyEqual(widget.RangeSelectorEnabled, matlab.lang.OnOffSwitchState.off);
         end
 
+        function rangeHandlesFollowTheRangeBarOnResize(testCase)
+            hFigure = createHiddenFigure(testCase, [100, 100, 800, 200]);
+            widget = uim.widget.PlaybackControl(hFigure, "Position", [10, 10, 600, 30], ...
+                "Minimum", 1, "Maximum", 100);
+            testCase.addTeardown(@deleteValid, widget);
+            widget.RangeSelectorEnabled = "on";
+            widget.ActiveRange = [20, 60];
+
+            widget.Position = [10, 10, 750, 30];
+
+            hSliderAxes = findall(hFigure, "Tag", "Playback Widget (Slider Axes)");
+            hBar = findobj(hSliderAxes, "Type", "patch", "FaceColor", [0, 1, 0]);
+            hLines = findobj(hSliderAxes, "Type", "line");
+            isHandle = arrayfun(@(h) isa(h.ButtonDownFcn, "function_handle") && ...
+                contains(func2str(h.ButtonDownFcn), "rangeButtonPressed"), hLines);
+            handleX = sort([hLines(isHandle).XData]);
+
+            testCase.assertNumElements(handleX, 2);
+            testCase.verifyEqual(handleX, [min(hBar.XData(:)), max(hBar.XData(:))], "AbsTol", 1, ...
+                "After a resize the drag handles sit at the ends of the range bar.");
+        end
+
         function playbackControlHostsChannelAndPlaneSelectors(testCase)
             hFigure = createHiddenFigure(testCase, [100, 100, 500, 200]);
             widget = uim.widget.PlaybackControl(hFigure, "Position", [10, 10, 400, 30], ...
