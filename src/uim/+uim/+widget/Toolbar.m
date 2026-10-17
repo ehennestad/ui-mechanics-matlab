@@ -11,7 +11,8 @@ classdef Toolbar < uim.abstract.Container
 %   parent: a uim.UIComponentCanvas, a uim container, an axes (an overlay
 %   canvas is created or reused), or a graphics container such as a
 %   uipanel. By default the toolbar is horizontal, anchored at the
-%   'northwest' location, 30 pixels high, and shrinks to fit its buttons.
+%   'northwest' location, 30 pixels high, and shrinks along its length
+%   to fit its buttons.
 %
 %   toolbar = uim.widget.Toolbar(parent, Name=Value) also sets public
 %   properties, including those inherited from uim.abstract.Component
@@ -101,9 +102,10 @@ classdef Toolbar < uim.abstract.Container
         % buttons; 'full' fills the whole toolbar position
         BackgroundMode = 'wrap'
 
-        % BarExtensionMode - 'tight' sizes the toolbar to fit its buttons;
-        % 'expanded' lets the toolbar take the size computed by the layout
-        % along its length
+        % BarExtensionMode - 'tight' sizes the toolbar to fit its buttons
+        % along its length, and across it unless IsFixedSize fixes that
+        % side; 'expanded' lets the toolbar take the size computed by the
+        % layout along its length
         BarExtensionMode = 'tight'
     end
 
@@ -383,7 +385,11 @@ classdef Toolbar < uim.abstract.Container
 
             [~, extent] = obj.getButtonExtentAlongLength();
 
-            if obj.NumButtons == 0
+            % A short side fixed by IsFixedSize keeps its set size, so
+            % Size [inf, 20] stays a 20 px high bar
+            if obj.IsFixedSize(dimS)
+                extent(dimS) = obj.Position_(dimS+2);
+            elseif obj.NumButtons == 0
                 extent(dimS) = obj.CanvasPosition(dimS+2);
             else
                 extent(dimS) = max(obj.AllButtonPosition(:, dimS+2), [], 1);
@@ -746,10 +752,10 @@ classdef Toolbar < uim.abstract.Container
         %   S = uim.widget.Toolbar.getTypeDefaults() returns a struct of
         %   property values used at construction; a name-value option for
         %   the same property replaces the default. The defaults describe
-        %   a horizontal bar (IsFixedSize
-        %   [false, true]) of 30 by 30 pixels at the 'northwest' location,
-        %   Padding [10, 3, 10, 3], and a black background with
-        %   BackgroundAlpha 0.2.
+        %   a horizontal bar (IsFixedSize [false, true]) of 30 by 30
+        %   pixels at the 'northwest' location, Padding [10, 3, 10, 3],
+        %   and a black background with BackgroundAlpha 0.2. MinimumSize
+        %   is the component default, [10, 10].
 
             S.PositionMode = 'auto';
             S.Location = 'northwest';
@@ -763,7 +769,6 @@ classdef Toolbar < uim.abstract.Container
 
             S.Padding = [10, 3, 10, 3];
 
-            S.MinimumSize = [30, 30];
             S.MaximumSize = [inf, inf];
 
             S.BackgroundColor = 'k';
