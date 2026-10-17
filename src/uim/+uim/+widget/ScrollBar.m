@@ -141,6 +141,11 @@ classdef ScrollBar < uim.Handle
             if isvalid(obj.ParentSizeChangedListener)
                 delete(obj.ParentSizeChangedListener)
             end
+            % The axes holds the track and bar patches, whose callbacks
+            % refer to this object
+            if ~isempty(obj.Axes) && isvalid(obj.Axes)
+                delete(obj.Axes)
+            end
         end
 
         function redraw(obj)
@@ -585,10 +590,9 @@ classdef ScrollBar < uim.Handle
 
             % Plot the "scroller track" and the scrollerbar
             obj.Bar = gobjects(2,1);
-            obj.Bar(1) = patch(xDataTrack, yDataTrack, obj.TrackColor);
-            obj.Bar(2) = patch(xDataBar, yDataBar, obj.BarColor);
+            obj.Bar(1) = patch(obj.Axes, xDataTrack, yDataTrack, obj.TrackColor);
+            obj.Bar(2) = patch(obj.Axes, xDataBar, yDataBar, obj.BarColor);
             obj.Bar(2).FaceAlpha = 0.6;
-            set(obj.Bar, 'Parent', obj.Axes)
             set(obj.Bar, 'Visible', obj.Visible)
 
             % Tag scroller handles
@@ -621,10 +625,12 @@ classdef ScrollBar < uim.Handle
 
         function onPositionChanged(obj)
             if obj.IsInitialized
-                if any( obj.Axes.Position(3:4) ~=  obj.Position(3:4))
+                isResized = any( obj.Axes.Position(3:4) ~=  obj.Position(3:4));
+                % Move the axes first: redraw sizes the bar from the axes
+                obj.Axes.Position = obj.Position;
+                if isResized
                     obj.redraw()
                 end
-                obj.Axes.Position = obj.Position;
             end
         end
 

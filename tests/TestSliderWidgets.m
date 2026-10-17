@@ -386,6 +386,49 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
             testCase.verifyEqual(widget.RangeSelectorEnabled, matlab.lang.OnOffSwitchState.off);
         end
 
+        function playbackControlFillsItsPosition(testCase)
+            hFigure = createHiddenFigure(testCase, [100, 100, 600, 200]);
+            widget = uim.widget.PlaybackControl(hFigure, "Position", [100, 10, 400, 30], ...
+                "Minimum", 1, "Maximum", 50);
+            testCase.addTeardown(@deleteValid, widget);
+            hButtonAxes = findall(hFigure, "Tag", "Playback Widget (Button Axes)");
+            hSliderAxes = findall(hFigure, "Tag", "Playback Widget (Slider Axes)");
+
+            for newPosition = {[100, 10, 400, 30], [100, 10, 300, 30], [50, 20, 300, 30]}
+                widget.Position = newPosition{1};
+                buttonPosition = hButtonAxes.Position;
+                sliderPosition = hSliderAxes.Position;
+
+                testCase.verifyEqual(sliderPosition(1), buttonPosition(1) + buttonPosition(3), ...
+                    "The slider axes starts where the button axes ends.");
+                testCase.verifyEqual(sliderPosition(1) + sliderPosition(3), ...
+                    newPosition{1}(1) + newPosition{1}(3), ...
+                    "The slider axes ends at the right edge of Position.");
+                testCase.verifyEqual(widget.Position, newPosition{1}, ...
+                    "Position reads back as assigned.");
+            end
+
+            widget.Position = widget.Position;
+            testCase.verifyEqual(widget.Position, [50, 20, 300, 30], ...
+                "Assigning Position to itself does not grow the widget.");
+        end
+
+        function playbackControlKeepsPauseIconOnResize(testCase)
+            hFigure = createHiddenFigure(testCase, [100, 100, 600, 200]);
+            widget = uim.widget.PlaybackControl(hFigure, "Position", [10, 10, 400, 30], ...
+                "Minimum", 1, "Maximum", 50);
+            testCase.addTeardown(@deleteValid, widget);
+            hPlayButton = findall(hFigure, "Tag", "Play");
+
+            widget.switchPlayPauseIcon('pause')
+            pauseXData = hPlayButton.XData;
+            widget.Position = [10, 10, 500, 30];
+
+            testCase.verifyEqual(hPlayButton.Tag, 'Pause');
+            testCase.verifyEqual(hPlayButton.XData, pauseXData, ...
+                "A resize during playback keeps the pause bars.");
+        end
+
         function rangeHandlesFollowTheRangeBarOnResize(testCase)
             hFigure = createHiddenFigure(testCase, [100, 100, 800, 200]);
             widget = uim.widget.PlaybackControl(hFigure, "Position", [10, 10, 600, 30], ...

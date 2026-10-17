@@ -117,6 +117,118 @@ classdef TestMessageBox < matlab.unittest.TestCase
             testCase.verifyTrue(contains(output, 'NoSuchProperty'));
             testCase.verifyError(@() uim.widget.MessageBox(hPanel, 1, 2), "uim:MessageBox:InvalidPairs");
         end
+
+        function constructorAcceptsNameValueSyntax(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+
+            messageBox = uim.widget.MessageBox(uipanel(hFigure), FontSize=10);
+            testCase.addTeardown(@deleteValid, messageBox);
+
+            testCase.verifyEqual(messageBox.FontSize, 10);
+        end
+
+        function resetCentersTheBoxInAPanel(testCase)
+            [hFigure, messageBox] = createMessageBox(testCase);
+
+            messageBox.resetAxesPosition()
+
+            % 380 x 180 px panel, 300 x 50 px box
+            testCase.verifyEqual(messageBoxAxes(hFigure).Position, [40, 65, 300, 50], "AbsTol", 1e-9, ...
+                "The box is centred in the panel, not offset by the panel position.");
+        end
+
+        function successiveLongMessagesKeepTheBoxSize(testCase)
+            [hFigure, messageBox] = createMessageBox(testCase);
+            messageBox.resetAxesPosition()
+            hAxes = messageBoxAxes(hFigure);
+            positionBefore = hAxes.Position;
+            twoLineMessage = repmat('lorem ipsum ', 1, 5);
+            longMessage = repmat('lorem ipsum ', 1, 60);
+
+            messageBox.displayMessage(longMessage)
+            positionForLongMessage = hAxes.Position;
+            messageBox.clearMessage()
+
+            messageBox.displayMessage(twoLineMessage)
+            testCase.assertGreaterThan(hAxes.Position(4), positionBefore(4), ...
+                "Precondition: the first message enlarges the box.");
+            messageBox.displayMessage(longMessage)
+            testCase.verifyEqual(hAxes.Position, positionForLongMessage, "AbsTol", 1e-9, ...
+                "A long message is sized from the original box, not from an enlarged one.");
+
+            messageBox.clearMessage()
+            testCase.verifyEqual(hAxes.Position, positionBefore, "AbsTol", 1e-9, ...
+                "Clearing restores the original box.");
+        end
+
+        function deleteStopsAPendingMessageTimer(testCase)
+            timersBefore = numel(timerfindall);
+            [~, messageBox] = createMessageBox(testCase);
+
+            messageBox.displayMessage('Brief', 0.5)
+            delete(messageBox)
+            pause(1)
+
+            testCase.verifyEqual(numel(timerfindall), timersBefore, ...
+                "No timer is left after the box is deleted.");
+        end
+
+        function pendingMessageIgnoresDeletedGraphics(testCase)
+            timersBefore = numel(timerfindall);
+            [hFigure, messageBox] = createMessageBox(testCase);
+
+            messageBox.displayMessage('Brief', 0.3)
+            delete(hFigure)
+            pause(0.8)
+
+            testCase.verifyEqual(numel(timerfindall), timersBefore, ...
+                "The timer deletes itself after firing.");
+            testCase.verifyWarningFree(@() messageBox.clearMessage(), ...
+                "Clearing after the figure is closed does nothing.");
+        end
+
+        function messagesAfterTheFigureClosesDoNothing(testCase)
+            [hFigure, messageBox] = createMessageBox(testCase);
+            messageBox.waitbar(0.2, 'Loading')
+            delete(hFigure)
+
+            testCase.verifyWarningFree(@() messageBox.displayMessage('Late message'), ...
+                "displayMessage does nothing once the figure is closed.");
+            testCase.verifyWarningFree(@() messageBox.waitbar(0.5, 'Still loading'), ...
+                "waitbar does nothing once the figure is closed.");
+        end
+
+        function callsOnADeletedBoxDoNothing(testCase)
+            [~, messageBox] = createMessageBox(testCase);
+            messageBox.waitbar(0.2, 'Loading')
+
+            % A host that quits deletes its widgets while it may still
+            % report progress
+            delete(messageBox)
+
+            testCase.verifyWarningFree(@() messageBox.waitbar(0.5, 'Still loading'));
+            testCase.verifyWarningFree(@() messageBox.displayMessage('Late message'));
+            testCase.verifyWarningFree(@() messageBox.clearMessage());
+        end
+
+        function boxDeletedWhileWaitbarRedrawsStopsQuietly(testCase)
+            [hFigure, messageBox] = createMessageBox(testCase);
+            messageBox.waitbar(0.1, 'Loading')
+
+            % A queued callback runs at the next drawnow, as a close
+            % request does; waitbar's redraw is the first one
+            setappdata(groot, "TestMessageBoxClosed", false)
+            testCase.addTeardown(@() rmappdata(groot, "TestMessageBoxClosed"));
+            closeTimer = timer("StartDelay", 0, "TimerFcn", @(~, ~) closeOnce(hFigure, messageBox));
+            testCase.addTeardown(@() delete(closeTimer));
+            start(closeTimer)
+
+            testCase.verifyWarningFree(@() messageBox.waitbar(0.6, 'Loading more'), ...
+                "waitbar stops once the box is deleted during its own redraw.");
+            testCase.assumeTrue(getappdata(groot, "TestMessageBoxClosed"), ...
+                "The close ran during the waitbar call.");
+        end
     end
 end
 
@@ -143,6 +255,13 @@ function lines = displayedLines(hFigure)
         value = value(~cellfun(@isempty, value));
         lines = [lines; value(:)]; %#ok<AGROW>
     end
+end
+
+function closeOnce(hFigure, messageBox)
+%closeOnce Delete the box and its figure, as quitting a host app does
+    if isvalid(messageBox); delete(messageBox); end
+    if isvalid(hFigure); delete(hFigure); end
+    setappdata(groot, "TestMessageBoxClosed", true)
 end
 
 function deleteValid(object)
