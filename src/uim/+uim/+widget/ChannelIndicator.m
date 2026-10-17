@@ -10,9 +10,9 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 %
 %   indicator = uim.widget.ChannelIndicator(parent) creates an indicator
 %   for one channel. If parent is an axes, the indicators are drawn into
-%   it, and the axes must have hold on (NextPlot 'add'); otherwise the
-%   indicator creates its own invisible pixel-unit axes in parent, for
-%   example a figure or uipanel.
+%   it, added to its existing content; otherwise the indicator creates
+%   its own invisible pixel-unit axes in parent, for example a figure or
+%   uipanel.
 %
 %   indicator = uim.widget.ChannelIndicator(parent, Name=Value) also sets
 %   public properties, for example
@@ -386,6 +386,11 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
             [X, Y] = pol2cart(theta, ones(size(theta))*r);
 
+            % Plot replaces the content of an axes that is not held,
+            % including the indicator patches drawn just before
+            nextPlot = obj.Axes.NextPlot;
+            obj.Axes.NextPlot = 'add';
+
             for i = 1:obj.NumChannels
 
                 x0 = dx + (pad + 2*r) * (i-1);
@@ -406,6 +411,8 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
                 obj.changeIndicatorAppearance(i)
             end
+
+            obj.Axes.NextPlot = nextPlot;
         end
 
         function changeIndicatorAppearance(obj, channelNum)

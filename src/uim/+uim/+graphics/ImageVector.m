@@ -10,9 +10,9 @@ classdef ImageVector < handle
 %   other parent raises uim:ImageVector:InvalidParent.
 %
 %   Each shape is drawn with plot. For an hggroup parent the constructor
-%   holds the ancestor axes. An axes parent must already be held:
-%   otherwise each shape replaces the axes content, including the
-%   shapes plotted before it. The object is stored in
+%   holds the ancestor axes. An axes parent is held while the shapes are
+%   drawn and then gets its previous NextPlot back, so the shapes are
+%   added to the existing content. The object is stored in
 %   hParent.UserData.Handles, so it lives as long as the parent;
 %   hParent.UserData must be empty or a struct.
 %
@@ -102,13 +102,21 @@ classdef ImageVector < handle
 
             hP = gobjects(numShapes, 1);
 
-            if ~isa(hParent, 'matlab.graphics.axis.Axes')
+            if isa(hParent, 'matlab.graphics.axis.Axes')
+                % Plot replaces the content of an axes that is not held
+                nextPlot = hParent.NextPlot;
+                hParent.NextPlot = 'add';
+            else
                 hAxes = ancestor(hParent, 'axes');
                 hold(hAxes, 'on')
             end
 
             for i = 1:numShapes
                 hP(i) = plot(V(i).Shape, 'FaceColor', V(i).Color, 'FaceAlpha', 1, 'EdgeColor', 'none', 'Parent', hParent);
+            end
+
+            if isa(hParent, 'matlab.graphics.axis.Axes')
+                hParent.NextPlot = nextPlot;
             end
 
             obj.NumShapes = numShapes;

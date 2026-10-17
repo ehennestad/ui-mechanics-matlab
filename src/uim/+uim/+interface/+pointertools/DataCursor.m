@@ -12,8 +12,8 @@ classdef DataCursor < uim.interface.PointerTool
 %   and then calls CursorMovedFcn. suspend and deactivate hide the
 %   crosshair. Mouse presses do nothing else.
 %
-%   The crosshair is drawn with plot, so the axes must be held
-%   (PointerManager holds it).
+%   The crosshair is added to the axes content whether or not the axes
+%   is held.
 %
 %   ExitMode is 'default': a 'previous' tool such as ZoomIn suspends it
 %   while on, and it becomes current again when that tool turns off.
@@ -144,6 +144,11 @@ classdef DataCursor < uim.interface.PointerTool
 
             % Plot Line
             if isempty(obj.Crosshair)
+                % Plot replaces the content of an axes that is not held,
+                % so hold it while the crosshair lines are created
+                nextPlot = hAx.NextPlot;
+                hAx.NextPlot = 'add';
+
                 obj.Crosshair = gobjects(4,1);
                 obj.Crosshair(1) = plot(hAx, xdata1, ydata1);
                 obj.Crosshair(2) = plot(hAx, xdata2, ydata2);
@@ -159,6 +164,8 @@ classdef DataCursor < uim.interface.PointerTool
 
                 obj.Crosshair(5) = plot(obj.Axes, x0, y0, '.', 'MarkerSize', 20);
                 obj.Crosshair(5).Color =  obj.CursorColor;
+
+                hAx.NextPlot = nextPlot;
 
             else
 %                 set(obj.Crosshair, {'XData'}, {xdata1,xdata2}', ...
