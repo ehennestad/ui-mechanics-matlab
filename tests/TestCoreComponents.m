@@ -651,6 +651,38 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyEqual(barLengths(1)/barLengths(2), 1, "RelTol", 0.05);
         end
 
+        function waitbarFollowsAVerticalPositionChange(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [20, 20, 300, 200], "YLim", [0, 1]);
+            waitbar = uim.widget.Waitbar(hAxes, "Position", [1, 1, 200, 10]);
+            testCase.addTeardown(@deleteValid, waitbar);
+            barLines = findall(hAxes, "Type", "line");
+            yBefore = barLines(1).YData(1);
+
+            waitbar.Position = [1, 100, 200, 10];
+
+            % 99 px higher in a 200 px axes showing one data unit
+            testCase.verifyEqual(barLines(1).YData(1) - yBefore, 99/200, "AbsTol", 1e-9);
+        end
+
+        function waitbarCreatedHiddenDrawsAndDeletes(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure);
+
+            waitbar = uim.widget.Waitbar(hAxes, "Visible", "off");
+            barLines = findall(hAxes, "Type", "line");
+            testCase.verifyNumElements(barLines, 2, "The bars are drawn.");
+            testCase.verifyEqual(string({barLines.Visible}), ["off", "off"]);
+
+            waitbar.Visible = "on";
+            testCase.verifyEqual(string({barLines.Visible}), ["on", "on"]);
+
+            testCase.verifyWarningFree(@() delete(waitbar));
+            testCase.verifyEmpty(findall(hAxes, "Type", "line"), "delete removes the bars.");
+        end
+
         function frameMarkerTracksValueInPlainAxes(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
