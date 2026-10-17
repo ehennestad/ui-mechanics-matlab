@@ -521,7 +521,8 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             [yDecr, yIncr] = deal( [1,1; -1,-1; 0,0] .* buttonHeightB/2 );
 
             if ~isempty(obj.PlayButton) % Buttons already exist
-                set(obj.PlayButton, 'XData', xPlay, 'YData', yPlay);
+                % Keep the icon that matches the playback state
+                obj.switchPlayPauseIcon(lower(obj.PlayButton.Tag))
                 set(obj.DecrButton, 'XData', xDecr, 'YData', yDecr);
                 set(obj.IncrButton, 'XData', xIncr, 'YData', yIncr);
                 obj.Tincr.Position(1) = buttonXPos(4);
@@ -1130,8 +1131,8 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             obj.ButtonAxes.Position(3) = dx;
             obj.ButtonAxes.Position(4) = obj.Position_(4);
 
-            obj.SliderAxes.Position(1) = dx;
-            obj.SliderAxes.Position(3) = max([0, obj.Position_(3) - dx + 1]);
+            obj.SliderAxes.Position(1) = obj.Position_(1) + dx;
+            obj.SliderAxes.Position(3) = max([0, obj.Position_(3) - dx]);
             obj.SliderAxes.Position(4) = obj.Position_(4);
 
             % Set axes limits to correspond with pixel sizes of axes
