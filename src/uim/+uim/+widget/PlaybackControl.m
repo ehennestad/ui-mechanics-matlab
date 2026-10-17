@@ -156,7 +156,10 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         Bar2
 
         ActiveRangeBar
-        RangeButtons
+        % Markers at the ends of ActiveRangeBar that take its drag. An
+        % indexed assignment of a graphics object into [] stores a double
+        % handle, so the array starts as an empty graphics array.
+        RangeButtons = gobjects(0)
 
         PlaneSwitcher
         ChannelIndicator

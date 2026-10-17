@@ -451,6 +451,23 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
                 "After a resize the drag handles sit at the ends of the range bar.");
         end
 
+        function rangeHandlesAreGraphicsObjects(testCase)
+            hFigure = createHiddenFigure(testCase, [100, 100, 800, 200]);
+            widget = uim.widget.PlaybackControl(hFigure, "Position", [10, 10, 600, 30], ...
+                "Minimum", 1, "Maximum", 100);
+            testCase.addTeardown(@deleteValid, widget);
+            widget.RangeSelectorEnabled = "on";
+
+            % RangeButtons is private, so it is read through struct()
+            warningState = warning("off", "MATLAB:structOnObject");
+            testCase.addTeardown(@() warning(warningState));
+            widgetState = struct(widget);
+
+            testCase.verifyClass(widgetState.RangeButtons, "matlab.graphics.chart.primitive.Line", ...
+                "The range handles are stored as graphics objects, not double handles.");
+            testCase.verifyNumElements(widgetState.RangeButtons, 2);
+        end
+
         function playbackControlHostsChannelAndPlaneSelectors(testCase)
             hFigure = createHiddenFigure(testCase, [100, 100, 500, 200]);
             widget = uim.widget.PlaybackControl(hFigure, "Position", [10, 10, 400, 30], ...
