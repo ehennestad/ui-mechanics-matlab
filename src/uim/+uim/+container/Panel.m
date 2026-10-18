@@ -130,8 +130,9 @@ classdef Panel < uim.abstract.Container
         %
         %   See also getpixelposition
             if nargin < 2; recursive = false; end
-            % The panel's graphics container is its own uipanel, so the
-            % Component method would add the panel offset twice
+            % Component.getpixelposition offsets Position by the graphics
+            % container, which for a panel is the panel's own uipanel, so
+            % the panel reports the uipanel's position directly
             pos = getpixelposition(obj.PanelHandle, recursive);
         end
 
