@@ -73,6 +73,41 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
                 "AbsTol", 1e-9, "The toolbar stays anchored at the top edge.");
         end
 
+        function horizontalToolbarCentresButtonsAcrossItsHeight(testCase)
+            [~, canvas] = createCanvas(testCase);
+            toolbar = uim.widget.Toolbar(canvas, "Location", "southwest");
+            testCase.addTeardown(@deleteValid, toolbar);
+            button = toolbar.addButton("Text", "A");
+
+            gapBelow = button.Position(2) - toolbar.Position(2);
+            gapAbove = sum(toolbar.Position([2, 4])) - sum(button.Position([2, 4]));
+            testCase.verifyEqual(gapBelow, gapAbove, "AbsTol", 1e-9, ...
+                "The button is centred across the bar.");
+        end
+
+        function verticalToolbarAppliesPaddingAlongAndAcrossTheBar(testCase)
+            [~, canvas] = createCanvas(testCase);
+            toolbar = uim.widget.Toolbar(canvas, Location="west", Orientation="vertical", ...
+                Padding=[10, 3, 6, 3]);
+            testCase.addTeardown(@deleteValid, toolbar);
+            buttons = cell(1, 3);
+            for k = 1:3
+                buttons{k} = toolbar.addButton("Text", string(k));
+            end
+
+            barLeft = toolbar.Position(1);
+            barRight = sum(toolbar.Position([1, 3]));
+            for k = 1:3
+                position = buttons{k}.Position;
+                testCase.verifyEqual(position(1) - barLeft, barRight - sum(position([1, 3])), ...
+                    "AbsTol", 1e-9, "Button " + k + " is centred across the bar.");
+            end
+            testCase.verifyEqual(buttons{1}.Position(2) - toolbar.Position(2), 10, "AbsTol", 1e-9, ...
+                "Padding(1) is the gap before the first button along the bar.");
+            testCase.verifyEqual(sum(toolbar.Position([2, 4])) - sum(buttons{3}.Position([2, 4])), 6, ...
+                "AbsTol", 1e-9, "Padding(3) is the gap after the last button along the bar.");
+        end
+
         function toolbarAppliesOptionsGivenAtConstruction(testCase)
             [~, canvas] = createCanvas(testCase);
 
