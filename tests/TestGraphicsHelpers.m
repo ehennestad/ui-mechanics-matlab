@@ -33,6 +33,18 @@ classdef TestGraphicsHelpers < matlab.unittest.TestCase
             testCase.verifyNumElements(findobj(hAxes, "Type", "polygon"), 2, "Both shapes are drawn.");
             testCase.verifyEqual(char(hAxes.NextPlot), 'replace', "NextPlot is restored.");
         end
+
+        function imageVectorRestoresNextPlotWhenAShapeFailsToPlot(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "NextPlot", "replace");
+            % A numeric Shape plots as a line, which has no FaceColor
+            invalidShape = struct("Shape", 1:3, "Color", [0 0 0]);
+
+            testCase.verifyError(@() uim.graphics.ImageVector(hAxes, invalidShape), ?MException);
+
+            testCase.verifyEqual(char(hAxes.NextPlot), 'replace', "NextPlot is restored after the error.");
+        end
     end
 
     methods (Test) % ImageVector transforms

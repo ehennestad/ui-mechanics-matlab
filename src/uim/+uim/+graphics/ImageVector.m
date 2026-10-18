@@ -103,9 +103,12 @@ classdef ImageVector < handle
             hP = gobjects(numShapes, 1);
 
             if isa(hParent, 'matlab.graphics.axis.Axes')
-                % Plot replaces the content of an axes that is not held
+                % Plot replaces the content of an axes that is not held.
+                % The previous NextPlot is restored when the constructor
+                % exits, also if a shape fails to plot.
                 nextPlot = hParent.NextPlot;
                 hParent.NextPlot = 'add';
+                restoreNextPlot = onCleanup(@() set(hParent, 'NextPlot', nextPlot)); %#ok<NASGU>
             else
                 hAxes = ancestor(hParent, 'axes');
                 hold(hAxes, 'on')
@@ -113,10 +116,6 @@ classdef ImageVector < handle
 
             for i = 1:numShapes
                 hP(i) = plot(V(i).Shape, 'FaceColor', V(i).Color, 'FaceAlpha', 1, 'EdgeColor', 'none', 'Parent', hParent);
-            end
-
-            if isa(hParent, 'matlab.graphics.axis.Axes')
-                hParent.NextPlot = nextPlot;
             end
 
             obj.NumShapes = numShapes;

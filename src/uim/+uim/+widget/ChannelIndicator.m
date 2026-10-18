@@ -387,9 +387,12 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
             [X, Y] = pol2cart(theta, ones(size(theta))*r);
 
             % Plot replaces the content of an axes that is not held,
-            % including the indicator patches drawn just before
-            nextPlot = obj.Axes.NextPlot;
-            obj.Axes.NextPlot = 'add';
+            % including the indicator patches drawn just before. The
+            % previous NextPlot is restored on exit, also on an error.
+            hAxes = obj.Axes;
+            nextPlot = hAxes.NextPlot;
+            hAxes.NextPlot = 'add';
+            restoreNextPlot = onCleanup(@() set(hAxes, 'NextPlot', nextPlot)); %#ok<NASGU>
 
             for i = 1:obj.NumChannels
 
@@ -411,8 +414,6 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
                 obj.changeIndicatorAppearance(i)
             end
-
-            obj.Axes.NextPlot = nextPlot;
         end
 
         function changeIndicatorAppearance(obj, channelNum)

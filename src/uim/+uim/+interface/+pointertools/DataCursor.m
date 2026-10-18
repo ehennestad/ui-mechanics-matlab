@@ -145,9 +145,11 @@ classdef DataCursor < uim.interface.PointerTool
             % Plot Line
             if isempty(obj.Crosshair)
                 % Plot replaces the content of an axes that is not held,
-                % so hold it while the crosshair lines are created
+                % so hold it while the crosshair lines are created. The
+                % previous NextPlot is restored on exit, also on an error.
                 nextPlot = hAx.NextPlot;
                 hAx.NextPlot = 'add';
+                restoreNextPlot = onCleanup(@() set(hAx, 'NextPlot', nextPlot)); %#ok<NASGU>
 
                 obj.Crosshair = gobjects(4,1);
                 obj.Crosshair(1) = plot(hAx, xdata1, ydata1);
@@ -164,8 +166,6 @@ classdef DataCursor < uim.interface.PointerTool
 
                 obj.Crosshair(5) = plot(obj.Axes, x0, y0, '.', 'MarkerSize', 20);
                 obj.Crosshair(5).Color =  obj.CursorColor;
-
-                hAx.NextPlot = nextPlot;
 
             else
 %                 set(obj.Crosshair, {'XData'}, {xdata1,xdata2}', ...
