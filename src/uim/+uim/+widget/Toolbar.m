@@ -444,8 +444,10 @@ classdef Toolbar < uim.abstract.Container
                 lastButtonPosition = obj.AllButtonPosition(end, :);
                 pos(i) = sum(lastButtonPosition([i,i+2])) + obj.Spacing;
             end
-            pos(j) = obj.getCenteredPositionAcross(obj.NewButtonSize);
-            pos(3:4) = obj.NewButtonSize;
+            % NewButtonSize is a single size for both sides or [width, height]
+            buttonSize = [1, 1] .* obj.NewButtonSize;
+            pos(j) = obj.getCenteredPositionAcross(buttonSize(j));
+            pos(3:4) = buttonSize;
 
             obj.NextButtonPosition = pos;
         end

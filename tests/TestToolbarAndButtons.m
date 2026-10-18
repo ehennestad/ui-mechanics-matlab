@@ -85,6 +85,21 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
                 "The button is centred across the bar.");
         end
 
+        function toolbarCentresAButtonOfAGivenWidthAndHeight(testCase)
+            [~, canvas] = createCanvas(testCase);
+            toolbar = uim.widget.Toolbar(canvas, "Location", "southwest", ...
+                "Size", [inf, 30], "NewButtonSize", [40, 18]);
+            testCase.addTeardown(@deleteValid, toolbar);
+            button = toolbar.addButton("Text", "A");
+
+            testCase.verifyEqual(button.Position(3:4), [40, 18], ...
+                "The button takes NewButtonSize as [width, height].");
+            gapBelow = button.Position(2) - toolbar.Position(2);
+            gapAbove = sum(toolbar.Position([2, 4])) - sum(button.Position([2, 4]));
+            testCase.verifyEqual(gapBelow, gapAbove, "AbsTol", 1e-9, ...
+                "The button is centred across the bar by its height.");
+        end
+
         function verticalToolbarAppliesPaddingAlongAndAcrossTheBar(testCase)
             [~, canvas] = createCanvas(testCase);
             toolbar = uim.widget.Toolbar(canvas, Location="west", Orientation="vertical", ...
