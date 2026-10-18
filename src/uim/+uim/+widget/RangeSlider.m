@@ -16,7 +16,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 %   The track runs along Position, inset by the left and right Padding.
 %   Dragging a knob moves Low or High; pressing the track moves the
 %   nearest knob to the pressed point. Values from the pointer are
-%   rounded to the nearest multiple of (Max - Min)/NumTicks, clamped to
+%   rounded to the nearest Min + k*(Max - Min)/NumTicks, clamped to
 %   [Min, Max] and kept so that Low <= High. While a knob is pressed, a
 %   value label is shown above it (see ShowLabel). The inherited Label
 %   is drawn beside the track at LabelLocation.
@@ -65,8 +65,8 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
     properties
         % Number of value steps between Min and Max. Pointer values are
-        % rounded to multiples of (Max - Min)/NumTicks; no tick marks
-        % are drawn.
+        % rounded to the nearest Min + k*(Max - Min)/NumTicks; no tick
+        % marks are drawn.
         NumTicks = 100
 
         % Side of the track where Label is drawn: 'left', 'right', 'top'
@@ -554,7 +554,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             [trackStart, trackLength] = obj.getTrackExtent();
             newValue = uim.widget.internal.mapPixelToValue(...
                 mousePoint(1), obj.getValueLimits(), trackStart, trackLength);
-            newValue = uim.widget.internal.snapToStep(newValue, obj.StepSize);
+            newValue = uim.widget.internal.snapToStep(newValue, obj.StepSize, obj.Min);
 
             switch src.Tag
                 case 'Range Slider Low'
