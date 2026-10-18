@@ -258,19 +258,15 @@ classdef TestCoreComponents < matlab.unittest.TestCase
         end
 
         function resizablePositionConvertsToPixels(testCase)
-            testCase.assumeTrue(exist("imrect", "file") > 0, ...
-                "MessageBox over an axes needs the Image Processing Toolbox.");
             hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 400, 400]);
             testCase.addTeardown(@deleteValid, hFigure);
             hAxes = axes(hFigure, "Units", "pixels", "Position", [50, 50, 200, 200], ...
                 "XLim", [0, 100], "YLim", [0, 100]);
-            messageBox = uim.widget.MessageBox(hAxes);
-            testCase.addTeardown(@deleteValid, messageBox);
-            messageBox.Position = [10, 10, 20, 20];
+            resizable = ResizableStub(hAxes, [10, 10, 20, 20]);
 
             % 200 px for 100 data units: 2 px per unit
-            testCase.verifyEqual(messageBox.getpixelposition(), [20, 20, 40, 40], "AbsTol", 1e-9);
-            testCase.verifyEqual(messageBox.getpixelposition(true), [70, 70, 40, 40], "AbsTol", 1e-9);
+            testCase.verifyEqual(resizable.getpixelposition(), [20, 20, 40, 40], "AbsTol", 1e-9);
+            testCase.verifyEqual(resizable.getpixelposition(true), [70, 70, 40, 40], "AbsTol", 1e-9);
         end
 
         function rangeSliderClampsValuesWhenLimitsChange(testCase)
