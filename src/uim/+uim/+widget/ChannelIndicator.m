@@ -603,7 +603,8 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
             obj.IsMouseOnButton = false(1, obj.NumChannels);
 
-            % Indicators above NumChannels would stay drawn and clickable
+            % Only NumChannels indicators are drawn and clickable, so the
+            % ones above it are deleted
             numChannels = obj.NumChannels;
             if numel(obj.ChannelIndicators) > numChannels
                 delete(obj.ChannelIndicators(numChannels+1:end))
