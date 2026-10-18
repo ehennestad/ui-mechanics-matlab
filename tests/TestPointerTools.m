@@ -390,6 +390,24 @@ classdef TestPointerTools < matlab.unittest.TestCase
                 "The two crosshair lines and the dot take CursorColor.");
         end
 
+        function dataCursorDrawsItsColouredLinesAboveTheOutline(testCase)
+            [~, hAxes] = createImageAxes(testCase);
+            tool = uim.interface.pointertools.DataCursor(hAxes);
+            tool.activate()
+            tool.CursorColor = [0, 1, 0];
+
+            % Axes children are listed from the top of the stack down
+            children = hAxes.Children;
+            lines = children(arrayfun(@(h) isa(h, "matlab.graphics.chart.primitive.Line"), children));
+            isDashed = arrayfun(@(h) strcmp(h.LineStyle, '--'), lines);
+            isColoured = isDashed & arrayfun(@(h) isequal(h.Color, [0, 1, 0]), lines);
+            isOutline = isDashed & arrayfun(@(h) isequal(h.Color, [0, 0, 0]), lines);
+
+            testCase.assertEqual([nnz(isColoured), nnz(isOutline)], [2, 2]);
+            testCase.verifyLessThan(find(isColoured, 1, 'last'), find(isOutline, 1), ...
+                "Both coloured lines are drawn above both outline lines.");
+        end
+
         function deletingTheManagerRemovesToolGraphics(testCase)
             testCase.assumeTrue(exist("drawrectangle", "file") > 0, ...
                 "Crop needs Image Processing Toolbox ROI objects.");

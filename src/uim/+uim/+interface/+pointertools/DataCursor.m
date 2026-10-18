@@ -148,11 +148,13 @@ classdef DataCursor < uim.interface.PointerTool
 
             % Plot Line
             if isempty(obj.Crosshair)
+                % The black outline lines 3 and 4 are created first so
+                % that the thinner coloured lines 1 and 2 are drawn on top
                 obj.Crosshair = gobjects(4,1);
-                obj.Crosshair(1) = plot(hAx, xdata1, ydata1);
-                obj.Crosshair(2) = plot(hAx, xdata2, ydata2);
                 obj.Crosshair(3) = plot(hAx, xdata1, ydata1);
                 obj.Crosshair(4) = plot(hAx, xdata2, ydata2);
+                obj.Crosshair(1) = plot(hAx, xdata1, ydata1);
+                obj.Crosshair(2) = plot(hAx, xdata2, ydata2);
                 set( obj.Crosshair(1:2), 'Color', obj.CursorColor)
                 set( obj.Crosshair(1:2), 'LineWidth', 0.5)
                 set( obj.Crosshair(3:4), 'Color', [0,0,0])
