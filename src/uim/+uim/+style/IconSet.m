@@ -259,7 +259,7 @@ classdef IconSet < uim.Handle
             fig = figure('Visible', 'off');
             ax = axes(fig);
             axis equal
-            % Each traced shape is added to the axes, not replacing the last
+            % Hold the axes so that each traced shape is added to it
             hold(ax, 'on')
 
             for i = IND
