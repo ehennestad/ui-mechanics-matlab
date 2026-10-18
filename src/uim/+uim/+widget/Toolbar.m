@@ -21,12 +21,9 @@ classdef Toolbar < uim.abstract.Container
 %   is not supported when parent is an axes and raises
 %   uim:Container:PrivateCanvasUnsupportedOnOverlay.
 %
-%   Two options do not take full effect at construction, because the type
-%   defaults (see getTypeDefaults) are assigned after them: Orientation is
-%   overridden by the IsFixedSize default, and the background colours that
-%   DarkMode="off" sets are overridden by the BackgroundColor and
-%   BackgroundAlpha defaults. Set these two properties after
-%   construction, and set Orientation before adding buttons.
+%   Name-value options are assigned after the type defaults (see
+%   getTypeDefaults), so Orientation and DarkMode given at construction
+%   take effect. Set Orientation before adding buttons.
 %
 %   Example:
 %       toolbar = uim.widget.Toolbar(hAxes, Location="northeast");
@@ -160,7 +157,10 @@ classdef Toolbar < uim.abstract.Container
 
             obj@uim.abstract.Container(hParent, varargin{:})
 
-            % Toolbar specific construction....
+            % Visible can be assigned before the background exists
+            if ~isempty(obj.Background)
+                obj.Background.Visible = obj.Visible;
+            end
 
             obj.IsConstructed = true;
 
@@ -362,7 +362,7 @@ classdef Toolbar < uim.abstract.Container
         end
 
         function updateSize(obj, mode)
-            if nargin < 2; mode = obj.PositionMode; end
+            if nargin < 2; mode = obj.SizeMode; end
             if ~obj.IsConstructed; return; end
 
             switch obj.BarExtensionMode
@@ -385,8 +385,8 @@ classdef Toolbar < uim.abstract.Container
 
             [~, extent] = obj.getButtonExtentAlongLength();
 
-            % A short side fixed by IsFixedSize keeps its set size, so
-            % Size [inf, 20] stays a 20 px high bar
+            % A short side fixed by IsFixedSize keeps its set size: Size
+            % [inf, 20] gives a 20 px high bar
             if obj.IsFixedSize(dimS)
                 extent(dimS) = obj.Position_(dimS+2);
             elseif obj.NumButtons == 0
@@ -630,6 +630,9 @@ classdef Toolbar < uim.abstract.Container
         end
 
         function onVisibleChanged(obj, newValue)
+            % The name-value options are assigned before the background is
+            % created; the constructor applies Visible to it afterwards
+            if isempty(obj.Background); return; end
             obj.Background.Visible = newValue;
             for i = 1:obj.NumButtons
                 obj.Buttons(i).Visible = newValue;
