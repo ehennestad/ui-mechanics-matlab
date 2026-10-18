@@ -204,6 +204,7 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         end
 
         function set.ChannelColors(obj, value)
+            mustBeColorList(value)
             oldColors = obj.ChannelColors;
             obj.ChannelColors = value;
             obj.postSetChannelColors(oldColors)
@@ -630,5 +631,25 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
             labels = {'Red', 'Green', 'Blue', 'Cyan', 'Magenta', 'Yellow'};
             colors = {[1,0,0], [0,1,0], [0,0,1], [0,1,1], [1,0,1], [1,1,0]};
         end
+    end
+end
+
+function mustBeColorList(value)
+%mustBeColorList Require a cell array of colours (names or RGB triplets)
+    isColorList = iscell(value) && all(cellfun(@isColor, value));
+    if ~isColorList
+        error("uim:ChannelIndicator:InvalidChannelColors", ...
+            "ChannelColors must be a cell array of colours, each a colour name such as 'r' or an RGB triplet.")
+    end
+end
+
+function tf = isColor(value)
+%isColor True for a value validatecolor accepts as one colour
+    try
+        rgb = validatecolor(value);
+        tf = size(rgb, 1) == 1;
+    catch
+        % validatecolor raises for anything that is not a colour
+        tf = false;
     end
 end

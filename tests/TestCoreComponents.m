@@ -230,6 +230,32 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 "A second change within 1 s is not notified at a rate of 1.");
         end
 
+        function invalidAlignmentSpacingAndColorsAreRejected(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "NextPlot", "add");
+            icon = uim.graphics.ImageVector(hAxes, struct("Shape", polyshape([0 1 1 0], [0 0 1 1]), "Color", [0 0 0]));
+            testCase.verifyError(@() assignProperty(icon, "HorizontalAlignment", "middle"), ...
+                "MATLAB:validators:mustBeMember");
+            testCase.verifyError(@() assignProperty(icon, "VerticalAlignment", "center"), ...
+                "MATLAB:validators:mustBeMember");
+            icon.HorizontalAlignment = "left";
+            testCase.verifyEqual(icon.HorizontalAlignment, 'left');
+
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            button = uim.control.Button(canvas, "Text", "Go");
+            testCase.addTeardown(@deleteValid, button);
+            testCase.verifyError(@() assignProperty(button, "IconTextSpacing", -1), ...
+                "MATLAB:validators:mustBeNonnegative");
+
+            indicator = uim.widget.ChannelIndicator(uipanel(hFigure), "NumChannels", 2);
+            testCase.addTeardown(@deleteValid, indicator);
+            testCase.verifyError(@() assignProperty(indicator, "ChannelColors", {'r', 'notAColor'}), ...
+                "uim:ChannelIndicator:InvalidChannelColors");
+            testCase.verifyError(@() assignProperty(indicator, "ChannelColors", [1, 0, 0]), ...
+                "uim:ChannelIndicator:InvalidChannelColors");
+        end
+
         function rangeSliderClampsValuesWhenLimitsChange(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);

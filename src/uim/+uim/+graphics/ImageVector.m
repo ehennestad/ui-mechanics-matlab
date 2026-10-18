@@ -43,8 +43,10 @@ classdef ImageVector < handle
 
     properties
 
-        HorizontalAlignment = 'center' % left | center | right: x of the box point that Position names
-        VerticalAlignment = 'middle' % bottom | middle | top: y of the box point that Position names
+        % left | center | right: x of the box point that Position names
+        HorizontalAlignment (1,:) char {mustBeMember(HorizontalAlignment, {'left', 'center', 'right'})} = 'center'
+        % bottom | middle | top: y of the box point that Position names
+        VerticalAlignment (1,:) char {mustBeMember(VerticalAlignment, {'bottom', 'middle', 'top'})} = 'middle'
 
         Shape % Not used
         Color % Face color applied to every polygon; empty until set
