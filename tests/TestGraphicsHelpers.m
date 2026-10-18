@@ -296,6 +296,41 @@ classdef TestGraphicsHelpers < matlab.unittest.TestCase
             testCase.verifyTrue(ismember('square', iconSet.IconNames));
         end
 
+        function iconSetTracesPatchIconsWithHoles(testCase)
+            workingFolder = createTemporaryFolder(testCase);
+            imwrite(drawingWithRing(), fullfile(workingFolder, 'ring.png'))
+
+            iconData = uim.style.IconSet.createIcon(workingFolder, 'ring', 'patch');
+
+            testCase.assertTrue(isfield(iconData, 'ring'));
+            shapes = [iconData.ring.Shape];
+            testCase.verifyClass(shapes, "polyshape");
+            testCase.verifyGreaterThanOrEqual(sum([shapes.NumHoles]), 1, ...
+                "The ring keeps its hole.");
+        end
+
+        function iconSetTracesEveryPngWithoutAName(testCase)
+            workingFolder = createTemporaryFolder(testCase);
+            imwrite(drawingWithSquares(), fullfile(workingFolder, 'square.png'))
+            imwrite(drawingWithRing(), fullfile(workingFolder, 'ring.png'))
+
+            iconData = uim.style.IconSet.createIcon(workingFolder);
+
+            testCase.verifyEqual(sort(string(fieldnames(iconData)))', ["ring", "square"]);
+        end
+
+        function iconSetMatchesIconNamesExactly(testCase)
+            workingFolder = copyIconLibrary(testCase);
+            iconSet = uim.style.IconSet(workingFolder);
+            iconSet.addIcon('Icon', struct('Icon', iconSet.IconData.zoomIn));
+
+            testCase.verifyEqual(iconSet.IconDir, workingFolder, ...
+                "A property whose name contains an icon name is read as a property.");
+            testCase.verifyWarningFree(@() iconSet.removeIcon('zoom'));
+            testCase.verifyTrue(ismember('zoomIn', iconSet.IconNames), ...
+                "Removing 'zoom' does not touch 'zoomIn'.");
+        end
+
         function missingLibraryYieldsAnEmptySet(testCase)
             emptyFolder = createTemporaryFolder(testCase);
             iconSet = uim.style.IconSet(emptyFolder);
