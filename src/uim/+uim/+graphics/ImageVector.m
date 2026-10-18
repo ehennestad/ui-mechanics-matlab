@@ -108,7 +108,7 @@ classdef ImageVector < handle
                 % exits, also if a shape fails to plot.
                 nextPlot = hParent.NextPlot;
                 hParent.NextPlot = 'add';
-                restoreNextPlot = onCleanup(@() set(hParent, 'NextPlot', nextPlot)); %#ok<NASGU>
+                restoreNextPlot = onCleanup(@() set(hParent, 'NextPlot', nextPlot));
             else
                 hAxes = ancestor(hParent, 'axes');
                 hold(hAxes, 'on')

@@ -149,7 +149,7 @@ classdef DataCursor < uim.interface.PointerTool
                 % previous NextPlot is restored on exit, also on an error.
                 nextPlot = hAx.NextPlot;
                 hAx.NextPlot = 'add';
-                restoreNextPlot = onCleanup(@() set(hAx, 'NextPlot', nextPlot)); %#ok<NASGU>
+                restoreNextPlot = onCleanup(@() set(hAx, 'NextPlot', nextPlot));
 
                 obj.Crosshair = gobjects(4,1);
                 obj.Crosshair(1) = plot(hAx, xdata1, ydata1);

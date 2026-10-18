@@ -392,7 +392,7 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
             hAxes = obj.Axes;
             nextPlot = hAxes.NextPlot;
             hAxes.NextPlot = 'add';
-            restoreNextPlot = onCleanup(@() set(hAxes, 'NextPlot', nextPlot)); %#ok<NASGU>
+            restoreNextPlot = onCleanup(@() set(hAxes, 'NextPlot', nextPlot));
 
             for i = 1:obj.NumChannels
 
