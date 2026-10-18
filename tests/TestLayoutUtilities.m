@@ -65,8 +65,7 @@ classdef TestLayoutUtilities < matlab.unittest.TestCase
         end
 
         function gridSizeHandlesCountsWithManyFactors(testCase)
-            % 4096 = 2^12; enumerating permutations of its factors would
-            % need 12! rows
+            % 4096 = 2^12 has twelve prime factors
             tStart = tic;
             [nRows, nCols] = uim.utility.layout.findGridSize(4096);
             testCase.verifyLessThan(toc(tStart), 5);
