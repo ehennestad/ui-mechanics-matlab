@@ -64,6 +64,17 @@ classdef TestLayoutUtilities < matlab.unittest.TestCase
             testCase.verifyEqual([nRows, nCols], [2, 2]);
         end
 
+        function gridSizeHandlesCountsWithManyFactors(testCase)
+            % 4096 = 2^12; enumerating permutations of its factors would
+            % need 12! rows
+            tStart = tic;
+            [nRows, nCols] = uim.utility.layout.findGridSize(4096);
+            testCase.verifyLessThan(toc(tStart), 5);
+            testCase.verifyGreaterThanOrEqual(nRows * nCols, 4096);
+            testCase.verifyGreaterThan(nCols / nRows, 4/3);
+            testCase.verifyLessThan(nCols / nRows, 16/9);
+        end
+
         function pos2limConvertsRectanglesToLimits(testCase)
             testCase.verifyEqual(uim.utility.pos2lim([10, 20, 30, 40]), [10, 20, 40, 60]);
             testCase.verifyEqual(uim.utility.pos2lim([0, 0, 1, 1; 5, 5, 2, 3]), ...
