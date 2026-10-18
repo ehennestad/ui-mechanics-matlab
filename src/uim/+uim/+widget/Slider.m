@@ -172,8 +172,9 @@ classdef Slider < handle
 
             props = uim.utility.parseNameValue(def, varargin{1}{:});
 
-            % Assign the limits together: one at a time, set.Min and
-            % set.Max would check each against the other's default
+            % set.Min and set.Max each check against the other limit,
+            % which still has its default during option parsing, so the
+            % limits are validated and assigned together here
             assert(props.Min < props.Max, "uim:Slider:InvalidLimits", ...
                 'Slider lower limit must be smaller than slider upper limit')
             obj.Min_ = props.Min;
@@ -339,9 +340,8 @@ classdef Slider < handle
                 axesSizePixels = axPosition(3:4);
 
                 % Expand the x-limits so the knob stays fully visible at
-                % either end of the value range. The margin comes from
-                % the value range, not the current limits, so repeated
-                % calls do not widen the limits further.
+                % either end of the value range: the margin is one knob
+                % diameter, as a fraction of the axes width, of Max - Min
                 valueRange = obj.Max - obj.Min;
                 obj.Axes.XLim = [obj.Min, obj.Max] + ...
                     [-1, 1] .* valueRange .* (knobDiameter / axesSizePixels(1));
