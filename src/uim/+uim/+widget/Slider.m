@@ -404,20 +404,25 @@ classdef Slider < handle
 
         function [xCoords, yCoords] = getTickCoordinates(obj)
 
-            [trackStart, trackLength] = obj.getTrackExtent();
             pixelPosition = obj.getPixelPosition();
             yCenter = pixelPosition(2) + pixelPosition(4) / 2;
             numTicks = 9;
 
-            [xCoords, yCoords] = uim.widget.internal.tickMarkCoordinates(...
-                [trackStart, trackStart + trackLength], yCenter, ...
-                obj.TickLength, obj.TickMode, numTicks);
-
             if obj.OwnsAxes
-                pixelPoints = [xCoords(:), yCoords(:)];
+                % The knob travels over [Min, Max] in data units, so the
+                % ticks span exactly that range with no edge inset. The
+                % tick lengths are in pixels, so only y is converted.
+                [xCoords, yCoords] = uim.widget.internal.tickMarkCoordinates(...
+                    [obj.Min, obj.Max], yCenter, ...
+                    obj.TickLength, obj.TickMode, numTicks, 0);
+                pixelPoints = [zeros(numel(yCoords), 1), yCoords(:)];
                 dataPoints = uim.utility.px2du(obj.Axes, pixelPoints);
-                xCoords = reshape(dataPoints(:,1), size(xCoords));
                 yCoords = reshape(dataPoints(:,2), size(yCoords));
+            else
+                [trackStart, trackLength] = obj.getTrackExtent();
+                [xCoords, yCoords] = uim.widget.internal.tickMarkCoordinates(...
+                    [trackStart, trackStart + trackLength], yCenter, ...
+                    obj.TickLength, obj.TickMode, numTicks);
             end
         end
 

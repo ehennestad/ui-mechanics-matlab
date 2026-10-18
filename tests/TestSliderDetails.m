@@ -289,6 +289,23 @@ classdef TestSliderDetails < matlab.unittest.TestCase
                 "AbsTol", 1e-12, "After a resize the background spans the axes.");
         end
 
+        function sliderTicksSpanTheKnobTravelInItsOwnAxes(testCase)
+            hFigure = createHiddenFigure(testCase);
+            slider = uim.widget.Slider("Parent", hFigure, "Units", "pixels", ...
+                "Position", [20, 20, 200, 30], "Min", -2, "Max", 3, "TickLength", 4);
+            testCase.addTeardown(@deleteValid, slider);
+            hAxes = findall(hFigure, "Tag", "SlideBar Container");
+            hTicks = findobj(hAxes, "Type", "line");
+
+            testCase.verifyEqual(tickSpan(hTicks), [-2, 3], "AbsTol", 1e-12, ...
+                "The first and last tick are at Min and Max.");
+
+            slider.Position = [20, 20, 300, 30];
+
+            testCase.verifyEqual(tickSpan(hTicks), [-2, 3], "AbsTol", 1e-12, ...
+                "After a resize the ticks still span [Min, Max].");
+        end
+
         function pointerValuesSnapToStepsFromMin(testCase)
             testCase.verifyEqual(uim.widget.internal.snapToStep(2.4, 1.5, 1), 2.5, "AbsTol", 1e-12);
             testCase.verifyEqual(uim.widget.internal.snapToStep([1.6, 3.4], 1.5, 1), [1, 4], "AbsTol", 1e-12);
@@ -411,6 +428,12 @@ function hTrack = findTrack(hAxes)
     % The track is the long, thin patch
     [~, index] = max(widths ./ max(heights, eps));
     hTrack = patches(index);
+end
+
+function limits = tickSpan(hTicks)
+%tickSpan Smallest and largest x of the tick marks
+    xData = [hTicks.XData];
+    limits = [min(xData), max(xData)];
 end
 
 function span = spanOf(values)
