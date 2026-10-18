@@ -242,6 +242,47 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyNotEmpty(findall(hFigure, "Type", "text", "String", 'Time: 1'));
         end
 
+        function contrastSliderResetsLimitsOutsideNewDataLimits(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            slider = uim.widget.ContrastSlider(canvas, "DataLimits", [0, 255], "Limits", [0, 255]);
+            testCase.addTeardown(@deleteValid, slider);
+
+            slider.DataLimits = [300, 400];
+            testCase.verifyEqual(slider.Limits, [300, 400], ...
+                "Limits outside the new range are reset to the full range.");
+
+            slider.Limits = [320, 350];
+            slider.DataLimits = [310, 420];
+            testCase.verifyEqual(slider.Limits, [320, 350], ...
+                "Limits inside the new range are kept.");
+        end
+        function marginChangeKeepsAManualSize(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 600, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            components = {
+                uim.container.Panel(hFigure, BackgroundColor="w")
+                uim.decorator.Box(canvas, PositionMode="auto")
+                uim.widget.Toolbar(canvas, Location="northwest", BarExtensionMode="expanded")
+                uim.widget.RangeSlider(canvas, Min=0, Max=10)
+                };
+            for k = 1:numel(components)
+                component = components{k};
+                testCase.addTeardown(@deleteValid, component);
+                component.Size = [150, 60];
+
+                component.Margin = [5, 5, 5, 5];
+
+                testCase.verifyEqual(char(component.SizeMode), 'manual', ...
+                    class(component) + ": a Margin change keeps SizeMode 'manual'.");
+                testCase.verifyEqual(component.Size, [150, 60], ...
+                    class(component) + ": a Margin change keeps the manual Size.");
+            end
+        end
+
         function rangeSliderClampsValuesWhenLimitsChange(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
@@ -1302,8 +1343,8 @@ classdef TestCoreComponents < matlab.unittest.TestCase
 
             slider.DataLimits = [300, 500];
             testCase.verifyEqual(slider.DataLimits, [300, 500]);
-            % The old limits are clamped into the new data range.
-            testCase.verifyEqual(slider.Limits, [300, 300]);
+            % Limits outside the new data range are reset to the full range.
+            testCase.verifyEqual(slider.Limits, [300, 500]);
 
             slider.Limits = [320, 480];
             testCase.verifyEqual(slider.Limits, [320, 480]);
