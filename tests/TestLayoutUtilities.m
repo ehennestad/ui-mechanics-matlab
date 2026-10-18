@@ -64,6 +64,19 @@ classdef TestLayoutUtilities < matlab.unittest.TestCase
             testCase.verifyEqual([nRows, nCols], [2, 2]);
         end
 
+        function toolboxVersionReadsContentsInTheToolboxRoot(testCase)
+            % Packaging writes Contents.m in the toolbox root, the folder
+            % above the uim code folder (uim.toolboxdir)
+            contentsFile = fullfile(uim.toolboxdir(), "Contents.m");
+            testCase.assumeFalse(isfile(contentsFile), ...
+                "This checkout already has a Contents.m in the toolbox root.");
+            testCase.verifyError(@() uim.toolboxversion(), "uim:toolboxversion:ContentsNotFound");
+
+            writelines(["% UI Mechanics for MATLAB", "% Version 1.2.3 (R2020b+) 18-Oct-2026"], contentsFile);
+            testCase.addTeardown(@delete, contentsFile);
+            testCase.verifyEqual(uim.toolboxversion(), 'Version 1.2.3');
+        end
+
         function pos2limConvertsRectanglesToLimits(testCase)
             testCase.verifyEqual(uim.utility.pos2lim([10, 20, 30, 40]), [10, 20, 40, 60]);
             testCase.verifyEqual(uim.utility.pos2lim([0, 0, 1, 1; 5, 5, 2, 3]), ...
