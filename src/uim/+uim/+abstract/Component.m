@@ -346,8 +346,8 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 
             % Assign the type defaults first and the caller's options
             % second. An option can set other properties in its set
-            % method (a Toolbar's Orientation sets IsFixedSize), and a
-            % type default assigned after it would undo that.
+            % method (a Toolbar's Orientation sets IsFixedSize), so the
+            % caller's options must be the last values assigned.
             S = rmfield(S, intersect(fieldnames(S), callerNames));
             defaultArgs = cat(1, fieldnames(S)', struct2cell(S)');
             parseInputs@uim.mixin.NameValueAssignable(obj, defaultArgs{:})
