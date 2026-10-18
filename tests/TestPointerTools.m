@@ -358,6 +358,25 @@ classdef TestPointerTools < matlab.unittest.TestCase
         end
     end
 
+    methods (Test) % DataCursor on an axes that is not held
+
+        function dataCursorKeepsTheContentOfAnUnheldAxes(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure);
+            hImage = imagesc(hAxes, magic(10));
+            hold(hAxes, "off")
+            tool = uim.interface.pointertools.DataCursor(hAxes);
+
+            tool.activate()
+
+            testCase.verifyTrue(isvalid(hImage), "The image is kept.");
+            testCase.verifyNumElements(findobj(hAxes, "Type", "line"), 5, ...
+                "The four crosshair lines and the centre dot are drawn.");
+            testCase.verifyEqual(char(hAxes.NextPlot), 'replace', "NextPlot is restored.");
+        end
+    end
+
     methods (Test) % Crop
 
         function cropToolReportsSelectedRegion(testCase)
