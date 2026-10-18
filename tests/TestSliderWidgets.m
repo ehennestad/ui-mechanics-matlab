@@ -468,6 +468,37 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
             testCase.verifyNumElements(widgetState.RangeButtons, 2);
         end
 
+        function activeRangeChangeReportsOldAndNewRange(testCase)
+            hFigure = createHiddenFigure(testCase, [100, 100, 800, 200]);
+            widget = uim.widget.PlaybackControl(hFigure, "Position", [10, 10, 600, 30], ...
+                "Minimum", 1, "Maximum", 100);
+            testCase.addTeardown(@deleteValid, widget);
+            widget.RangeSelectorEnabled = "on";
+            widget.ActiveRange = [20, 60];
+            widget.ActiveRangeChangedFcn = @(~, evt) setappdata(hFigure, "RangeEvent", evt);
+
+            hSliderAxes = findall(hFigure, "Tag", "Playback Widget (Slider Axes)");
+            hLines = findobj(hSliderAxes, "Type", "line");
+            isHandle = arrayfun(@(h) isa(h.ButtonDownFcn, "function_handle") && ...
+                contains(func2str(h.ButtonDownFcn), "rangeButtonPressed"), hLines);
+            handles = hLines(isHandle);
+            [~, order] = sort([handles.XData]);
+            lowHandle = handles(order(1));
+
+            % Press the low handle and release it; a pointer move cannot
+            % be simulated, so the range is assigned in between
+            lowHandle.ButtonDownFcn(lowHandle, [])
+            widget.ActiveRange = [30, 60];
+            warningState = warning("off", "MATLAB:structOnObject");
+            testCase.addTeardown(@() warning(warningState));
+            widgetState = struct(widget);
+            widgetState.WindowMouseReleaseListener.Callback([], [])
+
+            evt = getappdata(hFigure, "RangeEvent");
+            testCase.verifyClass(evt, "uim.event.ValueChangedEventData");
+            testCase.verifyEqual([evt.OldValue; evt.NewValue], [20, 60; 30, 60]);
+        end
+
         function playbackControlHostsChannelAndPlaneSelectors(testCase)
             hFigure = createHiddenFigure(testCase, [100, 100, 500, 200]);
             widget = uim.widget.PlaybackControl(hFigure, "Position", [10, 10, 400, 30], ...

@@ -35,7 +35,9 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 %       axes selects the plane (CurrentPlaneChangedFcn).
 %     - With RangeSelectorEnabled "on", a bar marks ActiveRange on the
 %       track, and dragging either end of the bar moves that end.
-%       Releasing it calls ActiveRangeChangedFcn.
+%       Releasing it calls ActiveRangeChangedFcn with a
+%       uim.event.ValueChangedEventData whose OldValue and NewValue are
+%       the [first, last] range before and after the drag.
 %   Assigning a property updates the display without calling any of
 %   these callbacks.
 %
@@ -118,7 +120,8 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         % evt: uim.event.EventData with ChannelNumber and RgbColor
         ChannelColorChangedFcn = []
 
-        % User released an end of the range bar. evt: struct with NewRange
+        % User released an end of the range bar. evt:
+        % uim.event.ValueChangedEventData with the old and new ActiveRange
         ActiveRangeChangedFcn = []
     end
 
@@ -180,6 +183,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
     properties (Access = private) % Widget states and internals
         IsConstructed = false
         IsKnobDown = false
+        ActiveRangeAtPress = [] % ActiveRange when a range handle was pressed
         IsMouseOnButton = false
 
         Position_ = [1, 1, 20, 200]; %Initial position
@@ -925,6 +929,8 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
         function rangeButtonPressed(obj, hBtn)
 
+            obj.ActiveRangeAtPress = obj.ActiveRange;
+
             el = listener(obj.Figure, ...
                 'WindowMouseMotion', @(s,e) obj.rangeButtonMoving(hBtn));
             obj.WindowMouseMotionListener = el;
@@ -967,7 +973,7 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
             % Activate callback function for when active range changed
             if ~isempty(obj.ActiveRangeChangedFcn)
                 newRange = obj.ActiveRange;
-                evtData = struct('NewRange', newRange);
+                evtData = uim.event.ValueChangedEventData(obj.ActiveRangeAtPress, newRange);
                 obj.ActiveRangeChangedFcn(obj, evtData)
             end
         end
