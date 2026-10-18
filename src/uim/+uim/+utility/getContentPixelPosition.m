@@ -44,8 +44,10 @@ function pixelPosition = measureNormalizedChildPosition(hParent)
         drawnow limitrate
         measuredPosition = getpixelposition(hProbe);
 
+        % On some platforms a panel border measures a fraction of a
+        % pixel, while components are laid out in whole pixels
         if all(measuredPosition(3:4) > 0)
-            pixelPosition = measuredPosition;
+            pixelPosition = round(measuredPosition);
         end
     catch
         pixelPosition = [];
