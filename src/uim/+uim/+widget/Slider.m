@@ -56,9 +56,10 @@ classdef Slider < handle
         % are ignored.
         Value = 0.5
 
-        % Number of value steps between Min and Max; sets Step. It does
-        % not change the number of tick marks drawn (always 9).
-        NumTicks = 100
+        % Number of intervals between allowed values, which are
+        % Min + k*Step for k = 0 to NumTicks; sets Step. NumTicks + 1 tick
+        % marks are drawn, one at each allowed value from Min to Max.
+        NumTicks (1,1) double {mustBeInteger, mustBePositive} = 100
 
         Parent = []                 % Figure, panel or axes to draw in (default: current figure); used at construction
 
@@ -304,7 +305,10 @@ classdef Slider < handle
 
         function plotTicks(obj)
             [x, y] = getTickCoordinates(obj);
-            obj.Ticks = plot(obj.Axes, x, y, '-', 'Color',  obj.BarColor, 'LineWidth', obj.TickWidth);
+            % line adds to the axes whatever its NextPlot is, so ticks
+            % created after construction keep the other parts in a
+            % caller's axes. It draws one line object per tick.
+            obj.Ticks = line(obj.Axes, x, y, 'Color', obj.BarColor, 'LineWidth', obj.TickWidth);
 
             if obj.IsConstructed
                 uistack(obj.Ticks, 'bottom')
@@ -315,6 +319,15 @@ classdef Slider < handle
             if isempty(obj.Ticks); return; end
             [xCoords, yCoords] = getTickCoordinates(obj);
             numTicks = size(xCoords, 2);
+
+            % Each tick is its own line object, so a new number of ticks
+            % needs new lines
+            if numel(obj.Ticks) ~= numTicks
+                delete(obj.Ticks)
+                obj.plotTicks()
+                return
+            end
+
             xCoords = mat2cell(xCoords', ones(numTicks, 1));
             yCoords = mat2cell(yCoords', ones(numTicks, 1));
             set(obj.Ticks, {'XData'}, xCoords, {'YData'}, yCoords)
@@ -406,12 +419,16 @@ classdef Slider < handle
 
             pixelPosition = obj.getPixelPosition();
             yCenter = pixelPosition(2) + pixelPosition(4) / 2;
-            numTicks = 9;
+
+            % One tick per allowed value, Min + k*Step for k = 0 to
+            % NumTicks. The ticks span the knob's travel with no edge
+            % inset, so the outer ticks sit under the knob centre at Min
+            % and Max.
+            numTicks = obj.NumTicks + 1;
 
             if obj.OwnsAxes
-                % The knob travels over [Min, Max] in data units, so the
-                % ticks span exactly that range with no edge inset. The
-                % tick lengths are in pixels, so only y is converted.
+                % The knob travels over [Min, Max] in data units. The tick
+                % lengths are in pixels, so only y is converted.
                 [xCoords, yCoords] = uim.widget.internal.tickMarkCoordinates(...
                     [obj.Min, obj.Max], yCenter, ...
                     obj.TickLength, obj.TickMode, numTicks, 0);
@@ -422,7 +439,7 @@ classdef Slider < handle
                 [trackStart, trackLength] = obj.getTrackExtent();
                 [xCoords, yCoords] = uim.widget.internal.tickMarkCoordinates(...
                     [trackStart, trackStart + trackLength], yCenter, ...
-                    obj.TickLength, obj.TickMode, numTicks);
+                    obj.TickLength, obj.TickMode, numTicks, 0);
             end
         end
 
@@ -530,6 +547,11 @@ classdef Slider < handle
             elseif obj.TickLength ~= 0
                 obj.redrawTicks()
             end
+        end
+
+        function onNumTicksSet(obj)
+            if ~obj.IsConstructed; return; end
+            obj.redrawTicks()
         end
 
         function onBarColorSet(obj)
@@ -676,6 +698,11 @@ classdef Slider < handle
         function set.BarColor(obj, newColor)
             obj.BarColor = newColor;
             obj.onBarColorSet()
+        end
+
+        function set.NumTicks(obj, newValue)
+            obj.NumTicks = newValue;
+            obj.onNumTicksSet()
         end
 
         function set.TickLength(obj, newValue)

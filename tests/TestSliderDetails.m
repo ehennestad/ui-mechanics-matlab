@@ -306,6 +306,101 @@ classdef TestSliderDetails < matlab.unittest.TestCase
                 "After a resize the ticks still span [Min, Max].");
         end
 
+        function sliderDrawsATickAtEachAllowedValueInItsOwnAxes(testCase)
+            hFigure = createHiddenFigure(testCase);
+            slider = uim.widget.Slider("Parent", hFigure, "Units", "pixels", ...
+                "Position", [20, 20, 200, 30], "Min", 1, "Max", 4, "NumTicks", 2, ...
+                "TickLength", 4);
+            testCase.addTeardown(@deleteValid, slider);
+            hTicks = findobj(findall(hFigure, "Tag", "SlideBar Container"), "Type", "line");
+
+            testCase.assertNumElements(hTicks, slider.NumTicks + 1, ...
+                "NumTicks intervals give NumTicks + 1 ticks.");
+            testCase.verifyEqual(tickPositions(hTicks), [1, 2.5, 4], "AbsTol", 1e-12, ...
+                "The ticks sit at Min + k*Step in data units.");
+        end
+
+        function sliderTicksSitUnderTheKnobInACallersAxes(testCase)
+            hFigure = createHiddenFigure(testCase);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [20, 20, 320, 120], ...
+                "XLim", [0, 320], "YLim", [0, 120]);
+            slider = uim.widget.Slider("Parent", hAxes, "Position", [20, 40, 200, 30], ...
+                "Min", 1, "Max", 4, "Value", 1, "NumTicks", 2, "TickLength", 4);
+            testCase.addTeardown(@deleteValid, slider);
+            hTicks = findobj(hAxes, "Type", "line");
+            hKnob = findobj(hAxes, "Type", "patch", "FaceColor", slider.KnobFaceColorInactive);
+
+            % The track starts at Position(1) + Padding(1) and spans
+            % Position(3) - Padding(1) - Padding(3) pixels
+            trackStart = 20 + slider.Padding(1);
+            trackLength = 200 - slider.Padding(1) - slider.Padding(3);
+            expected = trackStart + [0, 0.5, 1] .* trackLength;
+            testCase.assertNumElements(hTicks, 3);
+            testCase.verifyEqual(tickPositions(hTicks), expected, "AbsTol", 1e-12, ...
+                "The ticks sit at the pixel positions of Min + k*Step.");
+
+            % The knob outline is a sampled circle, so the midpoint of its
+            % extent is the centre only to within a fraction of a pixel
+            knobTolerance = 0.01;
+            testCase.verifyEqual(midpoint(hKnob.XData), expected(1), "AbsTol", knobTolerance, ...
+                "The first tick is under the knob centre at Min.");
+            slider.Value = 4;
+            testCase.verifyEqual(midpoint(hKnob.XData), expected(3), "AbsTol", knobTolerance, ...
+                "The last tick is under the knob centre at Max.");
+        end
+
+        function sliderRedrawsTicksWhenNumTicksChanges(testCase)
+            hFigure = createHiddenFigure(testCase);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [20, 20, 320, 120], ...
+                "XLim", [0, 320], "YLim", [0, 120]);
+            slider = uim.widget.Slider("Parent", hAxes, "Position", [20, 40, 200, 30], ...
+                "Min", 0, "Max", 10, "NumTicks", 4, "TickLength", 4);
+            testCase.addTeardown(@deleteValid, slider);
+            numPatches = numel(findobj(hAxes, "Type", "patch"));
+            testCase.assertNumElements(findobj(hAxes, "Type", "line"), 5);
+
+            slider.NumTicks = 2;
+            testCase.verifyNumElements(findobj(hAxes, "Type", "line"), 3, ...
+                "Fewer intervals remove ticks.");
+
+            slider.NumTicks = 10;
+            hTicks = findobj(hAxes, "Type", "line");
+            testCase.verifyNumElements(hTicks, 11, "More intervals add ticks.");
+            testCase.verifyEqual(diff(tickPositions(hTicks)), ...
+                repmat((200 - sum(slider.Padding([1, 3])))/10, 1, 10), "AbsTol", 1e-9, ...
+                "The new ticks are evenly spaced over the track.");
+            testCase.verifyNumElements(findobj(hAxes, "Type", "patch"), numPatches, ...
+                "Redrawing the ticks keeps the slider's other parts in the caller's axes.");
+        end
+
+        function sliderTicksAddedAfterConstructionKeepTheOtherParts(testCase)
+            hFigure = createHiddenFigure(testCase);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [20, 20, 320, 120], ...
+                "XLim", [0, 320], "YLim", [0, 120]);
+            slider = uim.widget.Slider("Parent", hAxes, "Position", [20, 40, 200, 30], ...
+                "NumTicks", 4);
+            testCase.addTeardown(@deleteValid, slider);
+            testCase.assertFalse(ishold(hAxes));
+            numPatches = numel(findobj(hAxes, "Type", "patch"));
+
+            slider.TickLength = 6;
+
+            testCase.verifyNumElements(findobj(hAxes, "Type", "line"), 5);
+            testCase.verifyNumElements(findobj(hAxes, "Type", "patch"), numPatches, ...
+                "The track, knob and background survive in an axes with hold off.");
+        end
+
+        function sliderRejectsANonIntegerNumTicks(testCase)
+            hFigure = createHiddenFigure(testCase);
+            slider = uim.widget.Slider("Parent", hFigure);
+            testCase.addTeardown(@deleteValid, slider);
+
+            testCase.verifyError(@() setProperty(slider, "NumTicks", 2.5), ...
+                "MATLAB:validators:mustBeInteger");
+            testCase.verifyError(@() setProperty(slider, "NumTicks", 0), ...
+                "MATLAB:validators:mustBePositive");
+        end
+
         function pointerValuesSnapToStepsFromMin(testCase)
             testCase.verifyEqual(uim.widget.internal.snapToStep(2.4, 1.5, 1), 2.5, "AbsTol", 1e-12);
             testCase.verifyEqual(uim.widget.internal.snapToStep([1.6, 3.4], 1.5, 1), [1, 4], "AbsTol", 1e-12);
@@ -434,6 +529,20 @@ function limits = tickSpan(hTicks)
 %tickSpan Smallest and largest x of the tick marks
     xData = [hTicks.XData];
     limits = [min(xData), max(xData)];
+end
+
+function positions = tickPositions(hTicks)
+%tickPositions Sorted x of the tick marks; each tick line is vertical
+    positions = sort(arrayfun(@(h) h.XData(1), hTicks))';
+end
+
+function center = midpoint(values)
+%midpoint Middle of the range spanned by values
+    center = (max(values(:)) + min(values(:))) / 2;
+end
+
+function setProperty(object, name, value)
+    object.(name) = value;
 end
 
 function span = spanOf(values)
