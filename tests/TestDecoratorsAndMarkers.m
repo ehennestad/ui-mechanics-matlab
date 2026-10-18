@@ -88,6 +88,19 @@ classdef TestDecoratorsAndMarkers < matlab.unittest.TestCase
 
     methods (Test) % uim.widget.FrameMarker
 
+        function channelIndicatorDrawsIntoAnUnheldAxes(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "NextPlot", "replace");
+            hImage = imagesc(hAxes, magic(10));
+
+            indicator = uim.widget.ChannelIndicator(hAxes, "NumChannels", 2);
+            testCase.addTeardown(@deleteValid, indicator);
+
+            testCase.verifyTrue(isvalid(hImage), "The existing image is kept.");
+            testCase.verifyNumElements(findobj(hAxes, "Type", "patch"), 2, "Both indicators are drawn.");
+            testCase.verifyEqual(char(hAxes.NextPlot), 'replace', "NextPlot is restored.");
+        end
         function frameMarkerStartsHiddenWhenAsked(testCase)
             [~, hAxes] = createDataAxes(testCase);
             marker = uim.widget.FrameMarker(hAxes, "Minimum", 1, "Maximum", 100, ...
