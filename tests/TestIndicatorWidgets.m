@@ -136,6 +136,29 @@ classdef TestIndicatorWidgets < matlab.unittest.TestCase
             testCase.verifyEmpty(findobj(canvas.Axes, "Type", "text", "Visible", "on"), ...
                 "The labels stay hidden.");
         end
+
+        function pageIndicatorVisibleOffHidesEveryPart(testCase)
+            [~, canvas] = createCanvas(testCase);
+            pages = uim.widget.PageIndicator(canvas, {'One', 'Two'});
+            testCase.addTeardown(@deleteValid, pages);
+            dots = pageButtons(canvas.Axes);
+
+            pages.Visible = 'off';
+            testCase.verifyEqual(string({dots.Visible}), ["off", "off"], "The dots are hidden.");
+            testCase.verifyEmpty(findobj(canvas.Axes, "Type", "line", "Visible", "on"), ...
+                "The bar and ticks are hidden.");
+            testCase.verifyEmpty(findobj(pageLabels(canvas.Axes, {'One', 'Two'}), "Visible", "on"), ...
+                "The labels are hidden.");
+
+            pages.CurrentPage = 2;
+            testCase.verifyEmpty(findobj(canvas.Axes, "Type", "line", "Visible", "on"), ...
+                "A page change keeps the bar and ticks hidden.");
+            testCase.verifyEmpty(findobj(pageLabels(canvas.Axes, {'One', 'Two'}), "Visible", "on"), ...
+                "A page change keeps the labels hidden.");
+
+            pages.Visible = 'on';
+            testCase.verifyEqual(string({dots.Visible}), ["on", "on"], "The dots are shown again.");
+        end
     end
 
     methods (Test) % ChannelIndicator

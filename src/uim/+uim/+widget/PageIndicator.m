@@ -468,7 +468,7 @@ classdef PageIndicator < uim.abstract.Control
             obj.PageButtons(obj.CurrentPage).FaceColor = obj.BarColor;
             % A hidden indicator stays hidden; onVisibleChanged applies
             % the bar and label settings when it is shown
-            if obj.Visible
+            if strcmp(obj.Visible, 'on')
                 obj.updateBarVisibility()
                 obj.updateTextVisibility()
             end
@@ -480,7 +480,7 @@ classdef PageIndicator < uim.abstract.Control
         function onVisibleChanged(obj, ~)
             if ~obj.IsConstructed; return; end
 
-            if obj.Visible
+            if strcmp(obj.Visible, 'on')
                 set(obj.PageButtons, 'Visible', 'on')
                 % The bar, ticks and labels follow their own settings
                 obj.updateBarVisibility()
