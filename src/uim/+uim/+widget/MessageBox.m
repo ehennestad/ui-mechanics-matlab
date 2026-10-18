@@ -1,4 +1,4 @@
-classdef MessageBox < uim.mixin.Resizable
+classdef MessageBox < uim.Handle
 %MessageBox Overlay box that shows text messages and progress in a figure
 %
 %   messageBox = uim.widget.MessageBox(hParent) creates a hidden message
@@ -10,8 +10,8 @@ classdef MessageBox < uim.mixin.Resizable
 %     - in a panel, the box axes fills the panel, and the panel itself is
 %       made visible while a message shows and hidden when it is cleared.
 %   Over an axes or in a figure the box has the size MinSize, or less
-%   where the parent is smaller. Over an axes, construction also creates
-%   an imrect in that axes and needs the Image Processing Toolbox.
+%   where the parent is smaller. Over an axes, the box can be dragged
+%   with the mouse while a message shows, and stays inside the axes.
 %
 %   messageBox = uim.widget.MessageBox(hParent, Name, Value, ...) sets
 %   properties before the box is created. Names are character vectors or
@@ -56,11 +56,15 @@ classdef MessageBox < uim.mixin.Resizable
 
         MessageTimer
         CornerRadius = 2
+
+        % Pointer position and box position in pixels when a drag starts
+        DragStartPoint
+        DragStartPosition
+        DragMotionListener = event.listener.empty
+        DragReleaseListener = event.listener.empty
     end
 
     properties
-        %Parent %Resizable property for which axes the imrect is plotted into
-
         % Position of the box in the units of the parent, recorded when
         % the box is created. Assigning it does not move the box.
         Position
@@ -113,6 +117,7 @@ classdef MessageBox < uim.mixin.Resizable
         end % \MessageBox (Constructor)
 
         function delete(obj)
+            obj.stopDrag()
             if ~isempty(obj.MessageTimer) && isvalid(obj.MessageTimer)
                 stop(obj.MessageTimer)
                 delete(obj.MessageTimer)
@@ -123,31 +128,6 @@ classdef MessageBox < uim.mixin.Resizable
     end % \structor methods
 
     methods (Access = protected)
-        function setDefaultButtonDownFcn(~, ~)
-        end
-
-        function resize(obj, newPosition, ~)
-
-            % make sure messagebox units are the same as the reference axes
-            % units before setting the position property. The position
-            % values are based on the Units property of the parent.
-
-            axUnits = obj.Axes.Units;
-            obj.Axes.Units = obj.ReferenceAxes.Units;
-
-            if strcmp(obj.Parent.XDir, 'reverse')
-                newPosition(1) = obj.Parent.Position(3) - newPosition(1);
-            end
-
-            if strcmp(obj.Parent.YDir, 'reverse')
-                newPosition(2) = obj.Parent.Position(4) - newPosition(2);
-            end
-
-            obj.Axes.Position = newPosition;
-            obj.Axes.Units = axUnits;
-
-            obj.updateTextboxCoords()
-        end
     end
 
     methods (Access = private)
@@ -159,6 +139,45 @@ classdef MessageBox < uim.mixin.Resizable
         %   of the box is running, because drawing runs the event queue.
         %   The method then has to stop before it touches its graphics.
             tf = ~isvalid(obj) || isempty(obj.Axes) || ~isvalid(obj.Axes);
+        end
+
+        function startDrag(obj)
+        %startDrag Start moving the box with the pointer
+            obj.stopDrag()
+            hFigure = ancestor(obj.Axes, 'figure');
+            obj.DragStartPoint = currentPointInPixels(hFigure);
+            obj.DragStartPosition = getpixelposition(obj.Axes);
+
+            obj.DragMotionListener = listener(hFigure, 'WindowMouseMotion', ...
+                @(~, ~) obj.onDragMotion());
+            obj.DragReleaseListener = listener(hFigure, 'WindowMouseRelease', ...
+                @(~, ~) obj.stopDrag());
+        end
+
+        function onDragMotion(obj)
+        %onDragMotion Move the box by the pointer movement, inside the reference axes
+            if obj.isBoxDeleted(); return; end
+
+            hFigure = ancestor(obj.Axes, 'figure');
+            shift = currentPointInPixels(hFigure) - obj.DragStartPoint;
+            newPosition = obj.DragStartPosition;
+            newPosition(1:2) = newPosition(1:2) + shift;
+
+            % The box axes and the reference axes share a parent, so their
+            % pixel positions are in the same frame
+            limits = getpixelposition(obj.ReferenceAxes);
+            newPosition(1:2) = min(max(newPosition(1:2), limits(1:2)), ...
+                limits(1:2) + limits(3:4) - newPosition(3:4));
+
+            setpixelposition(obj.Axes, newPosition)
+        end
+
+        function stopDrag(obj)
+        %stopDrag End a drag
+            delete(obj.DragMotionListener)
+            delete(obj.DragReleaseListener)
+            obj.DragMotionListener = event.listener.empty;
+            obj.DragReleaseListener = event.listener.empty;
         end
 
         function createAxes(obj)
@@ -200,22 +219,11 @@ classdef MessageBox < uim.mixin.Resizable
                 obj.Axes.Position = [0,0,obj.ReferenceAxes.Position(3:4)];
             end
 
-            % Configure isResizable behavior. This will make the messagebox
-            % resizeable.
+            % Record the position in the units of the parent
             axUnits = obj.Axes.Units;
             obj.Axes.Units = obj.ReferenceAxes.Units;
             obj.Position = obj.Axes.Position;
             obj.Axes.Units = axUnits;
-
-            obj.Parent = obj.ReferenceAxes;
-            if isa(obj.ReferenceAxes, 'matlab.graphics.axis.Axes')
-                obj.createInteractiveRectangle()
-                obj.hideInteractiveRectangle
-
-                hFunc = makeConstrainToRectFcn('imrect', obj.Parent.XLim, obj.Parent.YLim);
-                obj.setPositionConstraintFcn(hFunc)
-                obj.IsResizable = false; % Turn of resizeability. (Messagebox can only be moved).
-            end
 
         end % \createAxes
 
@@ -250,8 +258,16 @@ classdef MessageBox < uim.mixin.Resizable
             obj.Background.FaceAlpha = obj.BackgroundAlpha;
             obj.Background.EdgeColor = obj.BorderColor;
             obj.Background.Visible = 'off';
-            obj.Background.PickableParts = 'none';
-            obj.Background.HitTest = 'off';
+            if isa(obj.ReferenceAxes, 'matlab.graphics.axis.Axes')
+                % Over an axes the box can be dragged; a hidden box
+                % (no message) is not pickable
+                obj.Background.PickableParts = 'visible';
+                obj.Background.HitTest = 'on';
+                obj.Background.ButtonDownFcn = @(~, ~) obj.startDrag();
+            else
+                obj.Background.PickableParts = 'none';
+                obj.Background.HitTest = 'off';
+            end
 
             hold(obj.Axes, 'on')
             obj.Axes.XLim = [0,1];
@@ -648,7 +664,6 @@ classdef MessageBox < uim.mixin.Resizable
             end
             % Drawing runs the event queue, which can close the figure
             if obj.isBoxDeleted(); return; end
-            obj.showInteractiveRectangle()
 
             if isa(obj.ReferenceAxes, 'matlab.ui.container.Panel')
                 obj.ReferenceAxes.Visible = 'on';
@@ -694,7 +709,7 @@ classdef MessageBox < uim.mixin.Resizable
                 obj.CloseButton.Visible = 'off';
                 obj.CloseButtonBackground.Visible = 'off';
             end
-            obj.hideInteractiveRectangle()
+            obj.stopDrag()
 
             obj.MessageText.String = '';
             obj.Background.Visible = 'off';
@@ -827,3 +842,13 @@ classdef MessageBox < uim.mixin.Resizable
     end
 
 end % \classdef
+
+function point = currentPointInPixels(hFigure)
+%currentPointInPixels Figure CurrentPoint in pixels, whatever the figure Units
+    point = hFigure.CurrentPoint;
+    if ~strcmp(hFigure.Units, 'pixels')
+        pointPosition = hgconvertunits(hFigure, [point, 0, 0], ...
+            hFigure.Units, 'pixels', hFigure);
+        point = pointPosition(1:2);
+    end
+end
