@@ -23,11 +23,10 @@ classdef PageIndicator < uim.abstract.Control
 %           TextVisibility="hit", BarVisibility="off");
 %       pages.ChangePageFcn = @(src, evt) disp(evt.NewPageNumber);
 %
-%   Change the page from code with changePage. PageNames and IndicatorSize
-%   are read only when the dots are created; CurrentPage passed at
-%   construction does not move the filled dot (see changePage). Setting
-%   Visible to 'on' shows the bar, the current tick and the current label
-%   even when BarVisibility or TextVisibility hides them.
+%   Change the page from code with changePage or by assigning
+%   CurrentPage. PageNames and IndicatorSize are read only when the dots
+%   are created. Setting Visible to 'on' shows the dots and applies
+%   BarVisibility and TextVisibility again.
 %
 %   See also uim.UIComponentCanvas, uim.event.EventData
 
@@ -40,8 +39,8 @@ classdef PageIndicator < uim.abstract.Control
     properties
        PageNames = {''} % Cell array of page names, one dot per name; read when the dots are created
 
-       % CurrentPage - Index of the current page. Change it with changePage;
-       % assigning it directly does not update the graphics.
+       % CurrentPage - Index of the current page. Assigning it updates the
+       % dots, tick and label as changePage does, without ChangePageFcn.
        CurrentPage = 1;
 
        FontColor = 'k' % Colour of the page name labels
@@ -117,6 +116,15 @@ classdef PageIndicator < uim.abstract.Control
 
     methods % Set property values
 
+        function set.CurrentPage(obj, newValue)
+            oldValue = obj.CurrentPage;
+            obj.CurrentPage = newValue;
+            % Before the dots exist, createIndicator draws the current page
+            if obj.IsConstructed
+                obj.onCurrentPageChanged(oldValue)
+            end
+        end
+
         function set.BarColor(obj, newValue)
 
             obj.BarColor = newValue;
@@ -179,13 +187,13 @@ classdef PageIndicator < uim.abstract.Control
             [X,Y] = uim.shape.circle(R);
 
             % Coordinates for bars:
-            y1 = max(Y);
+            y1 = pos(2) + max(Y);
             y2 = pos(2)+3*R;
 
             for i = 1:numel(obj.PageNames)
 
                 X_ = X + pos(1);
-                Y_ = Y;
+                Y_ = Y + pos(2);
 
                 obj.PageButtons(i) = patch(obj.CanvasAxes, X_, Y_, obj.IndicatorColor);
                 obj.setPointerBehavior(obj.PageButtons(i))
@@ -201,7 +209,7 @@ classdef PageIndicator < uim.abstract.Control
 
                 obj.VerticalBars(i) = plot(obj.CanvasAxes, ones(1,2)*(pos(1)+R), [y1, y2]);
 
-                if i == 1
+                if i == obj.CurrentPage
                     obj.PageButtons(i).FaceColor = obj.BarColor;
                 else
                     obj.PageLabels(i).Visible = 'off';
@@ -338,15 +346,7 @@ classdef PageIndicator < uim.abstract.Control
                 return
             end
 
-            % Deactivate current page
-            obj.PageButtons(obj.CurrentPage).FaceColor = obj.IndicatorColor;
-
-            % Activate new page
-            obj.PageButtons(newPageNumber).FaceColor = obj.BarColor;
-
             obj.CurrentPage = newPageNumber;
-            obj.updateBarVisibility()
-            obj.updateTextVisibility()
         end
 
         function onMouseOverIndicator(obj)
@@ -458,15 +458,36 @@ classdef PageIndicator < uim.abstract.Control
         end
     end
 
+    methods (Access = private)
+
+        function onCurrentPageChanged(obj, oldPageNumber)
+        %onCurrentPageChanged Fill the current page's dot and show its tick and label
+            if oldPageNumber <= numel(obj.PageButtons)
+                obj.PageButtons(oldPageNumber).FaceColor = obj.IndicatorColor;
+            end
+            obj.PageButtons(obj.CurrentPage).FaceColor = obj.BarColor;
+            % A hidden indicator stays hidden; onVisibleChanged applies
+            % the bar and label settings when it is shown
+            if strcmp(obj.Visible, 'on')
+                obj.updateBarVisibility()
+                obj.updateTextVisibility()
+            end
+        end
+    end
+
     methods (Hidden, Access = protected)
 
         function onVisibleChanged(obj, ~)
-            if obj.IsConstructed
-                set(obj.HorizontalBar, 'Visible', obj.Visible)
-                set(obj.PageButtons, 'Visible', obj.Visible)
+            if ~obj.IsConstructed; return; end
 
-                set(obj.VerticalBars(obj.CurrentPage), 'Visible', obj.Visible)
-                set(obj.PageLabels(obj.CurrentPage), 'Visible', obj.Visible)
+            if strcmp(obj.Visible, 'on')
+                set(obj.PageButtons, 'Visible', 'on')
+                % The bar, ticks and labels follow their own settings
+                obj.updateBarVisibility()
+                obj.updateTextVisibility()
+            else
+                set([obj.HorizontalBar, obj.VerticalBars, obj.PageButtons, obj.PageLabels], ...
+                    'Visible', 'off')
             end
         end
 

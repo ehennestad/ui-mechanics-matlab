@@ -84,6 +84,83 @@ classdef TestIndicatorWidgets < matlab.unittest.TestCase
         end
     end
 
+    methods (Test) % PageIndicator fixes
+
+        function pageIndicatorDotsFollowPositionY(testCase)
+            [~, canvas] = createCanvas(testCase);
+            pages = uim.widget.PageIndicator(canvas, {'One', 'Two'}, ...
+                "Location", "north", "Size", [200, 40]);
+            testCase.addTeardown(@deleteValid, pages);
+
+            dots = pageButtons(canvas.Axes);
+            testCase.verifyEqual(min(dots(1).YData), pages.Position(2), "AbsTol", 1e-6, ...
+                "The dots start at Position(2).");
+        end
+
+        function pageIndicatorShowsCurrentPageGivenAtConstruction(testCase)
+            [~, canvas] = createCanvas(testCase);
+            pages = uim.widget.PageIndicator(canvas, {'One', 'Two'}, "CurrentPage", 2);
+            testCase.addTeardown(@deleteValid, pages);
+
+            dots = pageButtons(canvas.Axes);
+            testCase.verifyEqual([dots.FaceColor], [pages.IndicatorColor, validatecolor(pages.BarColor)], ...
+                "Dot 2 is filled.");
+        end
+
+        function pageIndicatorCurrentPageAssignmentUpdatesTheDisplay(testCase)
+            [~, canvas] = createCanvas(testCase);
+            pages = uim.widget.PageIndicator(canvas, {'One', 'Two'});
+            testCase.addTeardown(@deleteValid, pages);
+
+            pages.CurrentPage = 2;
+
+            dots = pageButtons(canvas.Axes);
+            testCase.verifyEqual([dots.FaceColor], [pages.IndicatorColor, validatecolor(pages.BarColor)]);
+            labelOne = pageLabels(canvas.Axes, {'One'});
+            labelTwo = pageLabels(canvas.Axes, {'Two'});
+            testCase.verifyEqual(string([labelOne.Visible, labelTwo.Visible]), ["off", "on"], ...
+                "The label of page 2 is shown.");
+        end
+
+        function pageIndicatorVisibleKeepsHiddenParts(testCase)
+            [~, canvas] = createCanvas(testCase);
+            pages = uim.widget.PageIndicator(canvas, {'One', 'Two'}, ...
+                "TextVisibility", "off", "BarVisibility", "off");
+            testCase.addTeardown(@deleteValid, pages);
+
+            pages.Visible = 'off';
+            pages.Visible = 'on';
+
+            testCase.verifyEmpty(findobj(canvas.Axes, "Type", "line", "Visible", "on"), ...
+                "The bar and ticks stay hidden.");
+            testCase.verifyEmpty(findobj(canvas.Axes, "Type", "text", "Visible", "on"), ...
+                "The labels stay hidden.");
+        end
+
+        function pageIndicatorVisibleOffHidesEveryPart(testCase)
+            [~, canvas] = createCanvas(testCase);
+            pages = uim.widget.PageIndicator(canvas, {'One', 'Two'});
+            testCase.addTeardown(@deleteValid, pages);
+            dots = pageButtons(canvas.Axes);
+
+            pages.Visible = 'off';
+            testCase.verifyEqual(string({dots.Visible}), ["off", "off"], "The dots are hidden.");
+            testCase.verifyEmpty(findobj(canvas.Axes, "Type", "line", "Visible", "on"), ...
+                "The bar and ticks are hidden.");
+            testCase.verifyEmpty(findobj(pageLabels(canvas.Axes, {'One', 'Two'}), "Visible", "on"), ...
+                "The labels are hidden.");
+
+            pages.CurrentPage = 2;
+            testCase.verifyEmpty(findobj(canvas.Axes, "Type", "line", "Visible", "on"), ...
+                "A page change keeps the bar and ticks hidden.");
+            testCase.verifyEmpty(findobj(pageLabels(canvas.Axes, {'One', 'Two'}), "Visible", "on"), ...
+                "A page change keeps the labels hidden.");
+
+            pages.Visible = 'on';
+            testCase.verifyEqual(string({dots.Visible}), ["on", "on"], "The dots are shown again.");
+        end
+    end
+
     methods (Test) % ChannelIndicator
 
         function channelIndicatorTracksSelectionAndColours(testCase)
