@@ -72,7 +72,7 @@ classdef Panel < uim.abstract.Container
 
     methods (Access = protected)
         function updateSize(obj, mode)
-            if nargin < 2; mode = obj.PositionMode; end
+            if nargin < 2; mode = obj.SizeMode; end
 
             updateSize@uim.abstract.Component(obj, mode)
             if ~isequal(obj.PanelHandle.Position, obj.Position)
