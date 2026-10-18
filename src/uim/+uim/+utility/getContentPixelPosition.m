@@ -5,11 +5,13 @@ function pixelPosition = getContentPixelPosition(hParent)
 %   [x, y, width, height] in pixels of the area where children of
 %   hParent are laid out.
 %
-%   For most containers, getpixelposition returns the usable content bounds.
-%   For tabs, getpixelposition can include the tab header while normalized
-%   children are laid out below it. Measure that normalized child area
-%   explicitly so pixel-positioned children use the same bounds as
-%   normalized children.
+%   For a figure, getpixelposition returns the usable content bounds.
+%   A panel lays out its children inside its border and title, and for
+%   tabs getpixelposition can include the tab header while normalized
+%   children are laid out below it. For panels and tabs the area a
+%   normalized child fills is therefore measured, so pixel-positioned
+%   children use the same bounds as normalized children. That position
+%   is in the container's own frame, whose content starts at [1, 1].
 
     pixelPosition = getpixelposition(hParent);
 
@@ -17,7 +19,7 @@ function pixelPosition = getContentPixelPosition(hParent)
         return
     end
 
-    if ~isa(hParent, 'matlab.ui.container.Tab')
+    if ~isa(hParent, 'matlab.ui.container.Tab') && ~isa(hParent, 'matlab.ui.container.Panel')
         return
     end
 
