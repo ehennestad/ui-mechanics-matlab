@@ -358,6 +358,52 @@ classdef TestPointerTools < matlab.unittest.TestCase
         end
     end
 
+    methods (Test) % Tool graphics
+
+        function zoomInClickClearsTheSelectionRectangle(testCase)
+            [~, hAxes] = createImageAxes(testCase);
+            tool = uim.interface.pointertools.ZoomIn(hAxes);
+
+            % Press, move and release at the same (fixed) pointer
+            % position: the motion draws a zero-size rectangle, and the
+            % release is a click
+            tool.onButtonDown([], struct("Button", 1))
+            tool.onButtonMotion([], [])
+            tool.onButtonUp([], [])
+
+            testCase.verifyEmpty(findobj(hAxes, "Tag", "Rectangular Selection Outline"), ...
+                "A click-zoom leaves no selection rectangle.");
+        end
+
+        function dataCursorColorKeepsTheBlackOutline(testCase)
+            [~, hAxes] = createImageAxes(testCase);
+            tool = uim.interface.pointertools.DataCursor(hAxes);
+            tool.activate()
+
+            tool.CursorColor = [0, 1, 0];
+
+            lines = findobj(hAxes, "Type", "line");
+            colors = cell2mat(get(lines, "Color"));
+            testCase.verifyEqual(sum(all(colors == [0, 0, 0], 2)), 2, ...
+                "The two outline lines stay black.");
+            testCase.verifyEqual(sum(all(colors == [0, 1, 0], 2)), 3, ...
+                "The two crosshair lines and the dot take CursorColor.");
+        end
+
+        function deletingTheManagerRemovesToolGraphics(testCase)
+            testCase.assumeTrue(exist("drawrectangle", "file") > 0, ...
+                "Crop needs Image Processing Toolbox ROI objects.");
+            [hFigure, hAxes] = createImageAxes(testCase);
+            childrenBefore = numel(hAxes.Children);
+            manager = uim.interface.PointerManager(hFigure, hAxes, {'crop', 'zoomIn'});
+
+            delete(manager)
+
+            testCase.verifyNumElements(hAxes.Children, childrenBefore, ...
+                "The axes is left with the content it had before the manager.");
+        end
+    end
+
     methods (Test) % Crop
 
         function cropToolReportsSelectedRegion(testCase)

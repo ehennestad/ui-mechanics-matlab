@@ -100,6 +100,9 @@ classdef ZoomIn < uim.interface.PointerTool & uim.mixin.Zoomable & ...
                 obj.AnchorPoint, currentPoint, obj.Axes.XLim, obj.Axes.YLim);
 
             if isClick
+                % A small rectangle may have been drawn during the motion
+                obj.resetRectangle();
+
                 if ~isempty(obj.ZoomInFcn)
                     if obj.RunDefault
                         obj.imageZoom('in')

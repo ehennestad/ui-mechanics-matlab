@@ -51,6 +51,10 @@ classdef DataCursor < uim.interface.PointerTool
 
     methods
 
+        function delete(obj)
+            delete(obj.Crosshair(isgraphics(obj.Crosshair)))
+        end
+
         function obj = DataCursor(hAxes)
         %DataCursor Create the tool for an axes
         %
@@ -170,7 +174,10 @@ classdef DataCursor < uim.interface.PointerTool
         end
 
         function updateCursorColor(obj)
-            set( obj.Crosshair, 'Color', obj.CursorColor)
+            % Lines 3 and 4 are the black outline under the coloured lines
+            % 1 and 2; line 5 is the centre dot
+            if numel(obj.Crosshair) < 5; return; end
+            set(obj.Crosshair([1, 2, 5]), 'Color', obj.CursorColor)
         end
     end
 end
