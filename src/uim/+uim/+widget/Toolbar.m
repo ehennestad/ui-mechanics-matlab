@@ -385,8 +385,8 @@ classdef Toolbar < uim.abstract.Container
 
             [~, extent] = obj.getButtonExtentAlongLength();
 
-            % A short side fixed by IsFixedSize keeps its set size, so
-            % Size [inf, 20] stays a 20 px high bar
+            % A short side fixed by IsFixedSize keeps its set size: Size
+            % [inf, 20] gives a 20 px high bar
             if obj.IsFixedSize(dimS)
                 extent(dimS) = obj.Position_(dimS+2);
             elseif obj.NumButtons == 0
