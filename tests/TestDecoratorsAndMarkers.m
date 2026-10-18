@@ -58,6 +58,49 @@ classdef TestDecoratorsAndMarkers < matlab.unittest.TestCase
             testCase.verifyTrue(all(arrayfun(@(h) all(h.XData == 20), handles)));
         end
 
+        function frameMarkerUsesItsAppearanceProperties(testCase)
+            [~, hAxes] = createDataAxes(testCase);
+            marker = uim.widget.FrameMarker(hAxes, "Minimum", 1, "Maximum", 100, "Value", 50, ...
+                "Color", [1, 0, 0], "MarkerSize", 20, "LineWidth", 2);
+            testCase.addTeardown(@deleteValid, marker);
+            topKnob = findall(hAxes, "Tag", "FrameMarker", "Marker", "v");
+            bottomKnob = findall(hAxes, "Tag", "FrameMarker", "Marker", "^");
+
+            testCase.verifyEqual([topKnob.MarkerSize, bottomKnob.MarkerSize], [20, 20]);
+            testCase.verifyEqual(topKnob.Color, [1, 0, 0]);
+            testCase.verifyEqual(topKnob.MarkerFaceColor, [1, 0, 0]);
+
+            marker.MarkerSymbol = 's';
+            marker.Color = [0, 0, 1];
+            testCase.verifyEqual(topKnob.Marker, 'square');
+            testCase.verifyEqual(bottomKnob.MarkerFaceColor, [0, 0, 1], ...
+                "Appearance changes after construction are applied.");
+        end
+
+        function releasingTheBottomKnobRestoresIt(testCase)
+            [~, hAxes] = createDataAxes(testCase);
+            marker = uim.widget.FrameMarker(hAxes, "Minimum", 1, "Maximum", 100, "Value", 20);
+            testCase.addTeardown(@deleteValid, marker);
+            bottomKnob = findall(hAxes, "Tag", "FrameMarker", "Marker", "^");
+
+            marker.onMouseEnterSlider(bottomKnob)
+            marker.knobPressed([], [])
+            marker.onMouseExitSlider(bottomKnob)
+            marker.knobReleased([], [])
+
+            testCase.verifyEqual(bottomKnob.MarkerSize, marker.MarkerSize, ...
+                "Release restores the bottom knob too.");
+        end
+
+        function deletingTheMarkerRemovesItsLines(testCase)
+            [~, hAxes] = createDataAxes(testCase);
+            marker = uim.widget.FrameMarker(hAxes, "Minimum", 1, "Maximum", 100, "Value", 20);
+
+            delete(marker)
+
+            testCase.verifyEmpty(findall(hAxes, "Tag", "FrameMarker"));
+        end
+
         function frameMarkerFollowsItsValue(testCase)
             [~, hAxes] = createDataAxes(testCase);
             marker = uim.widget.FrameMarker(hAxes, "Minimum", 1, "Maximum", 100, "Value", 20);
