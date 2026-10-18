@@ -255,6 +255,40 @@ classdef TestSliderDetails < matlab.unittest.TestCase
                 "Value changes do not widen XLim.");
         end
 
+        function sliderGeometryIsTheSameBeforeAndAfterAPositionChange(testCase)
+            hFigure = createHiddenFigure(testCase);
+            slider = uim.widget.Slider("Parent", hFigure, "Units", "pixels", ...
+                "Position", [20, 20, 200, 30], "Min", 0, "Max", 1, "TickLength", 4);
+            testCase.addTeardown(@deleteValid, slider);
+            hAxes = findall(hFigure, "Tag", "SlideBar Container");
+            hTrack = findTrack(hAxes);
+            hBackground = findobj(hAxes, "Type", "patch", "FaceAlpha", 0);
+            hTicks = findobj(hAxes, "Type", "line");
+
+            testCase.verifyEqual([min(hTrack.XData), max(hTrack.XData)], [0, 1], "AbsTol", 1e-12, ...
+                "At construction the track spans [Min, Max].");
+            testCase.verifyEqual([min(hBackground.XData), max(hBackground.XData)], hAxes.XLim, ...
+                "AbsTol", 1e-12, "At construction the background spans the axes.");
+            trackBefore = hTrack.XData;
+            backgroundBefore = hBackground.XData;
+            ticksBefore = get(hTicks, "XData");
+
+            % Moving without resizing leaves every part where it was in
+            % data units
+            slider.Position = [40, 30, 200, 30];
+
+            testCase.verifyEqual(hTrack.XData, trackBefore, "AbsTol", 1e-12);
+            testCase.verifyEqual(hBackground.XData, backgroundBefore, "AbsTol", 1e-12);
+            testCase.verifyEqual(get(hTicks, "XData"), ticksBefore, "AbsTol", 1e-12);
+
+            slider.Position = [40, 30, 300, 30];
+
+            testCase.verifyEqual([min(hTrack.XData), max(hTrack.XData)], [0, 1], "AbsTol", 1e-12, ...
+                "After a resize the track still spans [Min, Max].");
+            testCase.verifyEqual([min(hBackground.XData), max(hBackground.XData)], hAxes.XLim, ...
+                "AbsTol", 1e-12, "After a resize the background spans the axes.");
+        end
+
         function pointerValuesSnapToStepsFromMin(testCase)
             testCase.verifyEqual(uim.widget.internal.snapToStep(2.4, 1.5, 1), 2.5, "AbsTol", 1e-12);
             testCase.verifyEqual(uim.widget.internal.snapToStep([1.6, 3.4], 1.5, 1), [1, 4], "AbsTol", 1e-12);
