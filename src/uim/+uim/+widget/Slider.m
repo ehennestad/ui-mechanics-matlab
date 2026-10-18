@@ -37,7 +37,7 @@ classdef Slider < handle
 %       hFigure = figure;
 %       slider = uim.widget.Slider(Parent=hFigure, Units="pixels", ...
 %           Position=[20, 20, 200, 20], Min=1, Max=10, Value=1, ...
-%           NumTicks=9, Callback=@(src, value) disp(value));
+%           NumSteps=9, Callback=@(src, value) disp(value));
 %
 %   See also uim.widget.RangeSlider, uim.widget.ScrollBar
 
@@ -56,10 +56,10 @@ classdef Slider < handle
         % are ignored.
         Value = 0.5
 
-        % Number of intervals between allowed values, which are
-        % Min + k*Step for k = 0 to NumTicks; sets Step. NumTicks + 1 tick
-        % marks are drawn, one at each allowed value from Min to Max.
-        NumTicks (1,1) double {mustBeInteger, mustBePositive} = 100
+        % Number of equal steps from Min to Max; sets Step. The allowed
+        % values are Min + k*Step for k = 0 to NumSteps, and a tick mark
+        % is drawn at each of them, NumSteps + 1 in all.
+        NumSteps (1,1) double {mustBeInteger, mustBePositive} = 100
 
         Parent = []                 % Figure, panel or axes to draw in (default: current figure); used at construction
 
@@ -99,7 +99,7 @@ classdef Slider < handle
     end
 
     properties (Dependent = true)
-        Step        % Value step size, (Max - Min)/NumTicks (read-only)
+        Step        % Value step size, (Max - Min)/NumSteps (read-only)
         FontSize    % Font size of the value label; NaN before the label exists
     end
 
@@ -421,10 +421,10 @@ classdef Slider < handle
             yCenter = pixelPosition(2) + pixelPosition(4) / 2;
 
             % One tick per allowed value, Min + k*Step for k = 0 to
-            % NumTicks. The ticks span the knob's travel with no edge
+            % NumSteps. The ticks span the knob's travel with no edge
             % inset, so the outer ticks sit under the knob centre at Min
             % and Max.
-            numTicks = obj.NumTicks + 1;
+            numTicks = obj.NumSteps + 1;
 
             if obj.OwnsAxes
                 % The knob travels over [Min, Max] in data units. The tick
@@ -549,7 +549,7 @@ classdef Slider < handle
             end
         end
 
-        function onNumTicksSet(obj)
+        function onNumStepsSet(obj)
             if ~obj.IsConstructed; return; end
             obj.redrawTicks()
         end
@@ -648,7 +648,7 @@ classdef Slider < handle
 %         end
 
         function stepSize = get.Step(obj)
-            stepSize = (obj.Max-obj.Min) / obj.NumTicks;
+            stepSize = (obj.Max-obj.Min) / obj.NumSteps;
         end
 
         function set.TextColor(obj, newValue)
@@ -700,9 +700,9 @@ classdef Slider < handle
             obj.onBarColorSet()
         end
 
-        function set.NumTicks(obj, newValue)
-            obj.NumTicks = newValue;
-            obj.onNumTicksSet()
+        function set.NumSteps(obj, newValue)
+            obj.NumSteps = newValue;
+            obj.onNumStepsSet()
         end
 
         function set.TickLength(obj, newValue)

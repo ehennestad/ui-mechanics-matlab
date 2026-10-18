@@ -89,7 +89,7 @@ classdef TestSliderDetails < matlab.unittest.TestCase
         function rangeSliderFractionalStepPrintsDecimals(testCase)
             [~, canvas] = createCanvas(testCase);
             slider = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 1, ...
-                "Low", 0.25, "High", 0.75, "NumTicks", 3);
+                "Low", 0.25, "High", 0.75, "NumSteps", 3);
             testCase.addTeardown(@deleteValid, slider);
 
             hLow = findobj(canvas.Axes, "Tag", "Range Slider Low");
@@ -105,7 +105,7 @@ classdef TestSliderDetails < matlab.unittest.TestCase
             hAxes = axes(hFigure, "Units", "pixels", "Position", [20, 20, 320, 120], ...
                 "XLim", [0, 320], "YLim", [0, 120]);
             slider = uim.widget.Slider("Parent", hAxes, "Position", [20, 40, 200, 30], ...
-                "Min", 0, "Max", 10, "Value", 5, "NumTicks", 8, "TickLength", 6);
+                "Min", 0, "Max", 10, "Value", 5, "NumSteps", 8, "TickLength", 6);
             testCase.addTeardown(@deleteValid, slider);
 
             hTicks = findobj(hAxes, "Type", "line");
@@ -128,7 +128,7 @@ classdef TestSliderDetails < matlab.unittest.TestCase
         function sliderTooltipUsesTheConfiguredExpression(testCase)
             hFigure = createHiddenFigure(testCase);
             slider = uim.widget.Slider("Parent", hFigure, "Min", 1, "Max", 10, ...
-                "Value", 4, "NumTicks", 9, "TooltipExpression", 'Z = %d');
+                "Value", 4, "NumSteps", 9, "TooltipExpression", 'Z = %d');
             testCase.addTeardown(@deleteValid, slider);
             hAxes = findall(hFigure, "Tag", "SlideBar Container");
             hLabel = findobj(hAxes, "Type", "text");
@@ -142,7 +142,7 @@ classdef TestSliderDetails < matlab.unittest.TestCase
         function sliderTooltipFallsBackToUnitsAndPrecision(testCase)
             hFigure = createHiddenFigure(testCase);
             slider = uim.widget.Slider("Parent", hFigure, "Min", 0, "Max", 1, ...
-                "Value", 0.5, "NumTicks", 100, "TooltipUnits", ' mm', ...
+                "Value", 0.5, "NumSteps", 100, "TooltipUnits", ' mm', ...
                 "TooltipPrecision", 3);
             testCase.addTeardown(@deleteValid, slider);
             hLabel = findobj(findall(hFigure, "Tag", "SlideBar Container"), "Type", "text");
@@ -309,13 +309,13 @@ classdef TestSliderDetails < matlab.unittest.TestCase
         function sliderDrawsATickAtEachAllowedValueInItsOwnAxes(testCase)
             hFigure = createHiddenFigure(testCase);
             slider = uim.widget.Slider("Parent", hFigure, "Units", "pixels", ...
-                "Position", [20, 20, 200, 30], "Min", 1, "Max", 4, "NumTicks", 2, ...
+                "Position", [20, 20, 200, 30], "Min", 1, "Max", 4, "NumSteps", 2, ...
                 "TickLength", 4);
             testCase.addTeardown(@deleteValid, slider);
             hTicks = findobj(findall(hFigure, "Tag", "SlideBar Container"), "Type", "line");
 
-            testCase.assertNumElements(hTicks, slider.NumTicks + 1, ...
-                "NumTicks intervals give NumTicks + 1 ticks.");
+            testCase.assertNumElements(hTicks, slider.NumSteps + 1, ...
+                "NumSteps steps give NumSteps + 1 ticks.");
             testCase.verifyEqual(tickPositions(hTicks), [1, 2.5, 4], "AbsTol", 1e-12, ...
                 "The ticks sit at Min + k*Step in data units.");
         end
@@ -325,7 +325,7 @@ classdef TestSliderDetails < matlab.unittest.TestCase
             hAxes = axes(hFigure, "Units", "pixels", "Position", [20, 20, 320, 120], ...
                 "XLim", [0, 320], "YLim", [0, 120]);
             slider = uim.widget.Slider("Parent", hAxes, "Position", [20, 40, 200, 30], ...
-                "Min", 1, "Max", 4, "Value", 1, "NumTicks", 2, "TickLength", 4);
+                "Min", 1, "Max", 4, "Value", 1, "NumSteps", 2, "TickLength", 4);
             testCase.addTeardown(@deleteValid, slider);
             hTicks = findobj(hAxes, "Type", "line");
             hKnob = findobj(hAxes, "Type", "patch", "FaceColor", slider.KnobFaceColorInactive);
@@ -349,21 +349,21 @@ classdef TestSliderDetails < matlab.unittest.TestCase
                 "The last tick is under the knob centre at Max.");
         end
 
-        function sliderRedrawsTicksWhenNumTicksChanges(testCase)
+        function sliderRedrawsTicksWhenNumStepsChanges(testCase)
             hFigure = createHiddenFigure(testCase);
             hAxes = axes(hFigure, "Units", "pixels", "Position", [20, 20, 320, 120], ...
                 "XLim", [0, 320], "YLim", [0, 120]);
             slider = uim.widget.Slider("Parent", hAxes, "Position", [20, 40, 200, 30], ...
-                "Min", 0, "Max", 10, "NumTicks", 4, "TickLength", 4);
+                "Min", 0, "Max", 10, "NumSteps", 4, "TickLength", 4);
             testCase.addTeardown(@deleteValid, slider);
             numPatches = numel(findobj(hAxes, "Type", "patch"));
             testCase.assertNumElements(findobj(hAxes, "Type", "line"), 5);
 
-            slider.NumTicks = 2;
+            slider.NumSteps = 2;
             testCase.verifyNumElements(findobj(hAxes, "Type", "line"), 3, ...
                 "Fewer intervals remove ticks.");
 
-            slider.NumTicks = 10;
+            slider.NumSteps = 10;
             hTicks = findobj(hAxes, "Type", "line");
             testCase.verifyNumElements(hTicks, 11, "More intervals add ticks.");
             testCase.verifyEqual(diff(tickPositions(hTicks)), ...
@@ -378,7 +378,7 @@ classdef TestSliderDetails < matlab.unittest.TestCase
             hAxes = axes(hFigure, "Units", "pixels", "Position", [20, 20, 320, 120], ...
                 "XLim", [0, 320], "YLim", [0, 120]);
             slider = uim.widget.Slider("Parent", hAxes, "Position", [20, 40, 200, 30], ...
-                "NumTicks", 4);
+                "NumSteps", 4);
             testCase.addTeardown(@deleteValid, slider);
             testCase.assertFalse(ishold(hAxes));
             numPatches = numel(findobj(hAxes, "Type", "patch"));
@@ -390,14 +390,14 @@ classdef TestSliderDetails < matlab.unittest.TestCase
                 "The track, knob and background survive in an axes with hold off.");
         end
 
-        function sliderRejectsANonIntegerNumTicks(testCase)
+        function sliderRejectsANonIntegerNumSteps(testCase)
             hFigure = createHiddenFigure(testCase);
             slider = uim.widget.Slider("Parent", hFigure);
             testCase.addTeardown(@deleteValid, slider);
 
-            testCase.verifyError(@() setProperty(slider, "NumTicks", 2.5), ...
+            testCase.verifyError(@() setProperty(slider, "NumSteps", 2.5), ...
                 "MATLAB:validators:mustBeInteger");
-            testCase.verifyError(@() setProperty(slider, "NumTicks", 0), ...
+            testCase.verifyError(@() setProperty(slider, "NumSteps", 0), ...
                 "MATLAB:validators:mustBePositive");
         end
 

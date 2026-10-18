@@ -18,7 +18,7 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
         function sliderInOwnAxesTracksValue(testCase)
             hFigure = createHiddenFigure(testCase, [100, 100, 400, 300]);
             slider = uim.widget.Slider("Parent", hFigure, "Min", -1, "Max", 1, ...
-                "Value", 0.5, "NumTicks", 20, "TickLength", 4);
+                "Value", 0.5, "NumSteps", 20, "TickLength", 4);
             testCase.addTeardown(@deleteValid, slider);
 
             hAxes = findall(hFigure, "Tag", "SlideBar Container");
@@ -47,7 +47,7 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
         function sliderTrackPressMovesValueAndNotifies(testCase)
             hFigure = createHiddenFigure(testCase, [100, 100, 400, 300]);
             slider = uim.widget.Slider("Parent", hFigure, "Min", -1, "Max", 1, ...
-                "Value", 0.25, "NumTicks", 20);
+                "Value", 0.25, "NumSteps", 20);
             testCase.addTeardown(@deleteValid, slider);
             slider.Callback = @(~, value) setappdata(hFigure, "SliderValue", value);
 
@@ -178,11 +178,11 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
             hTrack.ButtonDownFcn(hTrack, [])
 
             % The press goes through the figure's pointer position and is
-            % snapped to a step of (Max - Min)/NumTicks, so allow one pixel
+            % snapped to a step of (Max - Min)/NumSteps, so allow one pixel
             % of track plus half a step.
             valueRange = slider.Max - slider.Min;
             trackLength = slider.Position(3) - sum(slider.Padding([1, 3]));
-            tolerance = valueRange/trackLength + valueRange/slider.NumTicks/2;
+            tolerance = valueRange/trackLength + valueRange/slider.NumSteps/2;
 
             testCase.assertTrue(isappdata(hFigure, "Range"), "Callback fired.");
             reported = getappdata(hFigure, "Range");
