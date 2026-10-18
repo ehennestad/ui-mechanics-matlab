@@ -377,7 +377,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         function updateSize(obj, mode)
             if ~obj.IsConstructed; return; end
 
-            if nargin < 2; mode = obj.PositionMode; end
+            if nargin < 2; mode = obj.SizeMode; end
             updateSize@uim.abstract.Component(obj, mode)
             obj.plotTrack()
             obj.plotKnobs()

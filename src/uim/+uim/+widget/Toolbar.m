@@ -362,7 +362,7 @@ classdef Toolbar < uim.abstract.Container
         end
 
         function updateSize(obj, mode)
-            if nargin < 2; mode = obj.PositionMode; end
+            if nargin < 2; mode = obj.SizeMode; end
             if ~obj.IsConstructed; return; end
 
             switch obj.BarExtensionMode
