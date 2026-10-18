@@ -525,6 +525,11 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
             obj.onStyleChanged()
         end
 
+        function set.BorderWidth(obj, newValue)
+            obj.BorderWidth = newValue;
+            obj.onStyleChanged()
+        end
+
         function set.CornerRadius(obj, newValue)
             obj.CornerRadius = newValue;
             obj.onShapeChanged()
