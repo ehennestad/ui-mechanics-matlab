@@ -73,6 +73,25 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
                 "AbsTol", 1e-9, "The toolbar stays anchored at the top edge.");
         end
 
+        function toolbarAppliesOptionsGivenAtConstruction(testCase)
+            [~, canvas] = createCanvas(testCase);
+
+            vertical = uim.widget.Toolbar(canvas, Orientation="vertical");
+            testCase.addTeardown(@deleteValid, vertical);
+            testCase.verifyEqual(vertical.Orientation, 'vertical');
+
+            light = uim.widget.Toolbar(canvas, DarkMode="off");
+            testCase.addTeardown(@deleteValid, light);
+            testCase.verifyEqual(light.BackgroundColor, 'w', ...
+                "DarkMode='off' gives the light background.");
+
+            hidden = uim.widget.Toolbar(canvas, Visible="off", Location="northwest");
+            testCase.addTeardown(@deleteValid, hidden);
+            hBackground = findobj(canvas.Axes, "Type", "patch", "Visible", "on");
+            testCase.verifyNumElements(hBackground, 2, ...
+                "Only the two visible toolbars show a background.");
+        end
+
         function toolbarLaysOutButtonsAndSeparators(testCase)
             [~, canvas] = createCanvas(testCase);
             toolbar = uim.widget.Toolbar(canvas, "Location", "northwest");
