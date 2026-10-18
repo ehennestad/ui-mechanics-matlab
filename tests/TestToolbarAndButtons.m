@@ -143,6 +143,43 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
         end
     end
 
+    methods (Test) % Tooltip placement
+
+        function tooltipStaysInsideTheVerticalLimits(testCase)
+            [hFigure, canvas] = createCanvas(testCase);
+            yLim = canvas.Axes.YLim;
+
+            canvas.showTooltip('Near the bottom', [100, yLim(1) + 2])
+            hTooltip = findall(hFigure, "Type", "text", "String", "Near the bottom");
+            testCase.verifyGreaterThanOrEqual(hTooltip.Extent(2), yLim(1), ...
+                "A tooltip near the bottom is moved up to fit.");
+
+            canvas.showTooltip('Near the top', [100, yLim(2) - 2])
+            hTooltip = findall(hFigure, "Type", "text", "String", "Near the top");
+            testCase.verifyEqual(hTooltip.Position(2), yLim(2) - 2, "AbsTol", 1e-9, ...
+                "A tooltip that fits below its point is not moved.");
+        end
+
+        function hoveringAControlOnAPrivateCanvasWorks(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 500, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            toolbar = uim.widget.Toolbar(uipanel(hFigure), "CanvasMode", "private");
+            testCase.addTeardown(@deleteValid, toolbar);
+            button = toolbar.addButton("Text", "A", "Tooltip", "Tip");
+
+            testCase.assumeTrue(exist("iptGetPointerBehavior", "file") > 0, ...
+                "Hover needs the Image Processing Toolbox pointer manager.");
+            patches = findall(hFigure, "Type", "patch");
+            isPressable = arrayfun(@(h) isa(h.ButtonDownFcn, "function_handle") && ...
+                contains(func2str(h.ButtonDownFcn), "onMousePressed"), patches);
+            hBackground = patches(find(isPressable, 1));
+            behavior = iptGetPointerBehavior(hBackground);
+            testCase.verifyWarningFree(@() behavior.enterFcn(hFigure, [0, 0]));
+            testCase.verifyWarningFree(@() behavior.exitFcn(hFigure, [0, 0]));
+            testCase.verifyTrue(isvalid(button));
+        end
+    end
+
     methods (Test) % Button
 
         function buttonTextFollowsAlignmentSettings(testCase)
