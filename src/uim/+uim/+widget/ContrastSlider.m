@@ -136,8 +136,9 @@ classdef ContrastSlider < uim.widget.RangeSlider
     methods % Set/Get
 
         function set.DataLimits(obj, newValue)
-            % Limits wholly outside the new range would be clamped to a
-            % single value, so they are reset to the full range instead
+            % Setting Min and Max clamps Low and High into the new range,
+            % which collapses limits that lie wholly outside it to one
+            % value; such limits are set to the full range
             isOutsideNewRange = obj.High <= newValue(1) || obj.Low >= newValue(2);
 
             % Assign in an order that keeps Min < Max at every step: a
