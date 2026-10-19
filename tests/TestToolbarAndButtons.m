@@ -73,6 +73,91 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
                 "AbsTol", 1e-9, "The toolbar stays anchored at the top edge.");
         end
 
+        function horizontalToolbarCentresButtonsAcrossItsHeight(testCase)
+            [~, canvas] = createCanvas(testCase);
+            toolbar = uim.widget.Toolbar(canvas, "Location", "southwest");
+            testCase.addTeardown(@deleteValid, toolbar);
+            button = toolbar.addButton("Text", "A");
+
+            gapBelow = button.Position(2) - toolbar.Position(2);
+            gapAbove = sum(toolbar.Position([2, 4])) - sum(button.Position([2, 4]));
+            testCase.verifyEqual(gapBelow, gapAbove, "AbsTol", 1e-9, ...
+                "The button is centred across the bar.");
+        end
+
+        function toolbarCentresAButtonOfAGivenWidthAndHeight(testCase)
+            [~, canvas] = createCanvas(testCase);
+            toolbar = uim.widget.Toolbar(canvas, "Location", "southwest", ...
+                "Size", [inf, 30], "NewButtonSize", [40, 18]);
+            testCase.addTeardown(@deleteValid, toolbar);
+            button = toolbar.addButton("Text", "A");
+
+            testCase.verifyEqual(button.Position(3:4), [40, 18], ...
+                "The button takes NewButtonSize as [width, height].");
+            gapBelow = button.Position(2) - toolbar.Position(2);
+            gapAbove = sum(toolbar.Position([2, 4])) - sum(button.Position([2, 4]));
+            testCase.verifyEqual(gapBelow, gapAbove, "AbsTol", 1e-9, ...
+                "The button is centred across the bar by its height.");
+        end
+
+        function verticalToolbarCentresButtonsAndPadsItsEnds(testCase)
+            [~, canvas] = createCanvas(testCase);
+            toolbar = uim.widget.Toolbar(canvas, Location="west", Orientation="vertical", ...
+                Padding=[3, 10, 3, 6]);
+            testCase.addTeardown(@deleteValid, toolbar);
+            buttons = cell(1, 3);
+            for k = 1:3
+                buttons{k} = toolbar.addButton("Text", string(k));
+            end
+
+            barLeft = toolbar.Position(1);
+            barRight = sum(toolbar.Position([1, 3]));
+            for k = 1:3
+                position = buttons{k}.Position;
+                testCase.verifyEqual(position(1) - barLeft, barRight - sum(position([1, 3])), ...
+                    "AbsTol", 1e-9, "Button " + k + " is centred across the bar.");
+            end
+            testCase.verifyEqual(buttons{1}.Position(2) - toolbar.Position(2), 10, "AbsTol", 1e-9, ...
+                "The bottom padding, Padding(2), is the gap below the first button.");
+            testCase.verifyEqual(sum(toolbar.Position([2, 4])) - sum(buttons{3}.Position([2, 4])), 6, ...
+                "AbsTol", 1e-9, "The top padding, Padding(4), is the gap above the last button.");
+        end
+
+        function privateToolbarStaysInsideAPanelBorder(testCase)
+            hFigure = figure("Visible", "off", "Position", [100, 100, 500, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure, "Units", "pixels", "Position", [20, 20, 200, 60], ...
+                "BorderType", "etchedin");
+            toolbar = uim.widget.Toolbar(hPanel, "CanvasMode", "private", "Location", "northwest");
+            testCase.addTeardown(@deleteValid, toolbar);
+            toolbar.addButton("Text", "P");
+
+            hChild = axes(hPanel, "Units", "normalized", "Position", [0, 0, 1, 1], "Visible", "off");
+            contentHeight = getpixelposition(hChild) * [0; 0; 0; 1];
+            % Pixel positions start at 1, so the top pixel row is y + height - 1
+            testCase.verifyLessThanOrEqual(sum(toolbar.Position([2, 4])) - 1, contentHeight, ...
+                "A 'northwest' toolbar ends inside the panel's content area.");
+        end
+
+        function toolbarAppliesOptionsGivenAtConstruction(testCase)
+            [~, canvas] = createCanvas(testCase);
+
+            vertical = uim.widget.Toolbar(canvas, Orientation="vertical");
+            testCase.addTeardown(@deleteValid, vertical);
+            testCase.verifyEqual(vertical.Orientation, 'vertical');
+
+            light = uim.widget.Toolbar(canvas, DarkMode="off");
+            testCase.addTeardown(@deleteValid, light);
+            testCase.verifyEqual(light.BackgroundColor, 'w', ...
+                "DarkMode='off' gives the light background.");
+
+            hidden = uim.widget.Toolbar(canvas, Visible="off", Location="northwest");
+            testCase.addTeardown(@deleteValid, hidden);
+            hBackground = findobj(canvas.Axes, "Type", "patch", "Visible", "on");
+            testCase.verifyNumElements(hBackground, 2, ...
+                "Only the two visible toolbars show a background.");
+        end
+
         function toolbarLaysOutButtonsAndSeparators(testCase)
             [~, canvas] = createCanvas(testCase);
             toolbar = uim.widget.Toolbar(canvas, "Location", "northwest");
@@ -145,6 +230,39 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
 
     methods (Test) % Button
 
+        function tooltipStaysInsideTheVerticalLimits(testCase)
+            [hFigure, canvas] = createCanvas(testCase);
+            yLim = canvas.Axes.YLim;
+
+            canvas.showTooltip('Near the bottom', [100, yLim(1) + 2])
+            hTooltip = findall(hFigure, "Type", "text", "String", "Near the bottom");
+            testCase.verifyGreaterThanOrEqual(hTooltip.Extent(2), yLim(1), ...
+                "A tooltip near the bottom is moved up to fit.");
+
+            canvas.showTooltip('Near the top', [100, yLim(2) - 2])
+            hTooltip = findall(hFigure, "Type", "text", "String", "Near the top");
+            testCase.verifyEqual(hTooltip.Position(2), yLim(2) - 2, "AbsTol", 1e-9, ...
+                "A tooltip that fits below its point is not moved.");
+        end
+
+        function hoveringAControlOnAPrivateCanvasWorks(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 500, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            toolbar = uim.widget.Toolbar(uipanel(hFigure), "CanvasMode", "private");
+            testCase.addTeardown(@deleteValid, toolbar);
+            button = toolbar.addButton("Text", "A", "Tooltip", "Tip");
+
+            testCase.assumeTrue(exist("iptGetPointerBehavior", "file") > 0, ...
+                "Hover needs the Image Processing Toolbox pointer manager.");
+            patches = findall(hFigure, "Type", "patch");
+            isPressable = arrayfun(@(h) isa(h.ButtonDownFcn, "function_handle") && ...
+                contains(func2str(h.ButtonDownFcn), "onMousePressed"), patches);
+            hBackground = patches(find(isPressable, 1));
+            behavior = iptGetPointerBehavior(hBackground);
+            testCase.verifyWarningFree(@() behavior.enterFcn(hFigure, [0, 0]));
+            testCase.verifyWarningFree(@() behavior.exitFcn(hFigure, [0, 0]));
+            testCase.verifyTrue(isvalid(button));
+        end
         function buttonTextFollowsAlignmentSettings(testCase)
             [~, canvas] = createCanvas(testCase);
             button = uim.control.Button(canvas, "Text", "Go", "Position", [10, 10, 120, 40], ...

@@ -10,9 +10,9 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 %
 %   indicator = uim.widget.ChannelIndicator(parent) creates an indicator
 %   for one channel. If parent is an axes, the indicators are drawn into
-%   it, and the axes must have hold on (NextPlot 'add'); otherwise the
-%   indicator creates its own invisible pixel-unit axes in parent, for
-%   example a figure or uipanel.
+%   it, added to its existing content; otherwise the indicator creates
+%   its own invisible pixel-unit axes in parent, for example a figure or
+%   uipanel.
 %
 %   indicator = uim.widget.ChannelIndicator(parent, Name=Value) also sets
 %   public properties, for example
@@ -30,12 +30,12 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 %                       uim.utility.wavelengthToRgb, and "Make Current
 %                       Colors Default"
 %
-%   Limitations:
-%       NumChannels cannot exceed the number of entries in ChannelColors
-%       (six by default); drawing more indicators raises
-%       MATLAB:badsubscript. The indicators are placed from Position(1)
-%       when they are drawn; changing Position(1:2) later does not move
-%       them. Visible and BackgroundColor have no effect on the graphics.
+%   NumChannels cannot exceed the number of entries in ChannelColors (six
+%   by default); more raises uim:ChannelIndicator:TooFewColors. The
+%   indicators start at Position(1), ChannelIndicatorSpacing pixels
+%   apart, and are centred on y = 0; changing Position(1) moves them.
+%   Visible hides and shows them. BackgroundColor has no effect on the
+%   graphics.
 %
 %   See also uim.widget.PlaybackControl, uim.widget.PlaneSwitcher
 
@@ -151,6 +151,7 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
             obj.IsConstructed = true;
 
+            obj.assertEnoughColors(obj.NumChannels)
             obj.updateSize()
             obj.createWidgetComponents()
         end
@@ -194,6 +195,11 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         end
 
         function set.NumChannels(obj, newValue)
+            % During option parsing ChannelColors may not be assigned
+            % yet; the constructor checks the count once both are known
+            if obj.IsConstructed                                    %#ok<MCSUP>
+                obj.assertEnoughColors(newValue)
+            end
             obj.NumChannels = newValue;
             obj.onNumChannelsChanged()
         end
@@ -204,6 +210,7 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         end
 
         function set.ChannelColors(obj, value)
+            mustBeColorList(value)
             oldColors = obj.ChannelColors;
             obj.ChannelColors = value;
             obj.postSetChannelColors(oldColors)
@@ -292,11 +299,10 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         %
         %   indicator.selectChannel(channelNum) gives indicator channelNum
         %   a white outline with LineWidth 1 and the other indicators a
-        %   light grey outline. It does not change CurrentChannels, and
-        %   the other indicators keep their LineWidth.
+        %   light grey outline with LineWidth 0.5. It does not change
+        %   CurrentChannels.
 
-            set(obj.ChannelIndicators, 'EdgeColor', ones(1,3)*0.8);
-            set(obj.ChannelIndicators(channelNum), 'LineWidth', 0.5);
+            set(obj.ChannelIndicators, 'EdgeColor', ones(1,3)*0.8, 'LineWidth', 0.5);
             set(obj.ChannelIndicators(channelNum), 'EdgeColor', ones(1,3));
             set(obj.ChannelIndicators(channelNum), 'LineWidth', 1);
         end
@@ -330,7 +336,7 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
             dx = obj.Position(1);
 
             r = obj.ChannelIndicatorSize/2;
-            pad = 3;
+            pad = obj.ChannelIndicatorSpacing;
 
             for i = 1:obj.NumChannels
 
@@ -379,12 +385,20 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
             dx = obj.Position(1);
 
             r = obj.ChannelIndicatorSize/2;
-            pad = 3;
+            pad = obj.ChannelIndicatorSpacing;
 
             theta = deg2rad( [45:90:360, nan] );
             theta = theta([1,3,5,2,4]);
 
             [X, Y] = pol2cart(theta, ones(size(theta))*r);
+
+            % Plot replaces the content of an axes that is not held,
+            % including the indicator patches drawn just before. The
+            % previous NextPlot is restored on exit, also on an error.
+            hAxes = obj.Axes;
+            nextPlot = hAxes.NextPlot;
+            hAxes.NextPlot = 'add';
+            restoreNextPlot = onCleanup(@() set(hAxes, 'NextPlot', nextPlot));
 
             for i = 1:obj.NumChannels
 
@@ -552,15 +566,22 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
 
             if ~obj.IsConstructed; return; end
 
-            %obj.Axes.Visible = obj.Visible;
-
             if obj.Visible
+                set(obj.ChannelIndicators, 'Visible', 'on')
+                % The foreground shows whether a channel is off, so its
+                % visibility follows the channel state
+                for i = 1:obj.NumChannels
+                    obj.changeIndicatorAppearance(i)
+                end
             else
+                set([obj.ChannelIndicators, obj.ChannelForeground], 'Visible', 'off')
             end
         end
 
         function onLocationChanged(obj)
             if ~obj.IsConstructed; return; end
+            obj.drawIndicators()
+            obj.drawIndicatorState()
         end
 
         function onSizeChanged(obj)
@@ -590,6 +611,18 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         function onNumChannelsChanged(obj)
 
             obj.IsMouseOnButton = false(1, obj.NumChannels);
+
+            % Only NumChannels indicators are drawn and clickable, so the
+            % ones above it are deleted
+            numChannels = obj.NumChannels;
+            if numel(obj.ChannelIndicators) > numChannels
+                delete(obj.ChannelIndicators(numChannels+1:end))
+                obj.ChannelIndicators(numChannels+1:end) = [];
+            end
+            if numel(obj.ChannelForeground) > numChannels
+                delete(obj.ChannelForeground(numChannels+1:end))
+                obj.ChannelForeground(numChannels+1:end) = [];
+            end
 
             % Resize axes...
             % Todo: Call methods to change size / resize
@@ -625,10 +658,43 @@ classdef ChannelIndicator < uim.mixin.NameValueAssignable
         end
     end
 
+    methods (Access = private)
+
+        function assertEnoughColors(obj, numChannels)
+        %assertEnoughColors Require one ChannelColors entry per channel
+            if numChannels > numel(obj.ChannelColors)
+                error("uim:ChannelIndicator:TooFewColors", ...
+                    "NumChannels (%d) exceeds the number of ChannelColors (%d). " + ...
+                    "Assign at least %d colours to ChannelColors first.", ...
+                    numChannels, numel(obj.ChannelColors), numChannels)
+            end
+        end
+    end
+
     methods (Static, Access = private)
         function [labels, colors] = getColorOptions()
             labels = {'Red', 'Green', 'Blue', 'Cyan', 'Magenta', 'Yellow'};
             colors = {[1,0,0], [0,1,0], [0,0,1], [0,1,1], [1,0,1], [1,1,0]};
         end
+    end
+end
+
+function mustBeColorList(value)
+%mustBeColorList Require a cell array of colours (names or RGB triplets)
+    isColorList = iscell(value) && all(cellfun(@isColor, value));
+    if ~isColorList
+        error("uim:ChannelIndicator:InvalidChannelColors", ...
+            "ChannelColors must be a cell array of colours, each a colour name such as 'r' or an RGB triplet.")
+    end
+end
+
+function tf = isColor(value)
+%isColor True for a value validatecolor accepts as one colour
+    try
+        rgb = validatecolor(value);
+        tf = size(rgb, 1) == 1;
+    catch
+        % validatecolor raises for anything that is not a colour
+        tf = false;
     end
 end

@@ -10,8 +10,10 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 %   switcher = uim.widget.PlaneSwitcher(parent) creates a switcher for
 %   one plane. If parent is an axes, the button is drawn into it;
 %   otherwise the switcher creates its own invisible pixel-unit axes in
-%   parent, for example a figure or uipanel. The slider is created at
-%   construction, hidden, in the parent of that axes.
+%   parent, for example a figure or uipanel. With two or more planes the
+%   slider is created at construction, hidden, in the parent of that
+%   axes; with one plane there is nothing to switch and the button does
+%   nothing.
 %
 %   switcher = uim.widget.PlaneSwitcher(parent, Name=Value) also sets
 %   public properties, for example
@@ -19,12 +21,10 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 %       switcher = uim.widget.PlaneSwitcher(hPanel, NumPlanes=5, ...
 %           CurrentPlane=2, Callback=@(plane) disp(plane));
 %
-%   Limitations:
-%       NumPlanes is read when the slider is created; changing it later
-%       does not update the slider. The button is placed from Position
-%       when it is drawn; changing Position(1:2) later does not move it.
-%       Visible, BackgroundColor and PlaneSwitcherToggleButtonSize have no
-%       effect on the graphics.
+%   Changing NumPlanes updates the slider range. Changing Position(1:2)
+%   moves the button, and Visible hides the button and the slider.
+%   BackgroundColor and PlaneSwitcherToggleButtonSize have no effect on
+%   the graphics.
 %
 %   See also uim.widget.PlaybackControl, uim.widget.Slider,
 %   uim.widget.ChannelIndicator
@@ -39,7 +39,7 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 
     properties (Access = public)
         Visible matlab.lang.OnOffSwitchState = 'on' % Stored only; does not show or hide the switcher
-        NumPlanes = 1 % Number of planes, the slider's maximum; read when the slider is created
+        NumPlanes = 1 % Number of planes, the slider's maximum
 
         % CurrentPlane - Index of the current plane. Setting a scalar moves
         % the slider. While it holds more than one index, the slider is not
@@ -180,7 +180,11 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
         function createWidgetComponents(obj)
 
             obj.drawPlaneSwitcherToggleButton()
-            obj.drawPlaneSwitcherSlidebar()
+            % A slider needs Min < Max, so it only exists for two or more
+            % planes
+            if obj.NumPlanes > 1
+                obj.drawPlaneSwitcherSlidebar()
+            end
         end
 
         function drawPlaneSwitcherToggleButton(obj)
@@ -239,7 +243,8 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 
         function onPlaneSwitcherToggleButtonPushed(obj)
 
-            % Todo: Toggle rangebar visibility
+            if obj.NumPlanes < 2; return; end
+
             if isempty(obj.PlaneSwitcherSlider)
                 obj.drawPlaneSwitcherSlidebar()
                 return
@@ -263,15 +268,16 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 
             if ~obj.IsConstructed; return; end
 
-            %obj.Axes.Visible = obj.Visible;
-
-            if obj.Visible
-            else
+            obj.PlaneSwitcherToggleButton.Visible = obj.Visible;
+            % The slider opens from the button, so it closes with it
+            if ~obj.Visible && ~isempty(obj.PlaneSwitcherSlider)
+                obj.PlaneSwitcherSlider.Visible = 'off';
             end
         end
 
         function onLocationChanged(obj)
             if ~obj.IsConstructed; return; end
+            obj.drawPlaneSwitcherToggleButton()
         end
 
         function onSizeChanged(obj)
@@ -299,6 +305,16 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
         end
 
         function onNumPlanesChanged(obj)
+            if ~obj.IsConstructed || isempty(obj.PlaneSwitcherSlider); return; end
+
+            if obj.NumPlanes > 1
+                obj.PlaneSwitcherSlider.Max = obj.NumPlanes;
+                obj.PlaneSwitcherSlider.NumTicks = obj.NumPlanes - 1;
+            else
+                % One plane leaves nothing to switch
+                delete(obj.PlaneSwitcherSlider)
+                obj.PlaneSwitcherSlider = gobjects(0);
+            end
         end
 
         function onCurrentPlaneChanged(obj)

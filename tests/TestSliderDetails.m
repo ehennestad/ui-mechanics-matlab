@@ -72,6 +72,72 @@ classdef TestSliderDetails < matlab.unittest.TestCase
             testCase.verifyEqual(hLow.FaceColor, ones(1, 3)*0.8);
         end
 
+        function rangeSliderKnobHoverShowsTheHandPointer(testCase)
+            [hFigure, canvas] = createCanvas(testCase);
+            slider = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 100, ...
+                "Low", 20, "High", 80);
+            testCase.addTeardown(@deleteValid, slider);
+            hBackground = findobj(canvas.Axes, "Tag", "Range Slider Background");
+            hLow = findobj(canvas.Axes, "Tag", "Range Slider Low");
+            backgroundBehavior = iptGetPointerBehavior(hBackground);
+            knobBehavior = iptGetPointerBehavior(hLow);
+            testCase.assertNotEmpty(backgroundBehavior);
+            testCase.assertNotEmpty(knobBehavior);
+
+            % The pointer manager runs the exit function of the object the
+            % pointer leaves before the enter function of the one it enters
+            backgroundBehavior.enterFcn(hFigure, [0, 0])
+            backgroundBehavior.exitFcn(hFigure, [0, 0])
+            knobBehavior.enterFcn(hFigure, [0, 0])
+            testCase.verifyEqual(char(hFigure.Pointer), 'hand', ...
+                "The pointer is a hand over the knob.");
+
+            knobBehavior.exitFcn(hFigure, [0, 0])
+            testCase.verifyEqual(char(hFigure.Pointer), 'arrow', ...
+                "Leaving the knob restores the arrow.");
+
+            backgroundBehavior.enterFcn(hFigure, [0, 0])
+            testCase.verifyEqual(char(hFigure.Pointer), 'hand', ...
+                "Moving from the knob onto the background keeps the hand.");
+        end
+
+        function rangeSliderKnobHoverFollowsTheKnobColor(testCase)
+            [hFigure, canvas] = createCanvas(testCase);
+            slider = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 100, ...
+                "Low", 20, "High", 80, "KnobFaceColorInactive", [1, 0, 0]);
+            testCase.addTeardown(@deleteValid, slider);
+            hLow = findobj(canvas.Axes, "Tag", "Range Slider Low");
+
+            behavior = iptGetPointerBehavior(hLow);
+            behavior.enterFcn(hFigure, [0, 0])
+            testCase.verifyEqual(hLow.FaceColor, [1, 0.75, 0.75], "AbsTol", 1e-12, ...
+                "Hovering lightens KnobFaceColorInactive.");
+            behavior.exitFcn(hFigure, [0, 0])
+            testCase.verifyEqual(hLow.FaceColor, [1, 0, 0], ...
+                "Leaving the knob restores KnobFaceColorInactive.");
+        end
+
+        function rangeSliderPositionMovesTheWholeSlider(testCase)
+            [~, canvas] = createCanvas(testCase);
+            for sliderClass = ["RangeSlider", "ContrastSlider"]
+                if sliderClass == "RangeSlider"
+                    slider = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 10, ...
+                        "Position", [20, 20, 200, 30]);
+                else
+                    slider = uim.widget.ContrastSlider(canvas, "DataLimits", [0, 255], ...
+                        "Limits", [10, 200], "Position", [20, 20, 200, 30]);
+                end
+                hLow = findobj(canvas.Axes, "Tag", "Range Slider Low");
+                lowXBefore = mean(hLow.XData);
+
+                slider.Position = slider.Position + [50, 40, 0, 0];
+
+                testCase.verifyEqual(mean(hLow.XData), lowXBefore + 50, "AbsTol", 1e-6, ...
+                    sliderClass + ": the knob moves with Position.");
+                delete(slider)
+            end
+        end
+
         function rangeSliderReportsValuesWhileChanging(testCase)
             [hFigure, canvas] = createCanvas(testCase);
             slider = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 100, ...

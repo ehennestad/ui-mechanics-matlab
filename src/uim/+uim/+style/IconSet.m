@@ -62,7 +62,7 @@ classdef IconSet < uim.Handle
 
                 % Use builtin if a property is requested.
                 case '.'
-                    if ~isempty(obj.IconNames) && isscalar(s) && contains(s.subs, obj.IconNames)
+                    if ~isempty(obj.IconNames) && isscalar(s) && any(strcmp(s.subs, obj.IconNames))
                         if ~nargout
                             varargout = {obj.IconData.(s.subs)};
                         else
@@ -132,8 +132,7 @@ classdef IconSet < uim.Handle
         %   iconSet.addIcon(iconName, S) saves and adds the icons in the
         %   struct S (one field per icon) instead; iconName is not used.
         %
-        %   Calling addIcon without iconName raises an error, because
-        %   createIcon requires an icon name.
+        %   iconSet.addIcon() traces and adds every PNG file in IconDir.
 
             if nargin < 2
                 S = obj.createIcon(obj.IconDir);
@@ -189,12 +188,9 @@ classdef IconSet < uim.Handle
         %   iconSet.removeIcon(iconName) removes iconName from IconData and
         %   IconNames. The library file is not changed, so loadIcons or a
         %   new IconSet brings the icon back. A name that matches no icon
-        %   does nothing, but a name that is only part of an icon name
-        %   raises an error.
+        %   exactly does nothing.
 
-            isMatch = contains(obj.IconNames, iconName);
-
-            if any(isMatch)
+            if isfield(obj.IconData, iconName)
                 obj.IconData = rmfield(obj.IconData, iconName);
             end
 
@@ -238,9 +234,13 @@ classdef IconSet < uim.Handle
         %   created for the tracing and closed afterwards.
         %
         %   S = uim.style.IconSet.createIcon(rootDir, iconName, plotType)
-        %   sets the trace type: 'polygon' (default) or 'patch'. The
-        %   'patch' path calls an ImageVector method that does not exist
-        %   and raises an error.
+        %   sets the trace type: 'polygon' (default) traces the drawing as
+        %   one polygon object, and 'patch' traces each outer outline, with
+        %   its holes, as a shape of its own. Both give Shape and Color
+        %   fields.
+        %
+        %   S = uim.style.IconSet.createIcon(rootDir) traces every PNG file
+        %   in rootDir, with one field per file named after it.
 
             % Preallocate output
             S = struct.empty();
@@ -249,20 +249,22 @@ classdef IconSet < uim.Handle
 
             L = dir(fullfile(rootDir, '*.png'));
 
-            [~, iconName] = fileparts(iconName);
-
-            if nargin >= 2 || exist('iconName', 'var')
-                IND = find(strcmp({L.name}, [iconName, '.png'] ));
-            else
+            if nargin < 2 || isempty(iconName)
                 IND = 1:numel(L);
+            else
+                [~, iconName] = fileparts(iconName);
+                IND = find(strcmp({L.name}, [char(iconName), '.png'] ));
             end
 
             fig = figure('Visible', 'off');
             ax = axes(fig);
             axis equal
+            % Hold the axes so that each traced shape is added to it
+            hold(ax, 'on')
 
             for i = IND
                 imageName = L(i).name;
+                [~, thisIconName] = fileparts(imageName);
 
                 loadPath = fullfile(rootDir, imageName);
 
@@ -272,31 +274,31 @@ classdef IconSet < uim.Handle
 
                 switch plotType
                     case 'polygon'
-                        % Get the shape and the colors and save to a mat-file
                         polyShape = arrayfun(@(h) h.Shape, hP, 'uni', 0);
-                        colors = arrayfun(@(h) h.FaceColor, hP, 'uni', 0);
-
-                        V = struct('Shape', polyShape, 'Color', colors);
-                        delete(hP)
-
-                        hV = uim.graphics.ImageVector(ax, V);
 
                     case 'patch'
-                        V = struct('Faces', {hP.Faces}, 'Vertices', {hP.Vertices}, ...
-                            'FaceColor', {hP.FaceColor}, 'EdgeColor', {'none'});
-                        delete(hP)
-
-                        hV = uim.graphics.ImageVector(ax, V);
-                        hV.center()
+                        % ImageVector draws polyshapes; each patch outline
+                        % has its holes spliced in, which polyshape splits
+                        % back into a boundary and holes
+                        warningState = warning('off', 'MATLAB:polyshape:repairedBySimplify');
+                        polyShape = arrayfun(@(h) polyshape(h.Vertices(:,1), h.Vertices(:,2)), ...
+                            hP, 'uni', 0);
+                        warning(warningState)
                 end
+                colors = arrayfun(@(h) h.FaceColor, hP, 'uni', 0);
+
+                V = struct('Shape', polyShape, 'Color', colors);
+                delete(hP)
+
+                hV = uim.graphics.ImageVector(ax, V);
 
                 % normalize vector image to have height 1.
                 hV.Height = hV.Height/hV.Height;
 
                 if isempty(S)
-                    S = struct(iconName, hV.getVectorStruct);
+                    S = struct(thisIconName, hV.getVectorStruct);
                 else
-                    S.(iconName) = hV.getVectorStruct;
+                    S.(thisIconName) = hV.getVectorStruct;
                 end
 
                 delete(hV)

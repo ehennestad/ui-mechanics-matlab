@@ -363,6 +363,29 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
     methods (Access = protected)
 
+        function resize(obj)
+        %resize Redraw the slider after its Size changes
+            resize@uim.abstract.Control(obj)
+            obj.redrawSliderParts()
+        end
+
+        function relocate(obj, shift)
+        %relocate Redraw the slider after its location changes
+            relocate@uim.abstract.Control(obj, shift)
+            obj.redrawSliderParts()
+        end
+
+        function redrawSliderParts(obj)
+        %redrawSliderParts Redraw the track, knobs and labels at Position
+        %
+        %   Component redraws only the background when Position or Size
+        %   is assigned, so the slider redraws the rest itself.
+            obj.plotTrack()
+            obj.plotKnobs()
+            obj.plotText()
+            obj.plotLabel()
+        end
+
         function updateLocation(obj, mode)
             if ~obj.IsConstructed; return; end
 
@@ -377,7 +400,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         function updateSize(obj, mode)
             if ~obj.IsConstructed; return; end
 
-            if nargin < 2; mode = obj.PositionMode; end
+            if nargin < 2; mode = obj.SizeMode; end
             updateSize@uim.abstract.Component(obj, mode)
             obj.plotTrack()
             obj.plotKnobs()
@@ -633,19 +656,36 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         end
 
         function onMouseEnterKnob(obj, hSource)
-        %onMouseEnterKnob Lighten a knob while the pointer rests on it
+        %onMouseEnterKnob Lighten a knob and show the hand pointer
+        %
+        %   The hover colour is KnobFaceColorInactive moved three
+        %   quarters of the way to white (0.8 grey becomes 0.95). The
+        %   knob has its own pointer behavior, so entering it runs the
+        %   exit function of the background below, which sets the
+        %   arrow; the hand is set again here.
 
             if ~obj.IsKnobPressed
-                hSource.FaceColor = ones(1,3) * 0.95;
+                faceColor = validatecolor(obj.KnobFaceColorInactive);
+                hSource.FaceColor = faceColor + (1 - faceColor) * 0.75;
             end
+
+            hFigure = ancestor(hSource, 'figure');
+            hFigure.Pointer = 'hand';
         end
 
         function onMouseExitKnob(obj, hSource)
-        %onMouseExitKnob Restore a knob when the pointer leaves it
+        %onMouseExitKnob Restore a knob and the arrow pointer
+        %
+        %   When the pointer moves from the knob onto the background, the
+        %   background's enter function runs after this and sets the
+        %   hand again.
 
             if ~obj.IsKnobPressed
-                hSource.FaceColor = ones(1,3) * 0.8;
+                hSource.FaceColor = obj.KnobFaceColorInactive;
             end
+
+            hFigure = ancestor(hSource, 'figure');
+            hFigure.Pointer = 'arrow';
         end
     end
 

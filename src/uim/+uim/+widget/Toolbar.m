@@ -21,12 +21,16 @@ classdef Toolbar < uim.abstract.Container
 %   is not supported when parent is an axes and raises
 %   uim:Container:PrivateCanvasUnsupportedOnOverlay.
 %
-%   Two options do not take full effect at construction, because the type
-%   defaults (see getTypeDefaults) are assigned after them: Orientation is
-%   overridden by the IsFixedSize default, and the background colours that
-%   DarkMode="off" sets are overridden by the BackgroundColor and
-%   BackgroundAlpha defaults. Set these two properties after
-%   construction, and set Orientation before adding buttons.
+%   Name-value options are assigned after the type defaults (see
+%   getTypeDefaults), so Orientation and DarkMode given at construction
+%   take effect. Set Orientation before adding buttons.
+%
+%   Padding is [left, bottom, right, top] in pixels, as for other
+%   components. Along the bar it sets the gaps before the first and after
+%   the last button: Padding(1) and Padding(3) for a horizontal toolbar,
+%   Padding(2) and Padding(4) for a vertical one. Buttons are centred
+%   across the bar's thickness (Size across the bar), so the padding
+%   across the bar is not used.
 %
 %   Example:
 %       toolbar = uim.widget.Toolbar(hAxes, Location="northeast");
@@ -160,7 +164,10 @@ classdef Toolbar < uim.abstract.Container
 
             obj@uim.abstract.Container(hParent, varargin{:})
 
-            % Toolbar specific construction....
+            % Visible can be assigned before the background exists
+            if ~isempty(obj.Background)
+                obj.Background.Visible = obj.Visible;
+            end
 
             obj.IsConstructed = true;
 
@@ -362,7 +369,7 @@ classdef Toolbar < uim.abstract.Container
         end
 
         function updateSize(obj, mode)
-            if nargin < 2; mode = obj.PositionMode; end
+            if nargin < 2; mode = obj.SizeMode; end
             if ~obj.IsConstructed; return; end
 
             switch obj.BarExtensionMode
@@ -385,8 +392,8 @@ classdef Toolbar < uim.abstract.Container
 
             [~, extent] = obj.getButtonExtentAlongLength();
 
-            % A short side fixed by IsFixedSize keeps its set size, so
-            % Size [inf, 20] stays a 20 px high bar
+            % A short side fixed by IsFixedSize keeps its set size: Size
+            % [inf, 20] gives a 20 px high bar
             if obj.IsFixedSize(dimS)
                 extent(dimS) = obj.Position_(dimS+2);
             elseif obj.NumButtons == 0
@@ -427,20 +434,20 @@ classdef Toolbar < uim.abstract.Container
 
         function setNextButtonPosition(obj)
 
-            if isempty(obj.AllButtonPosition) % Initialize
-                lastButtonPosition = [obj.CanvasPosition(1:2) + obj.Padding(1:2), 0, 0];
-            else
-                lastButtonPosition = obj.AllButtonPosition(end, :);
-            end
-
             i = obj.DimL_;
             j = obj.DimS_;
 
-            spacing = obj.Spacing .* double(obj.NumButtons>0);
-
-            pos(i) = sum(lastButtonPosition([i,i+2])) + spacing;
-            pos(j) = obj.CanvasPosition(j) + obj.Padding(j);
-            pos(3:4) = obj.NewButtonSize;
+            pos = zeros(1, 4);
+            if isempty(obj.AllButtonPosition)
+                pos(i) = obj.CanvasPosition(i) + obj.Padding(i);
+            else
+                lastButtonPosition = obj.AllButtonPosition(end, :);
+                pos(i) = sum(lastButtonPosition([i,i+2])) + obj.Spacing;
+            end
+            % NewButtonSize is a single size for both sides or [width, height]
+            buttonSize = [1, 1] .* obj.NewButtonSize;
+            pos(j) = obj.getCenteredPositionAcross(buttonSize(j));
+            pos(3:4) = buttonSize;
 
             obj.NextButtonPosition = pos;
         end
@@ -483,11 +490,11 @@ classdef Toolbar < uim.abstract.Container
             end
 
             shift(dimL) = offset;
-            shift(dimS) = obj.CanvasPosition(dimS) - obj.AllButtonPosition(1, dimS) + obj.Padding(dimS);
 
             if any(shift ~= 0)
                 obj.shiftChildren(shift)
             end
+            obj.centerButtonsAcross()
 
             %shift
 
@@ -532,6 +539,7 @@ classdef Toolbar < uim.abstract.Container
                 obj.AllButtonPosition(i,obj.DimL_) = anchorPoint;
                 anchorPoint = anchorPoint + obj.Buttons(i).Position(obj.DimL_+2) + obj.Spacing;
             end
+            obj.centerButtonsAcross()
 
             if strcmp(obj.BackgroundMode, 'wrap')
                 obj.redrawBackground()
@@ -565,6 +573,22 @@ classdef Toolbar < uim.abstract.Container
                 obj.Buttons(i).Position(1:2) = obj.Buttons(i).Position(1:2) + shift(1:2);
                 obj.AllButtonPosition(i,:) = obj.Buttons(i).Position;
             end
+        end
+
+        function centerButtonsAcross(obj)
+        %centerButtonsAcross Centre each button across the bar's thickness
+            dimS = obj.DimS_;
+            for i = 1:obj.NumButtons
+                buttonSize = obj.Buttons(i).Position(dimS+2);
+                obj.Buttons(i).Position(dimS) = obj.getCenteredPositionAcross(buttonSize);
+                obj.AllButtonPosition(i,:) = obj.Buttons(i).Position;
+            end
+        end
+
+        function position = getCenteredPositionAcross(obj, buttonSize)
+        %getCenteredPositionAcross Position across the bar that centres a button of buttonSize
+            dimS = obj.DimS_;
+            position = obj.CanvasPosition(dimS) + (obj.CanvasPosition(dimS+2) - buttonSize) / 2;
         end
 
         function redrawBackground(obj)
@@ -630,6 +654,9 @@ classdef Toolbar < uim.abstract.Container
         end
 
         function onVisibleChanged(obj, newValue)
+            % The name-value options are assigned before the background is
+            % created; the constructor applies Visible to it afterwards
+            if isempty(obj.Background); return; end
             obj.Background.Visible = newValue;
             for i = 1:obj.NumButtons
                 obj.Buttons(i).Visible = newValue;
