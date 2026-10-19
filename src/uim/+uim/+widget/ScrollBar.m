@@ -1,4 +1,4 @@
-classdef ScrollBar < uim.Handle
+classdef ScrollBar < uim.Handle & matlab.mixin.SetGet
 %ScrollBar A scrollbar drawn in its own axes inside a panel
 %
 %   h = uim.widget.ScrollBar(hParent) creates a scrollbar in hParent, a
@@ -8,8 +8,10 @@ classdef ScrollBar < uim.Handle
 %   location.
 %
 %   h = uim.widget.ScrollBar(hParent, Name=Value) also sets public
-%   properties. Names must match the property names exactly; they are
-%   assigned in the order given.
+%   properties. Names are case-insensitive and may be abbreviated; a name
+%   that matches no public property raises an error. Values are assigned
+%   in the order the properties are defined in the class, so Callback is
+%   not called for a Value given at construction.
 %
 %   The orientation follows the shape of the scrollbar's axes at
 %   construction: horizontal when it is wider than tall, vertical
@@ -104,19 +106,21 @@ classdef ScrollBar < uim.Handle
 
     methods
 
-        function obj = ScrollBar(parentContainer, varargin)
+        function obj = ScrollBar(parentContainer, options)
         %ScrollBar Create a scrollbar in a panel
         %
         %   h = uim.widget.ScrollBar(hParent, Name=Value). See the class
         %   help for the inputs.
 
+            arguments
+                parentContainer
+                options.?uim.widget.ScrollBar
+            end
+
             % make assertions, e.g. check that its a valid figure/panel.
             obj.Parent = parentContainer;
 
-            % Assign name value pairs to object.
-            for i = 1:2:numel(varargin)
-                obj.(varargin{i}) = varargin{i+1};
-            end
+            set(obj, options)
 
             obj.createScrollbar;
             obj.setPointerBehavior()
@@ -126,8 +130,6 @@ classdef ScrollBar < uim.Handle
 
             obj.IsInitialized = true;
             obj.redraw()
-
-            % Unwrap varargin
 
             % scrollerDirection: 'horizontal' | 'vertical'
             % scrollerWidthPixel

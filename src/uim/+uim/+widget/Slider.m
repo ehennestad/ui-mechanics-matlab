@@ -1,11 +1,12 @@
-classdef Slider < handle
+classdef Slider < matlab.mixin.SetGet
 %Slider A horizontal slider with a round knob, drawn in axes
 %
 %   slider = uim.widget.Slider(Name=Value) creates a slider. All options
 %   are name-value pairs naming public properties; there is no
 %   positional parent argument. Names are case-insensitive and may be
-%   abbreviated; unrecognized names are ignored. Step and FontSize
-%   cannot be set at construction.
+%   abbreviated; an unrecognized name raises an error. Step is
+%   read-only, and FontSize can only be set after construction: giving
+%   it as an option raises uim:Slider:FontSizeAtConstruction.
 %
 %   The Parent option selects how the slider is drawn:
 %     - A figure or panel (default: the current figure). The slider
@@ -129,13 +130,17 @@ classdef Slider < handle
 
     methods % Structor
 
-        function obj = Slider(varargin)
+        function obj = Slider(options)
         %Slider Create a slider
         %
         %   slider = uim.widget.Slider(Name=Value) creates a slider. See
         %   the class help for the options and drawing modes.
 
-            obj.parsevarargin(varargin)
+            arguments
+                options.?uim.widget.Slider
+            end
+
+            obj.assignOptions(options)
 
             obj.createSlider()
 
@@ -161,39 +166,38 @@ classdef Slider < handle
     end
 
     methods (Access = private) % Initialization
-        function parsevarargin(obj, varargin)
+        function assignOptions(obj, options)
+        %assignOptions Assign the constructor's name-value options
 
-            if isempty(varargin); return; end
-
-            propNames = properties(obj);
-
-            % Min and Max are Dependent only to have backing values; they
-            % are still name-value options.
-            dependentProps = setdiff(uim.utility.findProperties(obj, 'Dependent'), {'Min', 'Max'});
-            propNames = setdiff(propNames, dependentProps);
-
-            defaultValues = cellfun(@(name) obj.(name), propNames, 'uni', 0);
-            def = cell2struct(defaultValues, propNames, 1);
-
-            props = uim.utility.parseNameValue(def, varargin{1}{:});
+            % set.FontSize applies the size to the value label, which is
+            % created later by createSlider
+            if isfield(options, 'FontSize')
+                error("uim:Slider:FontSizeAtConstruction", ...
+                    "FontSize cannot be set at construction. Set it on the created slider.")
+            end
 
             % set.Min and set.Max each check against the other limit,
             % which still has its default during option parsing, so the
             % limits are validated and assigned together here
-            assert(props.Min < props.Max, "uim:Slider:InvalidLimits", ...
+            newMin = obj.Min_;
+            newMax = obj.Max_;
+            if isfield(options, 'Min')
+                newMin = options.Min;
+            end
+            if isfield(options, 'Max')
+                newMax = options.Max;
+            end
+            assert(newMin < newMax, "uim:Slider:InvalidLimits", ...
                 'Slider lower limit must be smaller than slider upper limit')
-            obj.Min_ = props.Min;
-            obj.Max_ = props.Max;
-            propNames = setdiff(propNames, {'Min', 'Max'});
+            obj.Min_ = newMin;
+            obj.Max_ = newMax;
+            options = rmfield(options, intersect(fieldnames(options), {'Min', 'Max'}));
 
-            optionNames = string(varargin{1}(1:2:end));
-            if ~any(strcmpi(optionNames, "Value"))
-                props.Value = min(max(props.Value, props.Min), props.Max);
+            if ~isfield(options, 'Value')
+                obj.Value = min(max(obj.Value, obj.Min), obj.Max);
             end
 
-            for i = 1:numel(propNames)
-                obj.(propNames{i}) = props.(propNames{i});
-            end
+            set(obj, options)
         end
 
         function createSlider(obj)

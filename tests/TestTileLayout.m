@@ -180,6 +180,40 @@ classdef TestTileLayout < matlab.unittest.TestCase
                 "Options reach the figure the object creates.");
         end
 
+        function tiledAxesMatchesOptionNamesCaseInsensitively(testCase)
+            tiledAxes = uim.graphics.TiledImageAxes("gridsize", [2, 3], "visible", "off");
+            testCase.addTeardown(@deleteValid, tiledAxes.Figure);
+
+            testCase.verifyEqual(tiledAxes.GridSize, [2, 3]);
+        end
+
+        function tiledAxesRejectsOtherOptions(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+
+            testCase.verifyError(@() uim.graphics.TiledImageAxes(hFigure, "NoSuchOption", 1), ...
+                "MATLAB:TooManyInputs");
+            testCase.verifyError(@() uim.graphics.TiledImageAxes(hFigure, ...
+                "HighlightTileOnMouseOver", true), "MATLAB:TooManyInputs", ...
+                "Only the documented options are accepted at construction.");
+        end
+
+        function tiledAxesAcceptsAnEmptyParent(testCase)
+            tiledAxes = uim.graphics.TiledImageAxes([], "GridSize", [1, 2], "Visible", "off");
+            testCase.addTeardown(@deleteValid, tiledAxes.Figure);
+
+            testCase.verifyEqual(tiledAxes.NumTiles, 2, "Options after an empty parent apply.");
+        end
+
+        function tiledAxesRejectsAParentThatIsNotAContainer(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure);
+
+            testCase.verifyError(@() uim.graphics.TiledImageAxes(hAxes), ...
+                "uim:TiledImageAxes:InvalidParent");
+        end
+
         function escapeEndsUiwaitWithNaN(testCase)
             tiledAxes = uim.graphics.TiledImageAxes("GridSize", [1, 2], "Visible", "off");
             hFigure = tiledAxes.Figure;

@@ -293,6 +293,30 @@ classdef TestSliderDetails < matlab.unittest.TestCase
             testCase.verifyEqual(slider.Value, 10, "The default 0.5 is moved to Min.");
         end
 
+        function sliderMatchesOptionNamesCaseInsensitively(testCase)
+            hFigure = createHiddenFigure(testCase);
+            slider = uim.widget.Slider("parent", hFigure, "min", 10, "max", 20, "value", 15);
+            testCase.addTeardown(@deleteValid, slider);
+
+            testCase.verifyEqual([slider.Min, slider.Max, slider.Value], [10, 20, 15]);
+        end
+
+        function sliderChecksAGivenLimitAgainstTheOtherDefault(testCase)
+            hFigure = createHiddenFigure(testCase);
+            testCase.verifyError(@() uim.widget.Slider("Parent", hFigure, "Min", 2), ...
+                "uim:Slider:InvalidLimits", "The default Max is 1.");
+        end
+
+        function sliderRejectsOptionsItCannotApply(testCase)
+            hFigure = createHiddenFigure(testCase);
+            testCase.verifyError(@() uim.widget.Slider("Parent", hFigure, "Orientation", "vertical"), ...
+                "MATLAB:TooManyInputs");
+            testCase.verifyError(@() uim.widget.Slider("Parent", hFigure, "Step", 0.1), ...
+                "MATLAB:TooManyInputs", "Step is read-only.");
+            testCase.verifyError(@() uim.widget.Slider("Parent", hFigure, "FontSize", 12), ...
+                "uim:Slider:FontSizeAtConstruction");
+        end
+
         function sliderTrackFollowsTheAxesSizeInNormalizedUnits(testCase)
             hFigure = createHiddenFigure(testCase);
             hFigure.Position = [100, 100, 400, 300];
@@ -488,6 +512,24 @@ classdef TestSliderDetails < matlab.unittest.TestCase
             testCase.verifyEqual(char(hAxes.YDir), 'normal', ...
                 "Only the default direction flips the axis.");
             testCase.verifyEqual(scrollBar.Orientation, 'vertical');
+        end
+
+        function scrollBarAssignsOptionsWithoutCallingCallback(testCase)
+            hFigure = createHiddenFigure(testCase);
+            hPanel = uipanel(hFigure, "Units", "pixels", "Position", [10, 10, 20, 200]);
+            failIfCalled = @(~, ~) error("uimtest:CallbackCalled", "Callback was called.");
+            scrollBar = uim.widget.ScrollBar(hPanel, "callback", failIfCalled, ...
+                "maximum", 10, "VisibleAmount", 2, "Value", 3);
+            testCase.addTeardown(@deleteValid, scrollBar);
+
+            testCase.verifyEqual([scrollBar.Maximum, scrollBar.Value], [10, 3]);
+        end
+
+        function scrollBarRejectsUnknownOptions(testCase)
+            hFigure = createHiddenFigure(testCase);
+            hPanel = uipanel(hFigure, "Units", "pixels", "Position", [10, 10, 20, 200]);
+            testCase.verifyError(@() uim.widget.ScrollBar(hPanel, "NoSuchOption", 1), ...
+                "MATLAB:TooManyInputs");
         end
 
         function scrollBarIsSizedFromItsNewPosition(testCase)
