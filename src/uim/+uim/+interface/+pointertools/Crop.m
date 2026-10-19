@@ -89,7 +89,6 @@ classdef Crop < uim.interface.PointerTool
             activate@uim.interface.PointerTool(obj)
             obj.RectangleSizeText.Visible = 'on';
             obj.selectRectangularRoi()
-            obj.updateInitialCornerText()
         end
 
         function deactivate(obj)
@@ -151,9 +150,6 @@ classdef Crop < uim.interface.PointerTool
     end
 
     methods (Access = private)
-
-        function updateInitialCornerText(obj)
-        end
 
         function selectRectangularRoi(obj)
 

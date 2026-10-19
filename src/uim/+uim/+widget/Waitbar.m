@@ -176,9 +176,6 @@ classdef Waitbar < uim.mixin.NameValueAssignable
             obj.BarCompleted.Color = obj.BarColorCompleted;
         end
 
-        function onEnableChanged(obj)
-        end
-
         function onVisibleChanged(obj)
             % Visible can be assigned before drawWaitbar creates the bars;
             % the constructor applies it once they exist

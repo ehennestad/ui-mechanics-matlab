@@ -16,7 +16,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 %   The track runs along Position, inset by the left and right Padding.
 %   Dragging a knob moves Low or High; pressing the track moves the
 %   nearest knob to the pressed point. Values from the pointer are
-%   rounded to the nearest Min + k*(Max - Min)/NumTicks, clamped to
+%   rounded to the nearest Min + k*(Max - Min)/NumSteps, clamped to
 %   [Min, Max] and kept so that Low <= High. While a knob is pressed, a
 %   value label is shown above it (see ShowLabel). The inherited Label
 %   is drawn beside the track at LabelLocation.
@@ -64,10 +64,10 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
     end
 
     properties
-        % Number of value steps between Min and Max. Pointer values are
-        % rounded to the nearest Min + k*(Max - Min)/NumTicks; no tick
+        % Number of equal steps from Min to Max. Pointer values are
+        % rounded to the nearest Min + k*(Max - Min)/NumSteps; no tick
         % marks are drawn.
-        NumTicks = 100
+        NumSteps = 100
 
         % Side of the track where Label is drawn: 'left', 'right', 'top'
         % or 'bottom'. Read when the label is placed.
@@ -786,12 +786,12 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             high = obj.High_;
         end
 
-% %         function set.NumTicks(obj, newValue)
+% %         function set.NumSteps(obj, newValue)
 % %
 % %         end
 
         function stepSize = get.StepSize(obj)
-            stepSize = (obj.Max-obj.Min) / obj.NumTicks;
+            stepSize = (obj.Max-obj.Min) / obj.NumSteps;
         end
     end
 

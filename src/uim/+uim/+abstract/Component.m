@@ -386,13 +386,6 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
             obj.Background.EdgeColor = 'none';
             obj.Background.FaceAlpha = 0;
         end
-
-        function createBorder(obj) % Subclasses can override
-        %createBorder Plot the component border
-
-            % Why not just use the edge of the patch??
-            %   -If we want to create more advanced borders...
-        end
     end
 
     methods % Set/Get
@@ -573,7 +566,6 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 
         function resize(obj)
         	obj.redrawBackground()
-            obj.redrawBorder()
         end
 
         function relocate(obj, ~)
@@ -745,10 +737,6 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
             obj.SizeMode = newMode;
         end % protected?
 
-        function redrawBorder(obj)
-            % Should this be done together with redrawBackground
-        end
-
         function moveBackground(obj, shift)
             if ~isempty(obj.Background) && obj.IsConstructed
                 if shift(1) ~= 0
@@ -849,7 +837,6 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
             % updateSize
 
             obj.redrawBackground()
-            %obj.redrawBorder() Not implemented yet
         end
     end
 

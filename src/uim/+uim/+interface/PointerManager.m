@@ -203,9 +203,6 @@ classdef PointerManager < handle
 
     methods (Hidden)
 
-        function onFigureChanged(obj)
-        end
-
         function updatePointerSymbol(obj)
             if ~isempty(obj.CurrentPointerTool)
                 obj.CurrentPointerTool.setPointerSymbol()
