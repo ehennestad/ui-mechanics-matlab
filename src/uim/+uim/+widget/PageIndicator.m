@@ -281,10 +281,6 @@ classdef PageIndicator < uim.abstract.Control
 
     methods
 
-        function restyle(obj)
-        %restyle Not implemented; does nothing
-        end
-
         function updateBarVisibility(obj)
         %updateBarVisibility Show or hide the bar and tick from BarVisibility
         %
@@ -347,10 +343,6 @@ classdef PageIndicator < uim.abstract.Control
             end
 
             obj.CurrentPage = newPageNumber;
-        end
-
-        function onMouseOverIndicator(obj)
-        %onMouseOverIndicator Not implemented; does nothing
         end
 
         function onAppearanceChanged(obj)

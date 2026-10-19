@@ -386,13 +386,6 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
             obj.Background.EdgeColor = 'none';
             obj.Background.FaceAlpha = 0;
         end
-
-        function createBorder(obj) % Subclasses can override
-        %createBorder Plot the component border
-
-            % Why not just use the edge of the patch??
-            %   -If we want to create more advanced borders...
-        end
     end
 
     methods % Set/Get
