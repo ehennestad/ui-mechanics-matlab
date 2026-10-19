@@ -1255,6 +1255,27 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyFalse(isvalid(panButton));
         end
 
+        function overviewIndicatorEndsAnUnfinishedDragOnPress(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            indicator = uim.widget.OverviewIndicator(canvas, ...
+                'DataLimits', [0, 200; 0, 100], 'ViewLimits', [50, 100; 25, 50]);
+            testCase.addTeardown(@deleteValid, indicator);
+            viewRect = findall(canvas.Axes, "Tag", "OverviewViewRect");
+
+            warningState = warning("off", "MATLAB:structOnObject");
+            testCase.addTeardown(@() warning(warningState));
+            viewRect.ButtonDownFcn(viewRect, [])
+            firstListener = struct(indicator).DragMotionListener;
+
+            % A second press without a release in between
+            viewRect.ButtonDownFcn(viewRect, [])
+
+            testCase.verifyFalse(isvalid(firstListener), ...
+                "The listeners of the unfinished drag are deleted.");
+        end
+
         function overviewIndicatorMapsAndNotifies(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
