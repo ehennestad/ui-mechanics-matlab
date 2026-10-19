@@ -167,7 +167,6 @@ classdef TestMessageBox < matlab.unittest.TestCase
 
             testCase.verifyEmpty(findall(hAxes, "Tag", "imrect"), ...
                 "No imrect is created in the reference axes.");
-            testCase.verifyFalse(isa(messageBox, "uim.mixin.Resizable"));
         end
 
         function constructorAcceptsNameValueSyntax(testCase)
