@@ -126,6 +126,7 @@ classdef Slider < matlab.mixin.SetGet
 
     properties (Constant, Access = private)
         KnobDiameter = 15   % Pixels
+        LabelGap = 6        % Pixels between the knob and the value label of a vertical slider
         AxesLimitNames = ["XLim", "YLim"]   % Indexed by getTrackDimensions
     end
 
@@ -375,11 +376,11 @@ classdef Slider < matlab.mixin.SetGet
         %getTextCoordinates Anchor of the value label
         %
         %   A horizontal slider shows the label above the knob, and a
-        %   vertical slider beside the right edge of the knob.
+        %   vertical slider LabelGap pixels right of the knob.
             knobCenter = obj.getKnobCenter();
             if strcmp(obj.Orientation, 'vertical')
-                knobRadius = obj.KnobDiameter/2 .* obj.getDataUnitsPerPixel();
-                xCoords = knobCenter(1) + knobRadius(1);
+                labelOffset = (obj.KnobDiameter/2 + obj.LabelGap) .* obj.getDataUnitsPerPixel();
+                xCoords = knobCenter(1) + labelOffset(1);
                 yCoords = knobCenter(2);
             elseif obj.OwnsAxes
                 xCoords = knobCenter(1);

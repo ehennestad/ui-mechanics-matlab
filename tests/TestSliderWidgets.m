@@ -195,8 +195,8 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
             testCase.verifyEqual(midpointOf(knob.YData), trackStart + trackLength, "AbsTol", 0.01);
             valueLabel = findobj(hAxes, "Type", "text");
             testCase.verifyEqual(valueLabel.Position(1:2), ...
-                [trackCenterX + 15/2, trackStart + trackLength], "AbsTol", 0.01, ...
-                "The value label sits beside the right edge of the knob.");
+                [trackCenterX + 15/2 + 6, trackStart + trackLength], "AbsTol", 0.01, ...
+                "The value label sits 6 pixels right of the knob's edge.");
             testCase.verifyEqual(valueLabel.VerticalAlignment, 'middle');
 
             % The pointer x is on the track centre line, which a slider
