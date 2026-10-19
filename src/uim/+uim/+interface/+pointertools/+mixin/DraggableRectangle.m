@@ -1,4 +1,4 @@
-classdef DraggableRectangle < handle
+classdef DraggableRectangle < uim.interface.AxesAttached
 %DraggableRectangle Mixin that draws a rubber-band rectangle for a pointer tool
 %
 %   Combine this mixin with uim.interface.PointerTool in a tool class
@@ -16,15 +16,10 @@ classdef DraggableRectangle < handle
 %   The outline is a grey line that ignores mouse clicks, drawn with
 %   plot into the tool's Axes, so the axes must be held.
 %
+%   The Axes property is declared by uim.interface.AxesAttached and
+%   implemented by PointerTool.
+%
 %   See also uim.interface.pointertools.ZoomIn, uim.interface.PointerTool
-
-%   The mixin uses the Axes property that PointerTool provides (a
-%   protected, validated matlab.graphics.axis.Axes) rather than
-%   redeclaring it here, which would conflict with PointerTool's own
-%   declaration under MATLAB's property-validation-inheritance rules
-%   (a property with a type/size constraint must be Abstract in every
-%   superclass that declares it, and PointerTool's Axes is concrete
-%   by design).
 
     properties
         RectanglePlotHandle = gobjects(0); % Line object of the outline, or empty when none is drawn
