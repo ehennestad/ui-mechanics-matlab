@@ -656,23 +656,36 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         end
 
         function onMouseEnterKnob(obj, hSource)
-        %onMouseEnterKnob Lighten a knob while the pointer rests on it
+        %onMouseEnterKnob Lighten a knob and show the hand pointer
         %
         %   The hover colour is KnobFaceColorInactive moved three
-        %   quarters of the way to white (0.8 grey becomes 0.95).
+        %   quarters of the way to white (0.8 grey becomes 0.95). The
+        %   knob has its own pointer behavior, so entering it runs the
+        %   exit function of the background below, which sets the
+        %   arrow; the hand is set again here.
 
             if ~obj.IsKnobPressed
                 faceColor = validatecolor(obj.KnobFaceColorInactive);
                 hSource.FaceColor = faceColor + (1 - faceColor) * 0.75;
             end
+
+            hFigure = ancestor(hSource, 'figure');
+            hFigure.Pointer = 'hand';
         end
 
         function onMouseExitKnob(obj, hSource)
-        %onMouseExitKnob Restore a knob when the pointer leaves it
+        %onMouseExitKnob Restore a knob and the arrow pointer
+        %
+        %   When the pointer moves from the knob onto the background, the
+        %   background's enter function runs after this and sets the
+        %   hand again.
 
             if ~obj.IsKnobPressed
                 hSource.FaceColor = obj.KnobFaceColorInactive;
             end
+
+            hFigure = ancestor(hSource, 'figure');
+            hFigure.Pointer = 'arrow';
         end
     end
 

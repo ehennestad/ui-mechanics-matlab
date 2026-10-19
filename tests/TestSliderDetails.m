@@ -72,6 +72,35 @@ classdef TestSliderDetails < matlab.unittest.TestCase
             testCase.verifyEqual(hLow.FaceColor, ones(1, 3)*0.8);
         end
 
+        function rangeSliderKnobHoverShowsTheHandPointer(testCase)
+            [hFigure, canvas] = createCanvas(testCase);
+            slider = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 100, ...
+                "Low", 20, "High", 80);
+            testCase.addTeardown(@deleteValid, slider);
+            hBackground = findobj(canvas.Axes, "Tag", "Range Slider Background");
+            hLow = findobj(canvas.Axes, "Tag", "Range Slider Low");
+            backgroundBehavior = iptGetPointerBehavior(hBackground);
+            knobBehavior = iptGetPointerBehavior(hLow);
+            testCase.assertNotEmpty(backgroundBehavior);
+            testCase.assertNotEmpty(knobBehavior);
+
+            % The pointer manager runs the exit function of the object the
+            % pointer leaves before the enter function of the one it enters
+            backgroundBehavior.enterFcn(hFigure, [0, 0])
+            backgroundBehavior.exitFcn(hFigure, [0, 0])
+            knobBehavior.enterFcn(hFigure, [0, 0])
+            testCase.verifyEqual(char(hFigure.Pointer), 'hand', ...
+                "The pointer is a hand over the knob.");
+
+            knobBehavior.exitFcn(hFigure, [0, 0])
+            testCase.verifyEqual(char(hFigure.Pointer), 'arrow', ...
+                "Leaving the knob restores the arrow.");
+
+            backgroundBehavior.enterFcn(hFigure, [0, 0])
+            testCase.verifyEqual(char(hFigure.Pointer), 'hand', ...
+                "Moving from the knob onto the background keeps the hand.");
+        end
+
         function rangeSliderKnobHoverFollowsTheKnobColor(testCase)
             [hFigure, canvas] = createCanvas(testCase);
             slider = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 100, ...
