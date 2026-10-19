@@ -284,6 +284,28 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyNotEmpty(findall(hFigure, "Type", "text", "String", 'Time: 1'));
         end
 
+        function propertiesSetInternallyAreReadOnly(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            button = uim.control.Button(canvas, "Text", "Go");
+            testCase.addTeardown(@deleteValid, button);
+            dropdown = uim.widget.DropDown(canvas, "Items", ["a", "b"]);
+            testCase.addTeardown(@deleteValid, dropdown);
+            readout = uim.widget.Readout(canvas, "Label", "Frame", "Value", 1);
+            testCase.addTeardown(@deleteValid, readout);
+            img = uim.decorator.Image(canvas, CData=zeros(3, 4, "uint8"));
+            testCase.addTeardown(@deleteValid, img);
+
+            assignments = {button, "Parent", hFigure; button, "Canvas", canvas; ...
+                button, "Extent", [0, 0, 1, 1]; dropdown, "ValueIndex", 1; ...
+                dropdown, "IsOpen", true; readout, "String", "x"; img, "AspectRatio", 1};
+            for i = 1:size(assignments, 1)
+                testCase.verifyError(@() assignProperty(assignments{i, :}), ...
+                    "MATLAB:class:SetProhibited", assignments{i, 2} + " is read-only.");
+            end
+        end
+
         function borderWidthChangeIsDrawn(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);

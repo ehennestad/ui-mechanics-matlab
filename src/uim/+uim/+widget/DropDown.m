@@ -70,7 +70,7 @@ classdef DropDown < uim.abstract.Control
         SelectionColor = 'w'            % Fill marking the selected item's row
     end
 
-    properties (Dependent, Transient)
+    properties (Dependent, SetAccess = private)
         ValueIndex  % Index of Value in Items, empty when nothing is selected (read-only)
         IsOpen      % True while the item list is showing (read-only)
     end

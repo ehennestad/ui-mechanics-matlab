@@ -124,14 +124,15 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
         Type % Should rename to name????
     end
 
-    properties (Transient) % Todo, this should not be transient. Actually, why not...
+    % Transient because both hold graphics handles, which save would
+    % write into the MAT file together with their figure.
+    properties (Transient, SetAccess = protected)
         % UIComponentCanvas the component draws on, or the private canvas
         % axes of its parent container. Set by the constructor.
         Canvas = [] % Rename to virtualParent? Hide?
 
         % Graphics container or UIComponentCanvas the component is placed
-        % in. Set by the constructor; assigning a new value does not move
-        % the component.
+        % in. Set by the constructor.
         Parent = [] % Rename / make sure this is a matlab graphical container
     end
 
