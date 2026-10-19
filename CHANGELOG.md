@@ -361,7 +361,7 @@ by plain descriptive names (`Axes`, `Figure`, `Background`, ...). This
 changes the name-value argument names accepted by every constructor that
 uses them, for example:
 
-- `uim.widget.Slider(..., 'nTicks', 10)` → `'NumTicks'`
+- `uim.widget.Slider(..., 'nTicks', 10)` → `'NumSteps'`
 - `uim.graphics.TiledImageAxes(..., 'gridSize', [3,5], 'imageSize', [128,128])` → `'GridSize'`, `'ImageSize'`
 - `uim.interface.PointerManager.pointers` → `.Pointers`
 - `uim.interface.PointerTool.exitMode` → `.ExitMode`

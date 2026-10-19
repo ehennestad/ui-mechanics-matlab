@@ -214,7 +214,7 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 
         function drawPlaneSwitcherSlidebar(obj)
 
-            args = {'Min', 1, 'Max', obj.NumPlanes, 'NumTicks', ...
+            args = {'Min', 1, 'Max', obj.NumPlanes, 'NumSteps', ...
                 obj.NumPlanes-1};
 
             hSlider = uim.widget.Slider('Parent', obj.Axes.Parent, ...
@@ -309,7 +309,7 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 
             if obj.NumPlanes > 1
                 obj.PlaneSwitcherSlider.Max = obj.NumPlanes;
-                obj.PlaneSwitcherSlider.NumTicks = obj.NumPlanes - 1;
+                obj.PlaneSwitcherSlider.NumSteps = obj.NumPlanes - 1;
             else
                 % One plane leaves nothing to switch
                 delete(obj.PlaneSwitcherSlider)

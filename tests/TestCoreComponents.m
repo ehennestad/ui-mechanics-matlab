@@ -158,7 +158,7 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             hAxes = findall(hPanel, "Type", "axes");
             tickLines = findall(hAxes, "Type", "line");
 
-            testCase.verifyEqual(numel(tickLines), 9);
+            testCase.verifyEqual(numel(tickLines), slider.NumSteps + 1);
             for i = 1:numel(tickLines)
                 xData = get(tickLines(i), "XData");
                 yData = get(tickLines(i), "YData");
@@ -169,7 +169,7 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             % Resizing should redraw ticks without error.
             slider.Position = [10, 10, 150, 20];
             tickLines = findall(hAxes, "Type", "line");
-            testCase.verifyEqual(numel(tickLines), 9);
+            testCase.verifyEqual(numel(tickLines), slider.NumSteps + 1);
         end
 
         function slidebarWithTicksRendersInCallerSuppliedAxes(testCase)
@@ -186,7 +186,7 @@ classdef TestCoreComponents < matlab.unittest.TestCase
 
             testCase.verifyClass(slider, "uim.widget.Slider");
             tickLines = findall(hAxes, "Type", "line");
-            testCase.verifyEqual(numel(tickLines), 9);
+            testCase.verifyEqual(numel(tickLines), slider.NumSteps + 1);
 
             % Hold state should be restored to what it was before construction.
             testCase.verifyEqual(ishold(hAxes), wasHoldOn);
