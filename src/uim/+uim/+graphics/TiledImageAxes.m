@@ -176,7 +176,13 @@ methods %Structors
     %       TileUnits         - 'pixel' (default) or 'scaled'
     %       Visible           - 'on' (default) or 'off'
     %       TileConfiguration - struct of tile appearance settings
+    %   Names are case-insensitive and may be abbreviated; an unknown name
+    %   raises an error.
 
+        % The parent is optional and comes before the name-value
+        % arguments. An arguments block would bind a leading name such as
+        % "GridSize" to the parent, so the parent is taken from varargin
+        % here and assignOptions validates the rest.
         hasParent = nargin > 0 && ...
             (isa(varargin{1}, 'matlab.ui.Figure') || ...
              isa(varargin{1}, 'matlab.ui.container.Panel') || ...
@@ -190,9 +196,7 @@ methods %Structors
             obj.Parent = parent;
         end
 
-        if ~isempty(varargin)
-            obj.parseVarargin(varargin)
-        end
+        obj.assignOptions(varargin{:})
 
         % Options are parsed first so that they apply to a new figure
         if ~hasParent
@@ -223,24 +227,23 @@ end
 
 methods (Access = private) % Methods for setting up gui
 
-    function parseVarargin(obj, cellOfVarargin)
+    function assignOptions(obj, options)
+    %assignOptions Assign the constructor's name-value options
 
-        fields = {'ImageSize', 'GridSize', 'Spacing', 'TileConfiguration', ...
-            'NumChannels', 'NormalizedPadding', 'TileUnits', 'Visible' };
+        arguments
+            obj
+            options.ImageSize
+            options.GridSize
+            options.Spacing
+            options.TileConfiguration
+            options.NumChannels
+            options.NormalizedPadding
+            options.TileUnits
+            options.Visible
+        end
 
-        assert(mod(numel(cellOfVarargin), 2) == 0, ...
-            'Inputs must be supplied as name-value pairs.')
-
-        for i = 1:2:numel(cellOfVarargin)
-            inputName = cellOfVarargin{i};
-            if isstring(inputName) && isscalar(inputName)
-                inputName = char(inputName);
-            end
-
-            match = strcmpi(fields, inputName);
-            if any(match)
-                obj.(fields{match}) = cellOfVarargin{i+1};
-            end
+        for name = string(fieldnames(options))'
+            obj.(name) = options.(name);
         end
     end
 

@@ -106,16 +106,28 @@ classdef TestMessageBox < matlab.unittest.TestCase
             testCase.verifyFalse(isvalid(hAxes));
         end
 
-        function constructorReportsUnknownParameters(testCase)
+        function constructorAssignsNameValueArguments(testCase)
             hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 400, 200]);
             testCase.addTeardown(@deleteValid, hFigure);
             hPanel = uipanel(hFigure, "Units", "pixels", "Position", [10, 10, 380, 180]);
 
-            output = evalc("messageBox = uim.widget.MessageBox(hPanel, 'FontSize', 10, 'NoSuchProperty', 1);");
+            messageBox = uim.widget.MessageBox(hPanel, "fontsize", 10, MinSize=[200, 40]);
             testCase.addTeardown(@deleteValid, messageBox);
             testCase.verifyEqual(messageBox.FontSize, 10);
-            testCase.verifyTrue(contains(output, 'NoSuchProperty'));
-            testCase.verifyError(@() uim.widget.MessageBox(hPanel, 1, 2), "uim:MessageBox:InvalidPairs");
+            testCase.verifyEqual(messageBox.MinSize, [200, 40]);
+        end
+
+        function constructorRejectsInvalidNameValueArguments(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 400, 200]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure, "Units", "pixels", "Position", [10, 10, 380, 180]);
+
+            testCase.verifyError(@() uim.widget.MessageBox(hPanel, NoSuchProperty=1), ...
+                "MATLAB:TooManyInputs");
+            testCase.verifyError(@() uim.widget.MessageBox(hPanel, 1, 2), "MATLAB:TooManyInputs");
+            % Private properties are not construction options
+            testCase.verifyError(@() uim.widget.MessageBox(hPanel, CornerRadius=4), ...
+                "MATLAB:TooManyInputs");
         end
 
         function boxOverAnAxesCanBeDraggedInsideIt(testCase)

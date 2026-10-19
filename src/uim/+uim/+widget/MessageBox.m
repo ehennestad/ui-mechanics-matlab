@@ -14,10 +14,9 @@ classdef MessageBox < uim.Handle
 %   with the mouse while a message shows, and stays inside the axes.
 %
 %   messageBox = uim.widget.MessageBox(hParent, Name, Value, ...) sets
-%   properties before the box is created. Names are character vectors or
-%   string scalars, so Name=Value syntax works; other names raise
-%   uim:MessageBox:InvalidPairs. A pair that can not be assigned is
-%   reported in the Command Window and skipped.
+%   public properties before the box is created. Names are
+%   case-insensitive and may be abbreviated; a name that matches no
+%   public property raises an error.
 %
 %   Use displayMessage and clearMessage to show and hide a message, and
 %   waitbar to show a progress bar along the bottom edge of the box. A
@@ -87,22 +86,18 @@ classdef MessageBox < uim.Handle
 
     methods
 
-        function obj = MessageBox(hParent, varargin)
+        function obj = MessageBox(hParent, options)
         %MessageBox Create a hidden message box over an axes, panel or figure
         %
         %   messageBox = uim.widget.MessageBox(hParent, Name, Value, ...)
 
-            msg = 'Invalid Sequence of Name, Value Parameters';
-            isName = @(arg) ischar(arg) || (isstring(arg) && isscalar(arg));
-            assert(all(cellfun(isName, varargin(1:2:end))), ...
-                "uim:MessageBox:InvalidPairs", msg)
+            arguments
+                hParent
+                options.?uim.widget.MessageBox
+            end
 
-            for i = 1:2:numel(varargin)
-                try
-                    obj.(char(varargin{i})) = varargin{i+1};
-                catch
-                    fprintf('Invalid Parameter Name (%s)\n', varargin{i})
-                end
+            for name = string(fieldnames(options))'
+                obj.(name) = options.(name);
             end
 
             obj.ReferenceAxes = hParent;

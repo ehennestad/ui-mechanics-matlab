@@ -274,6 +274,16 @@ classdef TestGraphicsHelpers < matlab.unittest.TestCase
             testCase.verifyNotEqual(min(croppedVertices(:, 1)), min(uncroppedVertices(:, 1)), ...
                 "Cropping shifts the traced coordinates.");
         end
+
+        function lineDrawingRejectsInvalidOptions(testCase)
+            [~, hAxes] = createAxes(testCase);
+            image = drawingWithSquares();
+
+            testCase.verifyError(@() uim.graphics.patchLineDrawing(hAxes, image, "plotType", "line"), ...
+                "MATLAB:validators:mustBeMember");
+            testCase.verifyError(@() uim.graphics.patchLineDrawing(hAxes, image, "NoSuchOption", 1), ...
+                "MATLAB:TooManyInputs");
+        end
     end
 
     methods (Test) % IconSet

@@ -1,4 +1,4 @@
-function hP = patchLineDrawing(ax, im, varargin)
+function hP = patchLineDrawing(ax, im, opt)
 %patchLineDrawing Trace the dark shapes of a line drawing as filled polygons
 %
 %   hP = uim.graphics.patchLineDrawing(ax, im) traces the boundaries of
@@ -24,19 +24,23 @@ function hP = patchLineDrawing(ax, im, varargin)
 %                    boundary. 'patch' plots one patch per outer
 %                    boundary, with the holes it contains cut out, and
 %                    returns a column of patch handles.
-%   Option names are case insensitive and may be abbreviated; unknown
-%   names are ignored. The function does not change the hold state of
-%   ax, so with plotType 'polygon' the plot replaces the axes content
+%   Option names are case insensitive and may be abbreviated; an unknown
+%   name raises an error. The function does not change the hold state
+%   of ax, so with plotType 'polygon' the plot replaces the axes content
 %   unless the axes is held.
 %
 %   The tracing uses bwboundaries from the Image Processing Toolbox.
 %
 %   See also uim.graphics.ImageVector, uim.style.IconSet
 
-    def = struct('SmoothIter', 2, 'SmoothWindow', 10, 'cropImage', true, ...
-        'plotType', 'polygon');
-
-    opt = uim.utility.parseNameValue(def, varargin{:});
+    arguments
+        ax
+        im
+        opt.SmoothIter (1,1) double {mustBeInteger, mustBeNonnegative} = 2
+        opt.SmoothWindow (1,1) double {mustBePositive} = 10
+        opt.cropImage (1,1) logical = true
+        opt.plotType (1,1) string {mustBeMember(opt.plotType, ["polygon", "patch"])} = "polygon"
+    end
 
     if opt.cropImage
         im = uim.graphics.internal.cropImageToContent(im);
