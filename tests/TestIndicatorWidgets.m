@@ -84,6 +84,83 @@ classdef TestIndicatorWidgets < matlab.unittest.TestCase
         end
     end
 
+    methods (Test) % PageIndicator fixes
+
+        function pageIndicatorDotsFollowPositionY(testCase)
+            [~, canvas] = createCanvas(testCase);
+            pages = uim.widget.PageIndicator(canvas, {'One', 'Two'}, ...
+                "Location", "north", "Size", [200, 40]);
+            testCase.addTeardown(@deleteValid, pages);
+
+            dots = pageButtons(canvas.Axes);
+            testCase.verifyEqual(min(dots(1).YData), pages.Position(2), "AbsTol", 1e-6, ...
+                "The dots start at Position(2).");
+        end
+
+        function pageIndicatorShowsCurrentPageGivenAtConstruction(testCase)
+            [~, canvas] = createCanvas(testCase);
+            pages = uim.widget.PageIndicator(canvas, {'One', 'Two'}, "CurrentPage", 2);
+            testCase.addTeardown(@deleteValid, pages);
+
+            dots = pageButtons(canvas.Axes);
+            testCase.verifyEqual([dots.FaceColor], [pages.IndicatorColor, validatecolor(pages.BarColor)], ...
+                "Dot 2 is filled.");
+        end
+
+        function pageIndicatorCurrentPageAssignmentUpdatesTheDisplay(testCase)
+            [~, canvas] = createCanvas(testCase);
+            pages = uim.widget.PageIndicator(canvas, {'One', 'Two'});
+            testCase.addTeardown(@deleteValid, pages);
+
+            pages.CurrentPage = 2;
+
+            dots = pageButtons(canvas.Axes);
+            testCase.verifyEqual([dots.FaceColor], [pages.IndicatorColor, validatecolor(pages.BarColor)]);
+            labelOne = pageLabels(canvas.Axes, {'One'});
+            labelTwo = pageLabels(canvas.Axes, {'Two'});
+            testCase.verifyEqual(string([labelOne.Visible, labelTwo.Visible]), ["off", "on"], ...
+                "The label of page 2 is shown.");
+        end
+
+        function pageIndicatorVisibleKeepsHiddenParts(testCase)
+            [~, canvas] = createCanvas(testCase);
+            pages = uim.widget.PageIndicator(canvas, {'One', 'Two'}, ...
+                "TextVisibility", "off", "BarVisibility", "off");
+            testCase.addTeardown(@deleteValid, pages);
+
+            pages.Visible = 'off';
+            pages.Visible = 'on';
+
+            testCase.verifyEmpty(findobj(canvas.Axes, "Type", "line", "Visible", "on"), ...
+                "The bar and ticks stay hidden.");
+            testCase.verifyEmpty(findobj(canvas.Axes, "Type", "text", "Visible", "on"), ...
+                "The labels stay hidden.");
+        end
+
+        function pageIndicatorVisibleOffHidesEveryPart(testCase)
+            [~, canvas] = createCanvas(testCase);
+            pages = uim.widget.PageIndicator(canvas, {'One', 'Two'});
+            testCase.addTeardown(@deleteValid, pages);
+            dots = pageButtons(canvas.Axes);
+
+            pages.Visible = 'off';
+            testCase.verifyEqual(string({dots.Visible}), ["off", "off"], "The dots are hidden.");
+            testCase.verifyEmpty(findobj(canvas.Axes, "Type", "line", "Visible", "on"), ...
+                "The bar and ticks are hidden.");
+            testCase.verifyEmpty(findobj(pageLabels(canvas.Axes, {'One', 'Two'}), "Visible", "on"), ...
+                "The labels are hidden.");
+
+            pages.CurrentPage = 2;
+            testCase.verifyEmpty(findobj(canvas.Axes, "Type", "line", "Visible", "on"), ...
+                "A page change keeps the bar and ticks hidden.");
+            testCase.verifyEmpty(findobj(pageLabels(canvas.Axes, {'One', 'Two'}), "Visible", "on"), ...
+                "A page change keeps the labels hidden.");
+
+            pages.Visible = 'on';
+            testCase.verifyEqual(string({dots.Visible}), ["on", "on"], "The dots are shown again.");
+        end
+    end
+
     methods (Test) % ChannelIndicator
 
         function channelIndicatorTracksSelectionAndColours(testCase)
@@ -137,6 +214,117 @@ classdef TestIndicatorWidgets < matlab.unittest.TestCase
             indicator.Visible = 'off';
             indicator.Visible = 'on';
             indicator.BackgroundColor = [0, 0, 0];
+        end
+    end
+
+    methods (Test) % ChannelIndicator fixes
+
+        function channelIndicatorRejectsMoreChannelsThanColors(testCase)
+            [~, hPanel] = createPanel(testCase);
+            testCase.verifyError(@() uim.widget.ChannelIndicator(hPanel, "NumChannels", 7), ...
+                "uim:ChannelIndicator:TooFewColors");
+
+            indicator = uim.widget.ChannelIndicator(hPanel, "NumChannels", 2);
+            testCase.addTeardown(@deleteValid, indicator);
+            testCase.verifyError(@() assignProperty(indicator, "NumChannels", 7), ...
+                "uim:ChannelIndicator:TooFewColors");
+
+            colors = repmat({[1, 0, 0]}, 1, 8);
+            wide = uim.widget.ChannelIndicator(hPanel, "NumChannels", 8, "ChannelColors", colors);
+            testCase.addTeardown(@deleteValid, wide);
+            testCase.verifyEqual(wide.NumChannels, 8, "Enough colours allow more channels.");
+        end
+
+        function channelIndicatorUsesItsSpacing(testCase)
+            [~, hPanel] = createPanel(testCase);
+            indicator = uim.widget.ChannelIndicator(hPanel, "NumChannels", 2, ...
+                "ChannelIndicatorSpacing", 20);
+            testCase.addTeardown(@deleteValid, indicator);
+
+            centers = sort(arrayfun(@(h) mean([min(h.XData), max(h.XData)]), ...
+                findall(hPanel, "Tag", "ChannelIndicator")));
+            testCase.verifyEqual(diff(centers), indicator.ChannelIndicatorSize + 20, "AbsTol", 1e-6);
+        end
+
+        function channelIndicatorFollowsVisibleAndPosition(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "NextPlot", "add");
+            indicator = uim.widget.ChannelIndicator(hAxes, "NumChannels", 2);
+            testCase.addTeardown(@deleteValid, indicator);
+            hIndicators = findall(hAxes, "Tag", "ChannelIndicator");
+            xBefore = arrayfun(@(h) min(h.XData), hIndicators);
+
+            indicator.Position(1) = indicator.Position(1) + 50;
+            testCase.verifyEqual(arrayfun(@(h) min(h.XData), hIndicators), xBefore + 50, "AbsTol", 1e-6);
+
+            indicator.Visible = 'off';
+            testCase.verifyEmpty(findobj(hAxes, "Visible", "on", "-not", "Type", "axes"), ...
+                "Visible='off' hides every indicator part.");
+            indicator.Visible = 'on';
+            testCase.verifyEqual(string(get(hIndicators, "Visible")), ["on"; "on"]);
+        end
+
+        function channelIndicatorSelectionMovesTheThickOutline(testCase)
+            [~, hPanel] = createPanel(testCase);
+            indicator = uim.widget.ChannelIndicator(hPanel, "NumChannels", 2);
+            testCase.addTeardown(@deleteValid, indicator);
+
+            indicator.selectChannel(1)
+            indicator.selectChannel(2)
+
+            hIndicators = findall(hPanel, "Tag", "ChannelIndicator");
+            [~, order] = sort(arrayfun(@(h) min(h.XData), hIndicators));
+            testCase.verifyEqual([hIndicators(order).LineWidth], [0.5, 1]);
+        end
+
+        function channelIndicatorRemovesIndicatorsAboveNumChannels(testCase)
+            [~, hPanel] = createPanel(testCase);
+            indicator = uim.widget.ChannelIndicator(hPanel, "NumChannels", 4);
+            testCase.addTeardown(@deleteValid, indicator);
+
+            indicator.NumChannels = 2;
+
+            testCase.verifyNumElements(findall(hPanel, "Tag", "ChannelIndicator"), 2);
+        end
+    end
+
+    methods (Test) % PlaneSwitcher fixes
+
+        function planeSwitcherWorksWithOnePlane(testCase)
+            [~, hPanel] = createPanel(testCase);
+            switcher = uim.widget.PlaneSwitcher(hPanel);
+            testCase.addTeardown(@deleteValid, switcher);
+
+            toggleButton = findall(hPanel, "Tag", "PlaneSwitcherToggleButton");
+            testCase.verifyWarningFree(@() toggleButton.ButtonDownFcn(toggleButton, []), ...
+                "Pressing the button with one plane does nothing.");
+        end
+
+        function planeSwitcherSliderFollowsNumPlanes(testCase)
+            [hFigure, hPanel] = createPanel(testCase);
+            switcher = uim.widget.PlaneSwitcher(hPanel, "NumPlanes", 3);
+            testCase.addTeardown(@deleteValid, switcher);
+            hSliderAxes = findall(hFigure, "Tag", "SlideBar Container");
+
+            switcher.NumPlanes = 8;
+
+            testCase.verifyEqual(hSliderAxes.XLim(2) > 7.5, true, ...
+                "The slider range grows to the new NumPlanes.");
+        end
+
+        function planeSwitcherFollowsVisibleAndPosition(testCase)
+            [~, hPanel] = createPanel(testCase);
+            switcher = uim.widget.PlaneSwitcher(hPanel, "NumPlanes", 3);
+            testCase.addTeardown(@deleteValid, switcher);
+            toggleButton = findall(hPanel, "Tag", "PlaneSwitcherToggleButton");
+            xBefore = toggleButton.Position(1);
+
+            switcher.Position(1) = switcher.Position(1) + 50;
+            testCase.verifyEqual(toggleButton.Position(1), xBefore + 50, "AbsTol", 1e-6);
+
+            switcher.Visible = 'off';
+            testCase.verifyEqual(char(toggleButton.Visible), 'off');
         end
     end
 
@@ -216,6 +404,10 @@ end
 function hBackground = sliderBackground(hAxes)
     patches = findobj(hAxes, "Type", "patch");
     hBackground = patches(arrayfun(@(h) numel(h.XData) == 5, patches));
+end
+
+function assignProperty(object, propertyName, value)
+    object.(propertyName) = value;
 end
 
 function deleteValid(object)

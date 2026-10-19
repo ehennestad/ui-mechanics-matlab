@@ -8,9 +8,8 @@ classdef Waitbar < uim.mixin.NameValueAssignable
 %   is not an axes raises an error.
 %
 %   Position is given in pixels and converted to data units of the axes.
-%   The horizontal extent is recomputed when Status or Position changes
-%   and when the axes is resized. The vertical position and the line
-%   styles are set at construction.
+%   The bar is redrawn when Status or Position changes and when the axes
+%   is resized. The line styles are set at construction.
 %
 %   Example:
 %       hAxes = axes(figure, XLim=[0, 1], YLim=[0, 1]);
@@ -138,8 +137,8 @@ classdef Waitbar < uim.mixin.NameValueAssignable
 
                 obj.onAppearanceChanged()
             else
-                obj.BarCompleted.XData = Xa;
-                obj.BarRemaining.XData = Xb;
+                set(obj.BarCompleted, 'XData', Xa, 'YData', Ya)
+                set(obj.BarRemaining, 'XData', Xb, 'YData', Yb)
                 drawnow limitrate
             end
         end
@@ -181,6 +180,9 @@ classdef Waitbar < uim.mixin.NameValueAssignable
         end
 
         function onVisibleChanged(obj)
+            % Visible can be assigned before drawWaitbar creates the bars;
+            % the constructor applies it once they exist
+            if isempty(obj.BarCompleted); return; end
             obj.BarRemaining.Visible = obj.Visible;
             obj.BarCompleted.Visible = obj.Visible;
         end

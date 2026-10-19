@@ -112,20 +112,11 @@ classdef NameValueAssignable < uim.Handle & matlab.mixin.SetGet
         function S = toStruct(obj)
         %toStruct Property values as a struct
         %
-        %   S = obj.toStruct() reads every property that is not Hidden,
+        %   S = obj.toStruct() reads every public, non-Hidden property,
         %   including Dependent ones, with get and returns them as struct
-        %   fields. The read goes through the public get interface, so it
-        %   raises an error when the class has a private or protected
-        %   property that is not Hidden; uim components have such
-        %   properties.
+        %   fields.
 
-            mc = metaclass(obj);
-
-            % Get all property names
-            propertyNames = {mc.PropertyList.Name};
-            isTransient = [ mc.PropertyList.Hidden ];
-            propertyNames = propertyNames(~isTransient);
-
+            propertyNames = uim.mixin.internal.publicPropertyNames(obj);
             values = get(obj, propertyNames);
             S = cell2struct(values, propertyNames, 2);
         end

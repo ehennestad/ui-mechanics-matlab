@@ -10,9 +10,9 @@ classdef ImageVector < handle
 %   other parent raises uim:ImageVector:InvalidParent.
 %
 %   Each shape is drawn with plot. For an hggroup parent the constructor
-%   holds the ancestor axes. An axes parent must already be held:
-%   otherwise each shape replaces the axes content, including the
-%   shapes plotted before it. The object is stored in
+%   holds the ancestor axes. An axes parent is held while the shapes are
+%   drawn and then gets its previous NextPlot back, so the shapes are
+%   added to the existing content. The object is stored in
 %   hParent.UserData.Handles, so it lives as long as the parent;
 %   hParent.UserData must be empty or a struct.
 %
@@ -43,8 +43,10 @@ classdef ImageVector < handle
 
     properties
 
-        HorizontalAlignment = 'center' % left | center | right: x of the box point that Position names
-        VerticalAlignment = 'middle' % bottom | middle | top: y of the box point that Position names
+        % left | center | right: x of the box point that Position names
+        HorizontalAlignment (1,:) char {mustBeMember(HorizontalAlignment, {'left', 'center', 'right'})} = 'center'
+        % bottom | middle | top: y of the box point that Position names
+        VerticalAlignment (1,:) char {mustBeMember(VerticalAlignment, {'bottom', 'middle', 'top'})} = 'middle'
 
         Shape % Not used
         Color % Face color applied to every polygon; empty until set
@@ -102,7 +104,14 @@ classdef ImageVector < handle
 
             hP = gobjects(numShapes, 1);
 
-            if ~isa(hParent, 'matlab.graphics.axis.Axes')
+            if isa(hParent, 'matlab.graphics.axis.Axes')
+                % Plot replaces the content of an axes that is not held.
+                % The previous NextPlot is restored when the constructor
+                % exits, also if a shape fails to plot.
+                nextPlot = hParent.NextPlot;
+                hParent.NextPlot = 'add';
+                restoreNextPlot = onCleanup(@() set(hParent, 'NextPlot', nextPlot));
+            else
                 hAxes = ancestor(hParent, 'axes');
                 hold(hAxes, 'on')
             end
