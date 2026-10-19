@@ -230,6 +230,54 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 "A second change within 1 s is not notified at a rate of 1.");
         end
 
+        function panelConstructsWithLayoutOptionsAndNoColor(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 600, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+
+            plain = uim.container.Panel(hFigure);
+            testCase.addTeardown(@deleteValid, plain);
+            testCase.verifyClass(plain, "uim.container.Panel", "No BackgroundColor is needed.");
+
+            withMargin = uim.container.Panel(hFigure, BackgroundColor="w", ...
+                Margin=[10, 10, 10, 10], Location="northeast", HorizontalAlignment="right");
+            testCase.addTeardown(@deleteValid, withMargin);
+            hPanel = withMargin.getGraphicsContainer();
+            testCase.verifyEqual(hPanel.Position, withMargin.Position, ...
+                "The uipanel follows the layout options given at construction.");
+        end
+
+        function panelPositionMovesTheUipanel(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 600, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            panel = uim.container.Panel(hFigure, BackgroundColor="w");
+            testCase.addTeardown(@deleteValid, panel);
+
+            panel.Position = [50, 50, 100, 80];
+
+            testCase.verifyEqual(panel.getGraphicsContainer().Position, [50, 50, 100, 80]);
+            testCase.verifyEqual(panel.getpixelposition(), [50, 50, 100, 80], ...
+                "getpixelposition counts the panel offset once.");
+        end
+
+        function tabGroupSelectedTabShowsThatTab(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 600, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            tabGroup = uim.container.TabGroup(hFigure);
+            testCase.addTeardown(@deleteValid, tabGroup);
+            tabOne = uim.container.Tab(tabGroup, "Title", "One");
+            tabTwo = uim.container.Tab(tabGroup, "Title", "Two");
+            setappdata(hFigure, "Changed", false)
+            tabGroup.SelectionChangedFcn = @(~, ~) setappdata(hFigure, "Changed", true);
+
+            tabGroup.SelectedTab = 2;
+
+            testCase.verifyEqual([string(tabOne.Panel.Visible), string(tabTwo.Panel.Visible)], ["off", "on"]);
+            testCase.verifyFalse(getappdata(hFigure, "Changed"), ...
+                "Assigning SelectedTab does not call SelectionChangedFcn.");
+            testCase.verifyError(@() assignProperty(tabGroup, "SelectedTab", 3), ...
+                "uim:TabGroup:InvalidSelectedTab");
+        end
+
         function contrastSliderResetsLimitsOutsideNewDataLimits(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
@@ -246,7 +294,6 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyEqual(slider.Limits, [320, 350], ...
                 "Limits inside the new range are kept.");
         end
-                
         function marginChangeKeepsAManualSize(testCase)
             hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 600, 400]);
             testCase.addTeardown(@deleteValid, hFigure);
