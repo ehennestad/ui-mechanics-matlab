@@ -183,16 +183,20 @@ classdef TestMessageBox < matlab.unittest.TestCase
             messageBox.resetAxesPosition()
             hAxes = messageBoxAxes(hFigure);
             positionBefore = hAxes.Position;
-            twoLineMessage = repmat('lorem ipsum ', 1, 5);
+            % A point is 1 px at 72 px/inch (macOS) and 1.33 px at 96
+            % px/inch (Linux). The medium message must overflow the box at
+            % both densities, and the long message sized from the enlarged
+            % box must differ from the long message sized from the original.
+            mediumMessage = repmat('lorem ipsum ', 1, 10);
             longMessage = repmat('lorem ipsum ', 1, 60);
 
             messageBox.displayMessage(longMessage)
             positionForLongMessage = hAxes.Position;
             messageBox.clearMessage()
 
-            messageBox.displayMessage(twoLineMessage)
+            messageBox.displayMessage(mediumMessage)
             testCase.assertGreaterThan(hAxes.Position(4), positionBefore(4), ...
-                "Precondition: the first message enlarges the box.");
+                "Precondition: the medium message enlarges the box.");
             messageBox.displayMessage(longMessage)
             testCase.verifyEqual(hAxes.Position, positionForLongMessage, "AbsTol", 1e-9, ...
                 "A long message is sized from the original box, not from an enlarged one.");
