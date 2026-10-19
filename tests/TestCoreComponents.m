@@ -74,6 +74,22 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyGreaterThan(webPosition(3:4), [0, 0]);
         end
 
+        function panelContentBoundsExcludeTheBorder(testCase)
+            hFigure = figure("Visible", "off", "Position", [100, 100, 500, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure, "Units", "pixels", "Position", [20, 20, 200, 60], ...
+                "BorderType", "etchedin", "Title", "Panel");
+            hChild = axes(hPanel, "Units", "normalized", "Position", [0, 0, 1, 1]);
+
+            contentPosition = uim.utility.getContentPixelPosition(hPanel);
+
+            childSize = getpixelposition(hChild) * [0 0; 0 0; 1 0; 0 1];
+            testCase.verifyEqual(contentPosition(3:4), round(childSize), ...
+                "The content area is the area a normalized child fills, in whole pixels.");
+            testCase.verifyLessThan(contentPosition(3:4), [200, 60], ...
+                "The border and title are not part of the content area.");
+        end
+
         function childOfPrivateCanvasContainerSharesItsAxes(testCase)
             hFigure = figure("Visible", "off", "Position", [100, 100, 500, 400]);
             testCase.addTeardown(@deleteValid, hFigure);

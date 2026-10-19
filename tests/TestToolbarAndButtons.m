@@ -73,6 +73,22 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
                 "AbsTol", 1e-9, "The toolbar stays anchored at the top edge.");
         end
 
+        function privateToolbarStaysInsideAPanelBorder(testCase)
+            hFigure = figure("Visible", "off", "Position", [100, 100, 500, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure, "Units", "pixels", "Position", [20, 20, 200, 60], ...
+                "BorderType", "etchedin");
+            toolbar = uim.widget.Toolbar(hPanel, "CanvasMode", "private", "Location", "northwest");
+            testCase.addTeardown(@deleteValid, toolbar);
+            toolbar.addButton("Text", "P");
+
+            hChild = axes(hPanel, "Units", "normalized", "Position", [0, 0, 1, 1], "Visible", "off");
+            contentHeight = getpixelposition(hChild) * [0; 0; 0; 1];
+            % Pixel positions start at 1, so the top pixel row is y + height - 1
+            testCase.verifyLessThanOrEqual(sum(toolbar.Position([2, 4])) - 1, contentHeight, ...
+                "A 'northwest' toolbar ends inside the panel's content area.");
+        end
+
         function toolbarAppliesOptionsGivenAtConstruction(testCase)
             [~, canvas] = createCanvas(testCase);
 
