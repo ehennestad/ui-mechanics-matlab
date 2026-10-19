@@ -119,11 +119,6 @@ classdef Resizable < uim.Handle
 % % %             cmHandle = obj.configContextMenu(hComp(1).UIContextMenu);
 % % %             set(hComp, 'uicontextmenu', cmHandle);
 
-            % Find the hggroup of the imrect. Move it down in the stack so
-            % that the imrect for the margins will stay on top.
-            imrectGroup = findobj(hRect, 'Type', 'hggroup', 'Tag', 'imrect');
-            %uistack(imrectGroup, 'down')
-
             obj.InteractiveRectangle = hRect;
          end
 
@@ -256,12 +251,9 @@ classdef Resizable < uim.Handle
             % based on change in the canvas.
             dW = (diff(newLim([1,3])) - diff(oldLim([1,3]))) / diff(oldLim([1,3]));
             dH = (diff(newLim([2,4])) - diff(oldLim([2,4]))) / diff(oldLim([2,4]));
-            dx = newLim(1) - oldLim(1);
-            dy = newLim(2) - oldLim(2);
 
             %fprintf('dH: %g, dW: %g\n', dH, dW)
             isResized = abs(dH) > 1e-9 || abs(dW) > 1e-9; % Take care of imprecision
-            isMoved = (dx ~= 0 || dy ~= 0) && ~isResized;
 
             if isResized && strcmp(hFig.SelectionType, 'extend'); return; end
 

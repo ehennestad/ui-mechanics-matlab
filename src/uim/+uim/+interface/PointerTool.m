@@ -168,12 +168,12 @@ classdef PointerTool < handle & matlab.mixin.Heterogeneous
                 currentPoint, obj.Axes.XLim, obj.Axes.YLim);
         end
 
-        function onPointerExitedAxes(obj)
+        function onPointerExitedAxes(~)
         %onPointerExitedAxes Called by the manager when the pointer leaves the axes
             % Subclasses may override
         end
 
-        function onPointerEnteredAxes(obj)
+        function onPointerEnteredAxes(~)
         %onPointerEnteredAxes Called by the manager when the pointer enters the axes
             % Subclasses may override
         end

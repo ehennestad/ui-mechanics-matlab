@@ -438,12 +438,6 @@ classdef PageIndicator < uim.abstract.Control
     end
 
     methods (Access = protected)
-        function onStyleChanged(obj)
-        end
-
-        function redraw(obj)
-        end
-
         function relocate(obj, shift)
             relocate@uim.abstract.Control(obj, shift)
             obj.shiftComponents(shift)

@@ -134,7 +134,7 @@ classdef Crop < uim.interface.PointerTool
 
     methods
 
-        function setPointerSymbol(obj)
+        function setPointerSymbol(~)
         %setPointerSymbol Leave the figure pointer unchanged
         end
         function onButtonDown(~, ~, ~)
