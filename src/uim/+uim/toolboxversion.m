@@ -2,24 +2,30 @@ function versionStr = toolboxversion()
 %toolboxversion Return the version of the toolbox
 %
 %   versionStr = uim.toolboxversion() reads the Contents.m file in the
-%   folder that contains the +uim namespace folder (src/uim in a source
-%   checkout) and returns its first version token, including the
-%   "Version" prefix, as a character vector (e.g. 'Version 1.2.3'). A
-%   four-part version (X.Y.Z.W) is preferred over X.Y.Z when both are
-%   present. The token must be followed by a space to match.
+%   toolbox root folder (uim.toolboxdir), where packaging writes it, and
+%   returns its first version token, including the "Version" prefix, as a
+%   character vector (e.g. 'Version 1.2.3'). A four-part version
+%   (X.Y.Z.W) is preferred over X.Y.Z when both are present. The token
+%   must be followed by a space to match.
 %
 %   Errors:
+%       uim:toolboxversion:ContentsNotFound - The toolbox root has no
+%           Contents.m. Packaging creates it, so a source checkout that
+%           has not been packaged has none.
 %       UIM:Version:VersionNotFound - Contents.m has no version token.
-%       MATLAB:fileread:cannotOpenFile - Contents.m does not exist in
-%           that folder, which is the case in a source checkout.
 %
 %   Example:
 %       versionStr = uim.toolboxversion()
 %
 %   See also uim.toolboxdir
 
-    rootPath = fileparts(fileparts(mfilename('fullpath')));
-    contentsFile = fullfile(rootPath, 'Contents.m');
+    contentsFile = fullfile(uim.toolboxdir(), 'Contents.m');
+
+    if ~isfile(contentsFile)
+        error("uim:toolboxversion:ContentsNotFound", ...
+            "No Contents.m in %s. The version is written there when the toolbox is packaged.", ...
+            uim.toolboxdir())
+    end
 
     fileStr = fileread(contentsFile);
    
