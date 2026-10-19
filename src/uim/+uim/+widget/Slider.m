@@ -10,10 +10,8 @@ classdef Slider < handle
 %   The Parent option selects how the slider is drawn:
 %     - A figure or panel (default: the current figure). The slider
 %       creates its own hidden axes at Position, in Units, and the knob
-%       moves in data units between Min and Max. The track and tick
-%       geometry treat Position as pixels, so use Units="pixels"; with
-%       the default "normalized" units the track is drawn with almost
-%       no length.
+%       moves in data units between Min and Max. The track and ticks
+%       follow the axes size in pixels, whatever the Units are.
 %     - An existing axes. The slider draws into it at Position, given
 %       in that axes' data units, and computes its geometry as if one
 %       data unit is one pixel. Use an axes whose limits match its
@@ -21,18 +19,16 @@ classdef Slider < handle
 %
 %   Pressing the track moves the value to the pressed point; dragging
 %   the knob moves it continuously. Values from the pointer are rounded
-%   to the nearest multiple of Step and clamped to [Min, Max]. When a
+%   to the nearest Min + k*Step and clamped to [Min, Max]. When a
 %   user interaction changes Value, the slider calls
 %   Callback(slider, newValue). Assigning Value programmatically moves
 %   the knob without calling Callback; values outside [Min, Max] are
 %   ignored. While the knob is pressed, a value label is shown above it
 %   (see ShowLabel, TooltipExpression, TooltipPrecision, TooltipUnits).
 %
-%   Name-value options are applied in alphabetical order, so Max is
-%   checked against the default Min of 0 before Min is assigned: a Max
-%   at or below 0 raises uim:Slider:InvalidLimits at construction. The
-%   default Value of 0.5 is kept when it lies outside [Min, Max], so
-%   pass Value whenever the range excludes 0.5.
+%   Min and Max given at construction are applied together, before the
+%   other options; Min must be below Max. Without a Value option, the
+%   default Value of 0.5 is moved into [Min, Max].
 %
 %   Assigning Min at or above Max, or Max at or below Min, raises
 %   uim:Slider:InvalidLimits.
@@ -106,6 +102,10 @@ classdef Slider < handle
         FontSize    % Font size of the value label; NaN before the label exists
     end
 
+    properties (Constant, Access = private)
+        KnobDiameter = 15   % Pixels
+    end
+
     properties (Access = private)
         % Values behind the Dependent Min and Max, so that each limit's
         % set method can check the new value against the other limit.
@@ -175,6 +175,21 @@ classdef Slider < handle
             def = cell2struct(defaultValues, propNames, 1);
 
             props = uim.utility.parseNameValue(def, varargin{1}{:});
+
+            % set.Min and set.Max each check against the other limit,
+            % which still has its default during option parsing, so the
+            % limits are validated and assigned together here
+            assert(props.Min < props.Max, "uim:Slider:InvalidLimits", ...
+                'Slider lower limit must be smaller than slider upper limit')
+            obj.Min_ = props.Min;
+            obj.Max_ = props.Max;
+            propNames = setdiff(propNames, {'Min', 'Max'});
+
+            optionNames = string(varargin{1}(1:2:end));
+            if ~any(strcmpi(optionNames, "Value"))
+                props.Value = min(max(props.Value, props.Min), props.Max);
+            end
+
             for i = 1:numel(propNames)
                 obj.(propNames{i}) = props.(propNames{i});
             end
@@ -188,6 +203,7 @@ classdef Slider < handle
 
             if ~isa(obj.Parent, 'matlab.graphics.axis.Axes')
                 obj.createAxes()
+                obj.updateAxesLimits()
             else
                 obj.Axes = obj.Parent;
             end
@@ -319,24 +335,31 @@ classdef Slider < handle
             end
         end
 
+        function updateAxesLimits(obj)
+        %updateAxesLimits Widen XLim so the knob stays fully visible at either end
+        %
+        %   The margin is one knob diameter, as a fraction of the axes
+        %   width, of Max - Min. Every part of a slider in its own axes is
+        %   converted between pixels and data units with these limits, so
+        %   they are set before any geometry is computed.
+            axPosition = getpixelposition(obj.Axes);
+            valueRange = obj.Max - obj.Min;
+            obj.Axes.XLim = [obj.Min, obj.Max] + ...
+                [-1, 1] .* valueRange .* (obj.KnobDiameter / axPosition(3));
+        end
+
         function [xCoords, yCoords] = getKnobCoordinates(obj)
 
-            knobDiameter = 15;
+            knobDiameter = obj.KnobDiameter;
 
             if obj.OwnsAxes
 
                 axPosition = getpixelposition(obj.Axes);
                 axesSizePixels = axPosition(3:4);
 
-                % Expand the x-limits so the knob stays fully visible at
-                % either end of the value range.
-                xRangeData = uim.utility.range(obj.Axes.XLim);
-                obj.Axes.XLim = [obj.Min, obj.Max] + ...
-                    [-1, 1] .* xRangeData .* (knobDiameter / axesSizePixels(1));
-
-                % Data units per pixel after the expansion: scaling the
-                % radii per axis keeps the knob round on screen whatever
-                % the axes limits are.
+                % Scaling the radii per axis by the data units per pixel
+                % keeps the knob round on screen whatever the axes limits
+                % are.
                 dataUnitsPerPixel = [uim.utility.range(obj.Axes.XLim), ...
                     uim.utility.range(obj.Axes.YLim)] ./ axesSizePixels;
 
@@ -356,12 +379,18 @@ classdef Slider < handle
         function [xCoords, yCoords] = getBarCoordinates(obj)
             if obj.OwnsAxes
                 barWidth = 3;
+                pixelPosition = obj.getPixelPosition();
 
-                [edgeX, edgeY] = uim.shape.rectangle([obj.Position(3), barWidth], barWidth/2);
-                % edgeX = edgeX + obj.Position(1);
-                edgeY = edgeY + obj.Position(4)/2 - barWidth/2;
+                % The track spans the knob's travel, [Min, Max]. The
+                % outline is made in pixels so the rounded ends keep their
+                % shape, then stretched onto [Min, Max] because rectangle
+                % rounds its width to whole pixels.
+                valueRange = obj.Max - obj.Min;
+                trackLength = valueRange / diff(obj.Axes.XLim) * pixelPosition(3);
+                [edgeX, edgeY] = uim.shape.rectangle([trackLength, barWidth], barWidth/2);
+                edgeY = edgeY + pixelPosition(4)/2 - barWidth/2;
                 coords = uim.utility.px2du(obj.Axes, [edgeX', edgeY']);
-                xCoords = coords(:,1)';
+                xCoords = obj.Min + edgeX ./ max(edgeX) .* valueRange;
                 yCoords = coords(:,2)';
 
             else
@@ -376,7 +405,8 @@ classdef Slider < handle
         function [xCoords, yCoords] = getTickCoordinates(obj)
 
             [trackStart, trackLength] = obj.getTrackExtent();
-            yCenter = obj.Position(2) + obj.Position(4) / 2;
+            pixelPosition = obj.getPixelPosition();
+            yCenter = pixelPosition(2) + pixelPosition(4) / 2;
             numTicks = 9;
 
             [xCoords, yCoords] = uim.widget.internal.tickMarkCoordinates(...
@@ -393,8 +423,24 @@ classdef Slider < handle
 
         function [trackStart, trackLength] = getTrackExtent(obj)
         %getTrackExtent Pixel start and length of the knob's travel
-            trackStart = obj.Position(1) + obj.Padding(1);
-            trackLength = obj.Position(3) - sum(obj.Padding([1,3]));
+            pixelPosition = obj.getPixelPosition();
+            trackStart = pixelPosition(1) + obj.Padding(1);
+            trackLength = pixelPosition(3) - sum(obj.Padding([1,3]));
+        end
+
+        function pixelPosition = getPixelPosition(obj)
+        %getPixelPosition Slider rectangle in the pixels the geometry uses
+        %
+        %   In its own axes the slider is drawn from the axes origin, and
+        %   Position may be in any Units, so the axes size in pixels is
+        %   used. In a caller's axes Position is already in the pixel-like
+        %   data units the geometry is computed in.
+            if obj.OwnsAxes
+                axesPosition = getpixelposition(obj.Axes);
+                pixelPosition = [0, 0, axesPosition(3:4)];
+            else
+                pixelPosition = obj.Position;
+            end
         end
 
         function [xCoords, yCoords] = getBackgroundCoordinates(obj)
@@ -428,6 +474,10 @@ classdef Slider < handle
         function onPositionChanged(obj)
 
             if ~obj.IsConstructed; return; end
+
+            if obj.OwnsAxes
+                obj.updateAxesLimits()
+            end
 
             [xCoords, yCoords] = obj.getTextCoordinates();
             obj.ValueLabel.Position(1:2) = [xCoords, yCoords];
@@ -659,7 +709,7 @@ classdef Slider < handle
         %moveSlider Move the value to the pointer position
         %
         %   slider.moveSlider() reads the pointer position in the slider's
-        %   axes, rounds the matching value to a multiple of Step and
+        %   axes, rounds the matching value to the nearest Min + k*Step and
         %   applies it through valueChangedCallback. It is the
         %   ButtonDownFcn of the track and background, and the motion
         %   callback during a knob drag.
@@ -677,7 +727,7 @@ classdef Slider < handle
                     mousePoint(1), [obj.Min, obj.Max], trackStart, trackLength);
             end
 
-            newValue = uim.widget.internal.snapToStep(newValue, obj.Step);
+            newValue = uim.widget.internal.snapToStep(newValue, obj.Step, obj.Min);
 
             if ~isequal(newValue, obj.Value)
                 obj.valueChangedCallback(newValue)

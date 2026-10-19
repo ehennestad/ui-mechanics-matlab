@@ -72,16 +72,10 @@ classdef StructConvertible < uim.Handle & matlab.mixin.SetGet
         %   S = obj.toStruct() returns one struct element per object in
         %   obj, with a field for every property that is not Hidden.
         %   Property values that are themselves StructConvertible objects
-        %   are converted with their own toStruct. Values are read with
-        %   get, so a private or protected property that is not Hidden
-        %   raises an error.
+        %   are converted with their own toStruct. Only public properties
+        %   are read.
 
-            mc = metaclass(obj);
-
-            % Get all property names
-            propertyNames = {mc.PropertyList.Name};
-            isTransient = [ mc.PropertyList.Hidden ];
-            propertyNames = propertyNames(~isTransient);
+            propertyNames = uim.mixin.internal.publicPropertyNames(obj);
 
             % Get all values for these properties
             values = get(obj, propertyNames);

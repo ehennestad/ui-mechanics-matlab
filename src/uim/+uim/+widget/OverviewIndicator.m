@@ -253,6 +253,11 @@ classdef OverviewIndicator < uim.abstract.Control
 
         function startDrag(obj)
 
+            % A press can arrive before the previous drag's release, for
+            % example after a release outside the figure. Its listeners
+            % live as long as the figure, so end that drag first.
+            obj.stopDrag()
+
             obj.DragStartPoint = obj.CanvasAxes.CurrentPoint(1, 1:2);
             obj.DragStartViewLimits = obj.ViewLimits;
 

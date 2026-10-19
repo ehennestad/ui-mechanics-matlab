@@ -358,7 +358,71 @@ classdef TestPointerTools < matlab.unittest.TestCase
         end
     end
 
-    methods (Test) % DataCursor on an axes that is not held
+    methods (Test) % Tool graphics
+
+        function zoomInClickClearsTheSelectionRectangle(testCase)
+            [~, hAxes] = createImageAxes(testCase);
+            tool = uim.interface.pointertools.ZoomIn(hAxes);
+
+            % Press, move and release at the same (fixed) pointer
+            % position: the motion draws a zero-size rectangle, and the
+            % release is a click
+            tool.onButtonDown([], struct("Button", 1))
+            tool.onButtonMotion([], [])
+            tool.onButtonUp([], [])
+
+            testCase.verifyEmpty(findobj(hAxes, "Tag", "Rectangular Selection Outline"), ...
+                "A click-zoom leaves no selection rectangle.");
+        end
+
+        function dataCursorColorKeepsTheBlackOutline(testCase)
+            [~, hAxes] = createImageAxes(testCase);
+            tool = uim.interface.pointertools.DataCursor(hAxes);
+            tool.activate()
+
+            tool.CursorColor = [0, 1, 0];
+
+            lines = findobj(hAxes, "Type", "line");
+            colors = cell2mat(get(lines, "Color"));
+            testCase.verifyEqual(sum(all(colors == [0, 0, 0], 2)), 2, ...
+                "The two outline lines stay black.");
+            testCase.verifyEqual(sum(all(colors == [0, 1, 0], 2)), 3, ...
+                "The two crosshair lines and the dot take CursorColor.");
+        end
+
+        function dataCursorDrawsItsColouredLinesAboveTheOutline(testCase)
+            [~, hAxes] = createImageAxes(testCase);
+            tool = uim.interface.pointertools.DataCursor(hAxes);
+            tool.activate()
+            tool.CursorColor = [0, 1, 0];
+
+            % Axes children are listed from the top of the stack down
+            children = hAxes.Children;
+            lines = children(arrayfun(@(h) isa(h, "matlab.graphics.chart.primitive.Line"), children));
+            isDashed = arrayfun(@(h) strcmp(h.LineStyle, '--'), lines);
+            isColoured = isDashed & arrayfun(@(h) isequal(h.Color, [0, 1, 0]), lines);
+            isOutline = isDashed & arrayfun(@(h) isequal(h.Color, [0, 0, 0]), lines);
+
+            testCase.assertEqual([nnz(isColoured), nnz(isOutline)], [2, 2]);
+            testCase.verifyLessThan(find(isColoured, 1, 'last'), find(isOutline, 1), ...
+                "Both coloured lines are drawn above both outline lines.");
+        end
+
+        function deletingTheManagerRemovesToolGraphics(testCase)
+            testCase.assumeTrue(exist("drawrectangle", "file") > 0, ...
+                "Crop needs Image Processing Toolbox ROI objects.");
+            [hFigure, hAxes] = createImageAxes(testCase);
+            childrenBefore = numel(hAxes.Children);
+            manager = uim.interface.PointerManager(hFigure, hAxes, {'crop', 'zoomIn'});
+
+            delete(manager)
+
+            testCase.verifyNumElements(hAxes.Children, childrenBefore, ...
+                "The axes is left with the content it had before the manager.");
+        end
+    end
+
+    methods (Test) % Crop
 
         function dataCursorKeepsTheContentOfAnUnheldAxes(testCase)
             hFigure = figure("Visible", "off");
@@ -375,10 +439,6 @@ classdef TestPointerTools < matlab.unittest.TestCase
                 "The four crosshair lines and the centre dot are drawn.");
             testCase.verifyEqual(char(hAxes.NextPlot), 'replace', "NextPlot is restored.");
         end
-    end
-
-    methods (Test) % Crop
-
         function cropToolReportsSelectedRegion(testCase)
             testCase.assumeTrue(exist("drawrectangle", "file") > 0, ...
                 "Crop needs Image Processing Toolbox ROI objects.");

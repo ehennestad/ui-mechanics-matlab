@@ -14,7 +14,8 @@ classdef Control < uim.abstract.Component
 %       - sets the figure pointer to 'hand' while the pointer is over
 %         its background patch, and to 'arrow' when the pointer leaves,
 %       - shows Tooltip, if not empty, centered about 15 pixels below
-%         its bottom edge while the pointer is over it,
+%         its bottom edge while the pointer is over it (a control in a
+%         container with a private canvas shows no tooltip),
 %       - records mouse presses: onMousePressed sets IsMousePressed and
 %         listens for the figure's WindowMouseRelease event, which
 %         clears it again.
@@ -124,12 +125,18 @@ classdef Control < uim.abstract.Component
         end
 
         function showTooltip(obj)
-            %Todo: Should always be the figures main canvas?
-            obj.Canvas.showTooltip(obj.Tooltip, obj.TooltipPosition)
+            % Tooltips are drawn by a UIComponentCanvas. A control in a
+            % container with a private canvas has that container's own
+            % axes as Canvas, which has no tooltip.
+            if isa(obj.Canvas, 'uim.UIComponentCanvas')
+                obj.Canvas.showTooltip(obj.Tooltip, obj.TooltipPosition)
+            end
         end
 
         function hideTooltip(obj)
-            obj.Canvas.hideTooltip()
+            if isa(obj.Canvas, 'uim.UIComponentCanvas')
+                obj.Canvas.hideTooltip()
+            end
         end
 
         function onTooltipChanged(obj)

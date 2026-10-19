@@ -12,14 +12,10 @@ classdef Image < uim.abstract.Component
 %       img = uim.decorator.Image(canvas, CData=imread("logo.png"), ...
 %           Position=[10, 10, 64, 64], PositionMode="manual");
 %
-%   The image is stored flipped upside down, because the canvas y-axis
-%   points up. Reading CData or Alpha back therefore returns the flipped
-%   array, and assigning that value again flips the displayed image.
-%
-%   With LockAspectRatio true, the code that fits the image into the
-%   component compares the image height/width ratio with the component
-%   width/height ratio, so in a component that is not square the image
-%   can extend past the component.
+%   CData and Alpha read back as assigned; the image is flipped only when
+%   it is drawn, because the canvas y-axis points up. With
+%   LockAspectRatio true, the image is scaled to fit inside the component
+%   and keeps its aspect ratio.
 %
 %   See also uim.abstract.Component
 
@@ -29,7 +25,7 @@ classdef Image < uim.abstract.Component
 
     properties
         CData = [] % Image data, an m-by-n or m-by-n-by-3 array as accepted by image.
-        Alpha = [] % Transparency, a scalar or an array the size of the image (AlphaData).
+        Alpha = [] % Transparency: empty, a scalar, or an array the size of the image (AlphaData).
 
         LockAspectRatio = true; % When true, keep the image aspect ratio inside the component.
 
@@ -78,13 +74,14 @@ classdef Image < uim.abstract.Component
 
             assert(isValidDim & isValidSize, 'Value must be an image matrix')
 
-            obj.CData = flipud(newValue);
+            obj.CData = newValue;
 
             obj.plotImage()
         end
 
         function set.Alpha(obj, newValue)
-            obj.Alpha = flipud(newValue);
+            obj.validateAlpha(newValue)
+            obj.Alpha = newValue;
             obj.onAlphaSet()
         end
 
@@ -122,7 +119,7 @@ classdef Image < uim.abstract.Component
             if ~obj.IsConstructed; return; end
             if isempty(obj.ImageHandle); return; end
 
-            obj.ImageHandle.AlphaData = obj.Alpha;
+            obj.ImageHandle.AlphaData = obj.getDrawnAlpha();
         end
     end
 
@@ -136,8 +133,11 @@ classdef Image < uim.abstract.Component
                 obj.ImageHandle=[];
             end
 
-            obj.ImageHandle = image(obj.CanvasAxes, 'CData', obj.CData);
-            obj.ImageHandle.AlphaData = obj.Alpha;
+            obj.validateAlpha(obj.Alpha)
+
+            % The canvas y-axis points up, so the rows are drawn flipped
+            obj.ImageHandle = image(obj.CanvasAxes, 'CData', flipud(obj.CData));
+            obj.ImageHandle.AlphaData = obj.getDrawnAlpha();
 
             obj.ImageHandle.HitTest = 'off';
             obj.ImageHandle.PickableParts = 'none';
@@ -150,7 +150,9 @@ classdef Image < uim.abstract.Component
             imSize = obj.Size;
 
             if obj.LockAspectRatio
-                if obj.AspectRatio > obj.Size(1) / obj.Size(2)
+                % Both ratios are height / width: a relatively taller image
+                % fills the height, a wider one fills the width
+                if obj.AspectRatio > obj.Size(2) / obj.Size(1)
                     imSize(1) = imSize(2) ./ obj.AspectRatio;
                 else
                     imSize(2) = imSize(1) .* obj.AspectRatio;
@@ -162,6 +164,30 @@ classdef Image < uim.abstract.Component
 
             obj.ImageHandle.XData = xPos;
             obj.ImageHandle.YData = yPos;
+        end
+
+        function validateAlpha(obj, alpha)
+        %validateAlpha Check that alpha is empty, a scalar or the size of the image
+        %
+        %   The size check needs CData. During construction it waits until
+        %   the image is first drawn, so it does not depend on the order in
+        %   which the options are assigned.
+            if ~obj.IsConstructed; return; end
+
+            imageSize = size(obj.CData, [1, 2]);
+            assert(isempty(alpha) || isscalar(alpha) || isequal(size(alpha), imageSize), ...
+                "uim:Image:InvalidAlpha", ...
+                "Alpha must be empty, a scalar, or an array the size of the image (%d-by-%d).", ...
+                imageSize(1), imageSize(2))
+        end
+
+        function alphaData = getDrawnAlpha(obj)
+        %getDrawnAlpha Alpha in the drawn orientation of the image
+            if isempty(obj.Alpha)
+                alphaData = 1;
+            else
+                alphaData = flipud(obj.Alpha);
+            end
         end
     end
 end
