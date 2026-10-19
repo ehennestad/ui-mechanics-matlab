@@ -387,8 +387,8 @@ classdef MessageBox < uim.mixin.Resizable
 
         function foldMessage(obj)
 
-            % Size every message from the box before the first long
-            % message, not from a box already enlarged for an earlier one
+            % Each message is measured in the box at its original size,
+            % which OriginalPosition holds while the box is enlarged
             if ~isempty(obj.OriginalPosition)
                 obj.Axes.Position([2,4]) = obj.OriginalPosition;
                 obj.OriginalPosition = [];

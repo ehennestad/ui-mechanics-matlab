@@ -14,7 +14,10 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
 %   ValueChangedFcn.
 %
 %   The parts are primitive lines with HandleVisibility "off", excluded
-%   from data tips.
+%   from data tips. Color, EdgeColor, LineWidth, MarkerSize and
+%   MarkerSymbol set their appearance; a knob grows by 2 points and
+%   lightens while the pointer is on it. Deleting the marker deletes its
+%   lines.
 %
 %   Example:
 %       hAxes = axes(figure, XLim=[1, 100], YLim=[0, 1]);
@@ -37,14 +40,14 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
         ValueChangedFcn
     end
 
-    % The appearance properties are not used by the widget: the marker
-    % is drawn in grey with fixed line width, knob size and knob symbols.
     properties % Appearance
-        Color               % Not used by the widget
-        EdgeColor           % Not used by the widget
-        LineWidth = 1;      % Not used by the widget
-        MarkerSize = 10;    % Not used by the widget
-        MarkerSymbol = 'v'  % Not used by the widget
+        Color = ones(1,3) * 0.4 % Colour of the line and the knobs
+        EdgeColor = []          % Edge colour of the knobs; empty uses Color
+        LineWidth = 1;          % Width of the line, in points
+        MarkerSize = 10;        % Size of the knobs, in points
+        % Marker of the top knob; the bottom knob uses the vertically
+        % mirrored marker ('v' and '^' swap)
+        MarkerSymbol = 'v'
     end
 
     properties (Access = public)
@@ -94,7 +97,40 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
         end
     end
 
+    methods
+        function delete(obj)
+            obj.resetWindowMouseListeners()
+            allHandles = [obj.LineHandle, obj.TopButtonHandle, obj.BottomButtonHandle];
+            delete(allHandles(isgraphics(allHandles)))
+        end
+    end
+
     methods % Set/get
+        function set.Color(obj, newValue)
+            obj.Color = newValue;
+            obj.onAppearanceChanged()
+        end
+
+        function set.EdgeColor(obj, newValue)
+            obj.EdgeColor = newValue;
+            obj.onAppearanceChanged()
+        end
+
+        function set.LineWidth(obj, newValue)
+            obj.LineWidth = newValue;
+            obj.onAppearanceChanged()
+        end
+
+        function set.MarkerSize(obj, newValue)
+            obj.MarkerSize = newValue;
+            obj.onAppearanceChanged()
+        end
+
+        function set.MarkerSymbol(obj, newValue)
+            obj.MarkerSymbol = newValue;
+            obj.onAppearanceChanged()
+        end
+
         function set.Value(obj, newValue)
             obj.Value = newValue;
             obj.updateFrameMarker()
@@ -124,13 +160,11 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
                 'LineStyle', '-', 'HitTest', 'off');
 
             obj.TopButtonHandle = line(obj.Axes, 1, 1, ...
-                'Marker', 'v', 'LineStyle', 'none', ...
-                'HitTest', 'on', 'MarkerSize', 10);
+                'LineStyle', 'none', 'HitTest', 'on');
             obj.TopButtonHandle.ButtonDownFcn = @obj.knobPressed;
 
             obj.BottomButtonHandle = line(obj.Axes, 1, 0, ...
-                'Marker', '^', 'LineStyle', 'none', ...
-                'HitTest', 'on', 'MarkerSize', 10);
+                'LineStyle', 'none', 'HitTest', 'on');
             obj.BottomButtonHandle.ButtonDownFcn = @obj.knobPressed;
 
             if ~wasHoldOn
@@ -141,10 +175,9 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
             %obj.hlineCurrentFrame(2).LineStyle = '-';
             %obj.hlineCurrentFrame(2).MarkerEdgeColor = [0.2,0.2,0.2];
 
-            set(allHandles, 'Color', ones(1,3) * 0.4, 'MarkerFaceColor', ones(1,3) * 0.4);
             set(allHandles, 'Tag', 'FrameMarker');
-            set(allHandles(1), 'Color', [ones(1,3)*0.4, 0.6])
             set(allHandles, 'HandleVisibility', 'off')
+            obj.applyAppearance()
 
             % The knobs keep HitTest on for dragging, so interactive
             % data tips are excluded per object.
@@ -187,7 +220,40 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
             yData = {[0,1], 1, 0};
             xData = {[xValue, xValue], xValue, xValue};
             set(allHandles, {'XData'}, xData', {'YData'}, yData')
-            set(allHandles, 'LineWidth', 1)
+        end
+
+        function onAppearanceChanged(obj)
+            if ~obj.IsConstructed; return; end
+            obj.applyAppearance()
+        end
+
+        function applyAppearance(obj)
+        %applyAppearance Apply the appearance properties to the line and knobs
+            color = validatecolor(obj.Color);
+            set(obj.LineHandle, 'Color', [color, 0.6], 'LineWidth', obj.LineWidth)
+
+            knobs = [obj.TopButtonHandle, obj.BottomButtonHandle];
+            if isempty(obj.EdgeColor)
+                edgeColor = 'auto';
+            else
+                edgeColor = obj.EdgeColor;
+            end
+            set(knobs, 'Color', color, 'MarkerEdgeColor', edgeColor, ...
+                'LineWidth', obj.LineWidth)
+            obj.TopButtonHandle.Marker = obj.MarkerSymbol;
+            obj.BottomButtonHandle.Marker = mirrorMarkerVertically(obj.MarkerSymbol);
+            obj.setKnobHighlight(knobs, false)
+        end
+
+        function setKnobHighlight(obj, knobs, isHighlighted)
+        %setKnobHighlight Show knobs as hovered (larger, lighter) or normal
+            color = validatecolor(obj.Color);
+            if isHighlighted
+                set(knobs, 'MarkerFaceColor', color + (1 - color) / 6, ...
+                    'MarkerSize', obj.MarkerSize + 2)
+            else
+                set(knobs, 'MarkerFaceColor', color, 'MarkerSize', obj.MarkerSize)
+            end
         end
 
         function resetWindowMouseListeners(obj)
@@ -214,8 +280,7 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
             if isgraphics(h, 'patch')
                 h.FaceColor = ones(1,3) * 0.8;
             elseif isgraphics(h, 'line') % Primitive or chart line
-                h.MarkerFaceColor = ones(1,3) * 0.5;
-                h.MarkerSize = 12;
+                obj.setKnobHighlight(h, true)
             end
 
             obj.IsMouseOnButton = true;
@@ -233,8 +298,7 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
                 h.FaceColor = ones(1,3) * 0.6;
             elseif isgraphics(h, 'line') % Primitive or chart line
                 if ~obj.IsButtonDown
-                    h.MarkerFaceColor = ones(1,3) * 0.4;
-                    h.MarkerSize = 10;
+                    obj.setKnobHighlight(h, false)
                 end
             end
 
@@ -297,18 +361,29 @@ classdef FrameMarker < uim.mixin.NameValueAssignable
         %
         %   marker.knobReleased(src, evt) is the pointer-release callback
         %   during a drag. It removes the drag listeners and restores the
-        %   size and color of the top knob.
+        %   size and color of both knobs.
 
             obj.IsButtonDown = false;
 
             obj.resetWindowMouseListeners()
 
-            obj.TopButtonHandle.MarkerFaceColor = ones(1,3) * 0.4;
-            obj.TopButtonHandle.MarkerSize = 10;
+            obj.setKnobHighlight([obj.TopButtonHandle, obj.BottomButtonHandle], false)
 
             if ~obj.IsMouseOnButton
                 obj.ParentFigure.Pointer = 'arrow';
             end
         end
+    end
+end
+
+function mirroredMarker = mirrorMarkerVertically(marker)
+%mirrorMarkerVertically Marker that points the other way vertically
+    switch marker
+        case 'v'
+            mirroredMarker = '^';
+        case '^'
+            mirroredMarker = 'v';
+        otherwise
+            mirroredMarker = marker;
     end
 end

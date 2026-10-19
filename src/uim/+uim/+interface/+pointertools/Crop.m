@@ -61,6 +61,17 @@ classdef Crop < uim.interface.PointerTool
 
     methods
 
+        function delete(obj)
+            % The size readout is created with the tool; the patch and the
+            % rectangle exist while or after a selection is made
+            handles = {obj.RectangleSizeText, obj.CroppedBoundaryPatch, obj.ImrectHandle};
+            for i = 1:numel(handles)
+                if ~isempty(handles{i}) && all(isvalid(handles{i}))
+                    delete(handles{i})
+                end
+            end
+        end
+
         function obj = Crop(hAxes)
         %Crop Create the tool for an image axes
         %

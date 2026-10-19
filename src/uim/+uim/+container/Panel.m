@@ -12,17 +12,10 @@ classdef Panel < uim.abstract.Container
 %   Components created with the panel as parent are placed inside the
 %   uipanel and draw on the uipanel's UIComponentCanvas.
 %
-%   Usage notes:
-%       - Pass BackgroundColor at construction. The inherited default,
-%         'none', is not a valid uipanel color, and construction fails
-%         without it. Of the style properties, only BackgroundColor and
-%         Visible affect the uipanel.
-%       - Set Margin, Location, HorizontalAlignment and
-%         VerticalAlignment after construction; passing them as
-%         name-value arguments raises an error.
-%       - The uipanel follows the automatic layout. Setting Position or
-%         Size changes the property but does not move or resize the
-%         uipanel.
+%   Of the style properties, only BackgroundColor and Visible affect the
+%   uipanel. With the inherited default BackgroundColor 'none', the
+%   uipanel keeps its own default colour. The uipanel follows the layout
+%   and any assigned Position or Size.
 %
 %   Example:
 %       hFigure = figure();
@@ -72,18 +65,39 @@ classdef Panel < uim.abstract.Container
 
     methods (Access = protected)
         function updateSize(obj, mode)
-            if nargin < 2; mode = obj.PositionMode; end
+            if nargin < 2; mode = obj.SizeMode; end
 
             updateSize@uim.abstract.Component(obj, mode)
-            if ~isequal(obj.PanelHandle.Position, obj.Position)
-                obj.PanelHandle.Position = obj.Position;
-            end
+            obj.syncPanelPosition()
         end
 
         function updateLocation(obj, mode)
             if nargin < 2; mode = obj.PositionMode; end
 
             updateLocation@uim.abstract.Component(obj, mode)
+            obj.syncPanelPosition()
+        end
+
+        function resize(obj)
+        %resize Resize the uipanel when Size or Position is assigned
+            resize@uim.abstract.Container(obj)
+            obj.syncPanelPosition()
+        end
+
+        function relocate(obj, shift)
+        %relocate Move the uipanel when Position is assigned
+            relocate@uim.abstract.Container(obj, shift)
+            obj.syncPanelPosition()
+        end
+    end
+
+    methods (Access = private)
+        function syncPanelPosition(obj)
+        %syncPanelPosition Give the uipanel the component Position
+        %
+        %   Layout options can be assigned before createBackground makes
+        %   the uipanel; the constructor's layout pass syncs it then.
+            if isempty(obj.PanelHandle); return; end
             if ~isequal(obj.PanelHandle.Position, obj.Position)
                 obj.PanelHandle.Position = obj.Position;
             end
@@ -92,17 +106,36 @@ classdef Panel < uim.abstract.Container
 
     methods (Access = protected)
         function onStyleChanged(obj)
-            if obj.IsConstructed
-                obj.PanelHandle.BackgroundColor = obj.BackgroundColor;
+            % A uipanel has no 'none' colour; it keeps its own default
+            color = obj.BackgroundColor;
+            isNone = (ischar(color) || isstring(color)) && strcmpi(color, 'none');
+            if obj.IsConstructed && ~isNone
+                obj.PanelHandle.BackgroundColor = color;
             end
         end
 
         function onVisibleChanged(obj, newValue)
+            if isempty(obj.PanelHandle); return; end
             obj.PanelHandle.Visible = newValue;
         end
     end
 
     methods
+        function pos = getpixelposition(obj, recursive)
+        %getpixelposition Return the panel position in pixels
+        %
+        %   pos = obj.getpixelposition() returns the uipanel's pixel
+        %   position in its parent. pos = obj.getpixelposition(true)
+        %   returns it relative to the figure.
+        %
+        %   See also getpixelposition
+            if nargin < 2; recursive = false; end
+            % Component.getpixelposition offsets Position by the graphics
+            % container, which for a panel is the panel's own uipanel, so
+            % the panel reports the uipanel's position directly
+            pos = getpixelposition(obj.PanelHandle, recursive);
+        end
+
         function hContainer = getGraphicsContainer(obj)
         %getGraphicsContainer Return the uipanel that holds child components
         %

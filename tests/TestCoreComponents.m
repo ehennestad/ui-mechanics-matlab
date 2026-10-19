@@ -230,6 +230,95 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 "A second change within 1 s is not notified at a rate of 1.");
         end
 
+        function panelConstructsWithLayoutOptionsAndNoColor(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 600, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+
+            plain = uim.container.Panel(hFigure);
+            testCase.addTeardown(@deleteValid, plain);
+            testCase.verifyClass(plain, "uim.container.Panel", "No BackgroundColor is needed.");
+
+            withMargin = uim.container.Panel(hFigure, BackgroundColor="w", ...
+                Margin=[10, 10, 10, 10], Location="northeast", HorizontalAlignment="right");
+            testCase.addTeardown(@deleteValid, withMargin);
+            hPanel = withMargin.getGraphicsContainer();
+            testCase.verifyEqual(hPanel.Position, withMargin.Position, ...
+                "The uipanel follows the layout options given at construction.");
+        end
+
+        function panelPositionMovesTheUipanel(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 600, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            panel = uim.container.Panel(hFigure, BackgroundColor="w");
+            testCase.addTeardown(@deleteValid, panel);
+
+            panel.Position = [50, 50, 100, 80];
+
+            testCase.verifyEqual(panel.getGraphicsContainer().Position, [50, 50, 100, 80]);
+            testCase.verifyEqual(panel.getpixelposition(), [50, 50, 100, 80], ...
+                "getpixelposition counts the panel offset once.");
+        end
+
+        function tabGroupSelectedTabShowsThatTab(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 600, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            tabGroup = uim.container.TabGroup(hFigure);
+            testCase.addTeardown(@deleteValid, tabGroup);
+            tabOne = uim.container.Tab(tabGroup, "Title", "One");
+            tabTwo = uim.container.Tab(tabGroup, "Title", "Two");
+            setappdata(hFigure, "Changed", false)
+            tabGroup.SelectionChangedFcn = @(~, ~) setappdata(hFigure, "Changed", true);
+
+            tabGroup.SelectedTab = 2;
+
+            testCase.verifyEqual([string(tabOne.Panel.Visible), string(tabTwo.Panel.Visible)], ["off", "on"]);
+            testCase.verifyFalse(getappdata(hFigure, "Changed"), ...
+                "Assigning SelectedTab does not call SelectionChangedFcn.");
+            testCase.verifyError(@() assignProperty(tabGroup, "SelectedTab", 3), ...
+                "uim:TabGroup:InvalidSelectedTab");
+        end
+
+        function contrastSliderResetsLimitsOutsideNewDataLimits(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            slider = uim.widget.ContrastSlider(canvas, "DataLimits", [0, 255], "Limits", [0, 255]);
+            testCase.addTeardown(@deleteValid, slider);
+
+            slider.DataLimits = [300, 400];
+            testCase.verifyEqual(slider.Limits, [300, 400], ...
+                "Limits outside the new range are reset to the full range.");
+
+            slider.Limits = [320, 350];
+            slider.DataLimits = [310, 420];
+            testCase.verifyEqual(slider.Limits, [320, 350], ...
+                "Limits inside the new range are kept.");
+        end
+        function marginChangeKeepsAManualSize(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 600, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            components = {
+                uim.container.Panel(hFigure, BackgroundColor="w")
+                uim.decorator.Box(canvas, PositionMode="auto")
+                uim.widget.Toolbar(canvas, Location="northwest", BarExtensionMode="expanded")
+                uim.widget.RangeSlider(canvas, Min=0, Max=10)
+                };
+            for k = 1:numel(components)
+                component = components{k};
+                testCase.addTeardown(@deleteValid, component);
+                component.Size = [150, 60];
+
+                component.Margin = [5, 5, 5, 5];
+
+                testCase.verifyEqual(char(component.SizeMode), 'manual', ...
+                    class(component) + ": a Margin change keeps SizeMode 'manual'.");
+                testCase.verifyEqual(component.Size, [150, 60], ...
+                    class(component) + ": a Margin change keeps the manual Size.");
+            end
+        end
+
         function rangeSliderClampsValuesWhenLimitsChange(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
@@ -649,6 +738,38 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             waitbar.Status = 1;
             barLengths = arrayfun(@(h) max(h.XData) - min(h.XData), barLines);
             testCase.verifyEqual(barLengths(1)/barLengths(2), 1, "RelTol", 0.05);
+        end
+
+        function waitbarFollowsAVerticalPositionChange(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [20, 20, 300, 200], "YLim", [0, 1]);
+            waitbar = uim.widget.Waitbar(hAxes, "Position", [1, 1, 200, 10]);
+            testCase.addTeardown(@deleteValid, waitbar);
+            barLines = findall(hAxes, "Type", "line");
+            yBefore = barLines(1).YData(1);
+
+            waitbar.Position = [1, 100, 200, 10];
+
+            % 99 px higher in a 200 px axes showing one data unit
+            testCase.verifyEqual(barLines(1).YData(1) - yBefore, 99/200, "AbsTol", 1e-9);
+        end
+
+        function waitbarCreatedHiddenDrawsAndDeletes(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure);
+
+            waitbar = uim.widget.Waitbar(hAxes, "Visible", "off");
+            barLines = findall(hAxes, "Type", "line");
+            testCase.verifyNumElements(barLines, 2, "The bars are drawn.");
+            testCase.verifyEqual(string({barLines.Visible}), ["off", "off"]);
+
+            waitbar.Visible = "on";
+            testCase.verifyEqual(string({barLines.Visible}), ["on", "on"]);
+
+            testCase.verifyWarningFree(@() delete(waitbar));
+            testCase.verifyEmpty(findall(hAxes, "Type", "line"), "delete removes the bars.");
         end
 
         function frameMarkerTracksValueInPlainAxes(testCase)
@@ -1290,8 +1411,8 @@ classdef TestCoreComponents < matlab.unittest.TestCase
 
             slider.DataLimits = [300, 500];
             testCase.verifyEqual(slider.DataLimits, [300, 500]);
-            % The old limits are clamped into the new data range.
-            testCase.verifyEqual(slider.Limits, [300, 300]);
+            % Limits outside the new data range are reset to the full range.
+            testCase.verifyEqual(slider.Limits, [300, 500]);
 
             slider.Limits = [320, 480];
             testCase.verifyEqual(slider.Limits, [320, 480]);
