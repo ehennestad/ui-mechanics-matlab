@@ -2,8 +2,9 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 %PlaneSwitcher Toggle button with a pop-up slider for choosing a z-plane
 %
 %   A plane switcher draws a bold "Z" text button. Clicking it shows or
-%   hides a vertical uim.widget.Slider that runs from 1 to NumPlanes, and
-%   moving the slider calls Callback with the new value.
+%   hides a vertical uim.widget.Slider above the button that runs from 1
+%   (bottom) to NumPlanes (top), and moving the slider calls Callback
+%   with the new value.
 %   uim.widget.PlaybackControl uses it to pick the plane of a volumetric
 %   image stack.
 %
@@ -70,6 +71,11 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
 
         PlaneSwitcherToggleButton = gobjects(0);
         PlaneSwitcherSlider = gobjects(0);
+    end
+
+    properties (Constant, Access = private)
+        SliderSize = [20, 100]  % Pixels, [width, height]
+        SliderGap = 5           % Pixels between the top of the button and the slider
     end
 
     properties (Access = private) % Widget states and internals
@@ -218,7 +224,7 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
                 obj.NumPlanes-1};
 
             hSlider = uim.widget.Slider('Parent', obj.Axes.Parent, ...
-                    'Position', [0, obj.Position(4)+10, 100, 10], ...
+                    'Position', obj.getSliderPosition(), 'Orientation', 'vertical', ...
                     'Units', 'pixel', args{:}, 'Value', obj.CurrentPlane, ...
                     'TextColor', obj.ForegroundColor, 'Padding', [0,9,3,9], ...
                     'Callback', @obj.onPlaneSliderValueChanged, ...
@@ -228,6 +234,23 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
             obj.PlaneSwitcherSlider = hSlider;
             obj.PlaneSwitcherSlider.Visible = 'off';
             % Todo
+        end
+
+        function sliderPosition = getSliderPosition(obj)
+        %getSliderPosition Pixel position of the plane slider in the parent of the axes
+        %
+        %   The slider stands SliderGap pixels above the "Z" button,
+        %   centred on it horizontally.
+            buttonExtent = obj.PlaneSwitcherToggleButton.Extent;
+            buttonTopCenter = [buttonExtent(1) + buttonExtent(3)/2, ...
+                buttonExtent(2) + buttonExtent(4)];
+
+            axesPosition = getpixelposition(obj.Axes);
+            topCenterInParent = axesPosition(1:2) + ...
+                uim.utility.du2px(obj.Axes, buttonTopCenter);
+
+            sliderPosition = [topCenterInParent(1) - obj.SliderSize(1)/2, ...
+                topCenterInParent(2) + obj.SliderGap, obj.SliderSize];
         end
     end
 
@@ -257,6 +280,9 @@ classdef PlaneSwitcher < uim.mixin.NameValueAssignable
             if strcmp(obj.PlaneSwitcherSlider.Visible, 'on')
                 obj.PlaneSwitcherSlider.Visible = 'off';
             else
+                % The button moves with the switcher and its axes, so the
+                % slider is placed above it each time it opens
+                obj.PlaneSwitcherSlider.Position = obj.getSliderPosition();
                 obj.PlaneSwitcherSlider.Visible = 'on';
             end
         end

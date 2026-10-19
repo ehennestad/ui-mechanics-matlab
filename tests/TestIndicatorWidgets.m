@@ -309,7 +309,7 @@ classdef TestIndicatorWidgets < matlab.unittest.TestCase
 
             switcher.NumPlanes = 8;
 
-            testCase.verifyEqual(hSliderAxes.XLim(2) > 7.5, true, ...
+            testCase.verifyEqual(hSliderAxes.YLim(2) > 7.5, true, ...
                 "The slider range grows to the new NumPlanes.");
         end
 
@@ -353,7 +353,7 @@ classdef TestIndicatorWidgets < matlab.unittest.TestCase
 
             switcher.CurrentPlane = 4;
             knob = sliderKnob(hSliderAxes);
-            testCase.verifyEqual((max(knob.XData) + min(knob.XData))/2, 4, "AbsTol", 1e-3);
+            testCase.verifyEqual((max(knob.YData) + min(knob.YData))/2, 4, "AbsTol", 1e-3);
 
             hBackground = sliderBackground(hSliderAxes);
             hBackground.ButtonDownFcn(hBackground, [])
@@ -365,6 +365,26 @@ classdef TestIndicatorWidgets < matlab.unittest.TestCase
             switcher.Position(1:2) = [30, 20];
             switcher.Visible = 'off';
             switcher.NumPlanes = 6;
+        end
+
+        function planeSwitcherOpensAVerticalSliderAboveTheButton(testCase)
+            [hFigure, hPanel] = createPanel(testCase);
+            switcher = uim.widget.PlaneSwitcher(hPanel, "NumPlanes", 5);
+            testCase.addTeardown(@deleteValid, switcher);
+            hSliderAxes = findall(hFigure, "Tag", "SlideBar Container");
+            toggleButton = findall(hPanel, "Tag", "PlaneSwitcherToggleButton");
+
+            toggleButton.ButtonDownFcn(toggleButton, [])
+            sliderPosition = getpixelposition(hSliderAxes);
+            testCase.verifyGreaterThan(sliderPosition(4), sliderPosition(3), ...
+                "The plane slider is a vertical bar.");
+            verifySliderAboveButton(testCase, sliderPosition, toggleButton)
+
+            % The slider is placed again when it reopens after the button moved
+            toggleButton.ButtonDownFcn(toggleButton, [])
+            switcher.Position(1) = switcher.Position(1) + 50;
+            toggleButton.ButtonDownFcn(toggleButton, [])
+            verifySliderAboveButton(testCase, getpixelposition(hSliderAxes), toggleButton)
         end
     end
 end
@@ -394,6 +414,21 @@ function labels = pageLabels(hAxes, pageNames)
 %pageLabels Text objects showing the page names (excludes the canvas tooltip)
     hTexts = findobj(hAxes, "Type", "text");
     labels = hTexts(arrayfun(@(h) any(strcmp(string(h.String), pageNames)), hTexts));
+end
+
+function verifySliderAboveButton(testCase, sliderPosition, toggleButton)
+%verifySliderAboveButton Slider bottom above the button top, centred on the button
+    hAxes = toggleButton.Parent;
+    extent = toggleButton.Extent;
+    topCorners = uim.utility.du2px(hAxes, ...
+        [extent(1), extent(2) + extent(4); extent(1) + extent(3), extent(2) + extent(4)]);
+    axesPosition = getpixelposition(hAxes);
+    topCorners = topCorners + axesPosition(1:2);
+
+    testCase.verifyGreaterThan(sliderPosition(2), topCorners(1, 2), ...
+        "The slider starts above the button.");
+    testCase.verifyEqual(sliderPosition(1) + sliderPosition(3)/2, mean(topCorners(:, 1)), ...
+        "AbsTol", 1, "The slider is centred on the button.");
 end
 
 function knob = sliderKnob(hAxes)

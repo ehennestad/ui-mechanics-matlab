@@ -1,5 +1,5 @@
 classdef Slider < matlab.mixin.SetGet
-%Slider A horizontal slider with a round knob, drawn in axes
+%Slider A horizontal or vertical slider with a round knob, drawn in axes
 %
 %   slider = uim.widget.Slider(Name=Value) creates a slider. All options
 %   are name-value pairs naming public properties; there is no
@@ -18,21 +18,32 @@ classdef Slider < matlab.mixin.SetGet
 %       data unit is one pixel. Use an axes whose limits match its
 %       pixel size. Deleting the slider leaves the axes in place.
 %
+%   The Orientation option sets the direction of the track, and can only
+%   be given at construction:
+%     - 'horizontal' (default). Min is at the left. The value label is
+%       shown above the knob, and Padding uses its left and right
+%       entries.
+%     - 'vertical'. Min is at the bottom. The value label is shown to
+%       the right of the knob, and Padding uses its bottom and top
+%       entries. TickMode 'over' places ticks to the right of the track
+%       and 'under' to the left.
+%
 %   Pressing the track moves the value to the pressed point; dragging
 %   the knob moves it continuously. Values from the pointer are rounded
 %   to the nearest Min + k*Step and clamped to [Min, Max]. When a
 %   user interaction changes Value, the slider calls
 %   Callback(slider, newValue). Assigning Value programmatically moves
 %   the knob without calling Callback; values outside [Min, Max] are
-%   ignored. While the knob is pressed, a value label is shown above it
-%   (see ShowLabel, TooltipExpression, TooltipPrecision, TooltipUnits).
+%   ignored. While the knob is pressed, the value label is shown (see
+%   ShowLabel, TooltipExpression, TooltipPrecision, TooltipUnits).
 %
 %   Min and Max given at construction are applied together, before the
 %   other options; Min must be below Max. Without a Value option, the
 %   default Value of 0.5 is moved into [Min, Max].
 %
 %   Assigning Min at or above Max, or Max at or below Min, raises
-%   uim:Slider:InvalidLimits.
+%   uim:Slider:InvalidLimits. Assigning Orientation after construction
+%   raises uim:Slider:OrientationAfterConstruction.
 %
 %   Example:
 %       hFigure = figure;
@@ -40,15 +51,21 @@ classdef Slider < matlab.mixin.SetGet
 %           Position=[20, 20, 200, 20], Min=1, Max=10, Value=1, ...
 %           NumSteps=9, Callback=@(src, value) disp(value));
 %
+%       verticalSlider = uim.widget.Slider(Parent=hFigure, ...
+%           Units="pixels", Position=[240, 20, 20, 200], ...
+%           Orientation="vertical");
+%
 %   See also uim.widget.RangeSlider, uim.widget.ScrollBar
 
     % Todo: adapt to uim.widgets.
 
-    % Todo: Allow vertical orientation...
-
     properties (Dependent = true)
         Min                     % Minimum slider value (default 0); must stay below Max
         Max                     % Maximum slider value (default 1); must stay above Min
+
+        % Direction of the track, 'horizontal' (default) or 'vertical'.
+        % Can only be set at construction.
+        Orientation (1,:) char {mustBeMember(Orientation, {'horizontal', 'vertical'})}
     end
 
     properties
@@ -87,7 +104,10 @@ classdef Slider < matlab.mixin.SetGet
         % Parent, the slider's rectangle in that axes' data units.
         Position = [0, 0, 0.1, 0.3]
         Units = 'normalized'    % Units of Position for the slider's own axes; used at construction
-        Padding = [0,9,3,9];    % Track inset in pixels, [left, bottom, right, top]; only left and right are used
+
+        % Track inset in pixels, [left, bottom, right, top]. A horizontal
+        % slider uses left and right, a vertical slider bottom and top.
+        Padding = [0,9,3,9];
 
         Visible = 'on'          % 'on' or 'off'
         ShowLabel = true;       % Show the value label while the knob is pressed
@@ -106,6 +126,7 @@ classdef Slider < matlab.mixin.SetGet
 
     properties (Constant, Access = private)
         KnobDiameter = 15   % Pixels
+        AxesLimitNames = ["XLim", "YLim"]   % Indexed by getTrackDimensions
     end
 
     properties (Access = private)
@@ -113,6 +134,11 @@ classdef Slider < matlab.mixin.SetGet
         % set method can check the new value against the other limit.
         Min_ = 0
         Max_ = 1
+
+        % Value behind the Dependent Orientation. Its set method reads
+        % IsConstructed, which the set method of a stored property should
+        % not access.
+        Orientation_ = 'horizontal'
 
         Axes
         OwnsAxes = false;
@@ -266,8 +292,12 @@ classdef Slider < matlab.mixin.SetGet
             % the slider is active.
             [xCoords, yCoords] = obj.getTextCoordinates();
             obj.ValueLabel = text(obj.Axes, xCoords, yCoords, '');
-            obj.ValueLabel.VerticalAlignment = 'Bottom';
-            obj.ValueLabel.HorizontalAlignment = 'Left';
+            if strcmp(obj.Orientation, 'vertical')
+                obj.ValueLabel.VerticalAlignment = 'middle';
+            else
+                obj.ValueLabel.VerticalAlignment = 'bottom';
+            end
+            obj.ValueLabel.HorizontalAlignment = 'left';
             obj.ValueLabel.Color = obj.TextColor;
             obj.ValueLabel.FontSize = obj.FontSize;
             obj.updateValuetipString()
@@ -300,8 +330,9 @@ classdef Slider < matlab.mixin.SetGet
             obj.Axes.HandleVisibility = 'off';
             obj.Axes.Tag = 'SlideBar Container';
 
-            obj.Axes.YLim = [0,1];
-            obj.Axes.XLim = [obj.Min, obj.Max];
+            [alongDim, acrossDim] = obj.getTrackDimensions();
+            obj.Axes.(obj.AxesLimitNames(acrossDim)) = [0, 1];
+            obj.Axes.(obj.AxesLimitNames(alongDim)) = [obj.Min, obj.Max];
             obj.OwnsAxes = true;
 
             uim.internal.disableAxesInteractivity(obj.Axes)
@@ -341,55 +372,72 @@ classdef Slider < matlab.mixin.SetGet
     methods (Access = private) % Internal updating
 
         function [xCoords, yCoords] = getTextCoordinates(obj)
-            if obj.OwnsAxes
-                xCoords = obj.Value;
+        %getTextCoordinates Anchor of the value label
+        %
+        %   A horizontal slider shows the label above the knob, and a
+        %   vertical slider beside the right edge of the knob.
+            knobCenter = obj.getKnobCenter();
+            if strcmp(obj.Orientation, 'vertical')
+                knobRadius = obj.KnobDiameter/2 .* obj.getDataUnitsPerPixel();
+                xCoords = knobCenter(1) + knobRadius(1);
+                yCoords = knobCenter(2);
+            elseif obj.OwnsAxes
+                xCoords = knobCenter(1);
                 yCoords = obj.Axes.YLim(2) .* 1.4; % Ad hoc offset.
             else
-                [trackStart, trackLength] = obj.getTrackExtent();
-                xCoords = uim.widget.internal.mapValueToPixel(...
-                    obj.Value, [obj.Min, obj.Max], trackStart, trackLength);
+                xCoords = knobCenter(1);
                 yCoords = obj.Position(2) + obj.Position(4) .* 0.9;
             end
         end
 
         function updateAxesLimits(obj)
-        %updateAxesLimits Widen XLim so the knob stays fully visible at either end
+        %updateAxesLimits Widen the limits along the track so the knob stays fully visible at either end
         %
         %   The margin is one knob diameter, as a fraction of the axes
-        %   width, of Max - Min. Every part of a slider in its own axes is
-        %   converted between pixels and data units with these limits, so
-        %   they are set before any geometry is computed.
+        %   length along the track, of Max - Min. Every part of a slider in
+        %   its own axes is converted between pixels and data units with
+        %   these limits, so they are set before any geometry is computed.
+            alongDim = obj.getTrackDimensions();
             axPosition = getpixelposition(obj.Axes);
             valueRange = obj.Max - obj.Min;
-            obj.Axes.XLim = [obj.Min, obj.Max] + ...
-                [-1, 1] .* valueRange .* (obj.KnobDiameter / axPosition(3));
+            obj.Axes.(obj.AxesLimitNames(alongDim)) = [obj.Min, obj.Max] + ...
+                [-1, 1] .* valueRange .* (obj.KnobDiameter / axPosition(alongDim+2));
+        end
+
+        function knobCenter = getKnobCenter(obj)
+        %getKnobCenter Knob centre as [x, y] in the slider's axes
+            if obj.OwnsAxes
+                % The axes limits across the track are [0, 1]
+                alongCoord = obj.Value;
+                acrossCoord = 0.5;
+            else
+                [trackStart, trackLength] = obj.getTrackExtent();
+                alongCoord = uim.widget.internal.mapValueToPixel(...
+                    obj.Value, [obj.Min, obj.Max], trackStart, trackLength);
+                acrossCoord = obj.getTrackCenterline();
+            end
+            [xCoord, yCoord] = obj.trackFrameToXY(alongCoord, acrossCoord);
+            knobCenter = [xCoord, yCoord];
         end
 
         function [xCoords, yCoords] = getKnobCoordinates(obj)
+            % Scaling the radii per axis by the data units per pixel keeps
+            % the knob round on screen whatever the axes limits are.
+            knobRadius = obj.KnobDiameter/2 .* obj.getDataUnitsPerPixel();
+            [xCoords, yCoords] = uim.widget.internal.knobOutline(...
+                obj.getKnobCenter(), knobRadius);
+        end
 
-            knobDiameter = obj.KnobDiameter;
-
+        function dataUnitsPerPixel = getDataUnitsPerPixel(obj)
+        %getDataUnitsPerPixel Data units per screen pixel, [x, y]
+        %
+        %   A caller's axes is assumed to have one data unit per pixel.
             if obj.OwnsAxes
-
                 axPosition = getpixelposition(obj.Axes);
-                axesSizePixels = axPosition(3:4);
-
-                % Scaling the radii per axis by the data units per pixel
-                % keeps the knob round on screen whatever the axes limits
-                % are.
                 dataUnitsPerPixel = [uim.utility.range(obj.Axes.XLim), ...
-                    uim.utility.range(obj.Axes.YLim)] ./ axesSizePixels;
-
-                [xCoords, yCoords] = uim.widget.internal.knobOutline(...
-                    [obj.Value, 0.5], knobDiameter/2 .* dataUnitsPerPixel);
+                    uim.utility.range(obj.Axes.YLim)] ./ axPosition(3:4);
             else
-                [trackStart, trackLength] = obj.getTrackExtent();
-                knobCenterX = uim.widget.internal.mapValueToPixel(...
-                    obj.Value, [obj.Min, obj.Max], trackStart, trackLength);
-                knobCenterY = obj.Position(2) + obj.Position(4)/2;
-
-                [xCoords, yCoords] = uim.widget.internal.knobOutline(...
-                    [knobCenterX, knobCenterY], knobDiameter/2);
+                dataUnitsPerPixel = [1, 1];
             end
         end
 
@@ -397,32 +445,32 @@ classdef Slider < matlab.mixin.SetGet
             if obj.OwnsAxes
                 barWidth = 3;
                 pixelPosition = obj.getPixelPosition();
+                alongDim = obj.getTrackDimensions();
 
                 % The track spans the knob's travel, [Min, Max]. The
                 % outline is made in pixels so the rounded ends keep their
                 % shape, then stretched onto [Min, Max] because rectangle
-                % rounds its width to whole pixels.
+                % rounds its length to whole pixels.
                 valueRange = obj.Max - obj.Min;
-                trackLength = valueRange / diff(obj.Axes.XLim) * pixelPosition(3);
-                [edgeX, edgeY] = uim.shape.rectangle([trackLength, barWidth], barWidth/2);
-                edgeY = edgeY + pixelPosition(4)/2 - barWidth/2;
-                coords = uim.utility.px2du(obj.Axes, [edgeX', edgeY']);
-                xCoords = obj.Min + edgeX ./ max(edgeX) .* valueRange;
-                yCoords = coords(:,2)';
+                alongLimits = obj.Axes.(obj.AxesLimitNames(alongDim));
+                trackLength = valueRange / diff(alongLimits) * pixelPosition(alongDim+2);
+                [edgeAlong, edgeAcross] = uim.shape.rectangle([trackLength, barWidth], barWidth/2);
+                edgeAcross = edgeAcross + obj.getTrackCenterline() - barWidth/2;
+                alongCoords = obj.Min + edgeAlong ./ max(edgeAlong) .* valueRange;
+                acrossCoords = obj.acrossPixelsToData(edgeAcross);
 
             else
-                barLength = obj.Position(3)-sum(obj.Padding([1,3]));
-
-                [xCoords, yCoords] = uim.shape.rectangle([barLength, 3], 1.5);
-                xCoords = xCoords + obj.Position(1)+obj.Padding(1);
-                yCoords = yCoords + obj.Position(2) + obj.Position(4) / 2 - 1;
+                [trackStart, trackLength] = obj.getTrackExtent();
+                [edgeAlong, edgeAcross] = uim.shape.rectangle([trackLength, 3], 1.5);
+                alongCoords = edgeAlong + trackStart;
+                acrossCoords = edgeAcross + obj.getTrackCenterline() - 1;
             end
+            [xCoords, yCoords] = obj.trackFrameToXY(alongCoords, acrossCoords);
         end
 
         function [xCoords, yCoords] = getTickCoordinates(obj)
 
-            pixelPosition = obj.getPixelPosition();
-            yCenter = pixelPosition(2) + pixelPosition(4) / 2;
+            acrossCenter = obj.getTrackCenterline();
 
             % One tick per allowed value, Min + k*Step for k = 0 to
             % NumSteps. The ticks span the knob's travel with no edge
@@ -432,26 +480,78 @@ classdef Slider < matlab.mixin.SetGet
 
             if obj.OwnsAxes
                 % The knob travels over [Min, Max] in data units. The tick
-                % lengths are in pixels, so only y is converted.
-                [xCoords, yCoords] = uim.widget.internal.tickMarkCoordinates(...
-                    [obj.Min, obj.Max], yCenter, ...
+                % lengths are in pixels, so only the coordinates across
+                % the track are converted.
+                [alongCoords, acrossCoords] = uim.widget.internal.tickMarkCoordinates(...
+                    [obj.Min, obj.Max], acrossCenter, ...
                     obj.TickLength, obj.TickMode, numTicks, 0);
-                pixelPoints = [zeros(numel(yCoords), 1), yCoords(:)];
-                dataPoints = uim.utility.px2du(obj.Axes, pixelPoints);
-                yCoords = reshape(dataPoints(:,2), size(yCoords));
+                acrossCoords = obj.acrossPixelsToData(acrossCoords);
             else
                 [trackStart, trackLength] = obj.getTrackExtent();
-                [xCoords, yCoords] = uim.widget.internal.tickMarkCoordinates(...
-                    [trackStart, trackStart + trackLength], yCenter, ...
+                [alongCoords, acrossCoords] = uim.widget.internal.tickMarkCoordinates(...
+                    [trackStart, trackStart + trackLength], acrossCenter, ...
                     obj.TickLength, obj.TickMode, numTicks, 0);
             end
+
+            % tickMarkCoordinates puts 'over' ticks on the positive side
+            % across the track: above a horizontal track, right of a
+            % vertical one.
+            [xCoords, yCoords] = obj.trackFrameToXY(alongCoords, acrossCoords);
         end
 
         function [trackStart, trackLength] = getTrackExtent(obj)
         %getTrackExtent Pixel start and length of the knob's travel
+            alongDim = obj.getTrackDimensions();
             pixelPosition = obj.getPixelPosition();
-            trackStart = pixelPosition(1) + obj.Padding(1);
-            trackLength = pixelPosition(3) - sum(obj.Padding([1,3]));
+
+            % Position is [x, y, width, height] and Padding is [left,
+            % bottom, right, top], so entries alongDim and alongDim + 2
+            % hold the start and size of the track's direction.
+            trackStart = pixelPosition(alongDim) + obj.Padding(alongDim);
+            trackLength = pixelPosition(alongDim+2) - ...
+                obj.Padding(alongDim) - obj.Padding(alongDim+2);
+        end
+
+        function acrossCenter = getTrackCenterline(obj)
+        %getTrackCenterline Pixel coordinate of the track's centre line, across the track
+            [~, acrossDim] = obj.getTrackDimensions();
+            pixelPosition = obj.getPixelPosition();
+            acrossCenter = pixelPosition(acrossDim) + pixelPosition(acrossDim+2) / 2;
+        end
+
+        function acrossData = acrossPixelsToData(obj, acrossPixels)
+        %acrossPixelsToData Convert pixel coordinates across the track to data units
+            [~, acrossDim] = obj.getTrackDimensions();
+            pixelPoints = zeros(numel(acrossPixels), 2);
+            pixelPoints(:, acrossDim) = acrossPixels(:);
+            dataPoints = uim.utility.px2du(obj.Axes, pixelPoints);
+            acrossData = reshape(dataPoints(:, acrossDim), size(acrossPixels));
+        end
+
+        function [alongDim, acrossDim] = getTrackDimensions(obj)
+        %getTrackDimensions Indices of the axes along and across the track
+        %
+        %   The geometry is computed along the track and across it. The
+        %   indices, 1 for x and 2 for y, select the matching entries of
+        %   Position, Padding and the axes limits.
+            if strcmp(obj.Orientation, 'vertical')
+                alongDim = 2;
+                acrossDim = 1;
+            else
+                alongDim = 1;
+                acrossDim = 2;
+            end
+        end
+
+        function [xCoords, yCoords] = trackFrameToXY(obj, alongCoords, acrossCoords)
+        %trackFrameToXY Place coordinates along and across the track on x and y
+            if strcmp(obj.Orientation, 'vertical')
+                xCoords = acrossCoords;
+                yCoords = alongCoords;
+            else
+                xCoords = alongCoords;
+                yCoords = acrossCoords;
+            end
         end
 
         function pixelPosition = getPixelPosition(obj)
@@ -481,8 +581,8 @@ classdef Slider < matlab.mixin.SetGet
         end
 
         function updateValuetipString(obj)
-            [xCoords, ~] = obj.getTextCoordinates();
-            obj.ValueLabel.Position(1) = xCoords;
+            [xCoords, yCoords] = obj.getTextCoordinates();
+            obj.ValueLabel.Position(1:2) = [xCoords, yCoords];
 
             if isempty(obj.TooltipExpression)
                 formatStr = sprintf('%%.%df', obj.TooltipPrecision);
@@ -591,8 +691,8 @@ classdef Slider < matlab.mixin.SetGet
                 obj.Value = newValue;
 
                 if ~isempty(obj.Knob)                                        %#ok<MCSUP>
-                    [xCoords, ~] = obj.getKnobCoordinates();
-                    obj.Knob.XData = xCoords;        %#ok<MCSUP>
+                    [xCoords, yCoords] = obj.getKnobCoordinates();
+                    set(obj.Knob, 'XData', xCoords, 'YData', yCoords) %#ok<MCSUP>
                     obj.updateValuetipString()
                     % newValue
                 end
@@ -645,6 +745,20 @@ classdef Slider < matlab.mixin.SetGet
 
         function maxValue = get.Max(obj)
             maxValue = obj.Max_;
+        end
+
+        function set.Orientation(obj, newOrientation)
+            % The parts are drawn for one orientation at construction
+            if obj.IsConstructed
+                error("uim:Slider:OrientationAfterConstruction", ...
+                    "Orientation can only be set at construction. " + ...
+                    "Create a new slider with the orientation you need.")
+            end
+            obj.Orientation_ = newOrientation;
+        end
+
+        function orientation = get.Orientation(obj)
+            orientation = obj.Orientation_;
         end
 
 %         function set.Step(obj, newValue)
@@ -755,12 +869,15 @@ classdef Slider < matlab.mixin.SetGet
             % uim.internal.ensurePointerMotionTracking.
             mousePoint = get(obj.Axes, 'CurrentPoint');
 
+            alongDim = obj.getTrackDimensions();
+            pointerAlongTrack = mousePoint(1, alongDim);
+
             if obj.OwnsAxes
-                newValue = mousePoint(1);
+                newValue = pointerAlongTrack;
             else
                 [trackStart, trackLength] = obj.getTrackExtent();
                 newValue = uim.widget.internal.mapPixelToValue(...
-                    mousePoint(1), [obj.Min, obj.Max], trackStart, trackLength);
+                    pointerAlongTrack, [obj.Min, obj.Max], trackStart, trackLength);
             end
 
             newValue = uim.widget.internal.snapToStep(newValue, obj.Step, obj.Min);

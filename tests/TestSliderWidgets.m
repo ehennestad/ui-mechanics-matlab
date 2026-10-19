@@ -114,6 +114,100 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
 
             testCase.verifyEqual(slider.Value, 75, "AbsTol", 0.5);
         end
+
+        function verticalSliderInOwnAxesTracksValueAlongY(testCase)
+            hFigure = createHiddenFigure(testCase, [100, 100, 400, 300]);
+            slider = uim.widget.Slider("Parent", hFigure, "Units", "pixels", ...
+                "Position", [50, 40, 20, 200], "Orientation", "vertical", ...
+                "Min", -1, "Max", 1, "Value", 0.5);
+            testCase.addTeardown(@deleteValid, slider);
+
+            hAxes = findall(hFigure, "Tag", "SlideBar Container");
+            testCase.verifyEqual(hAxes.XLim, [0, 1], "Across the track the limits are [0, 1].");
+            testCase.verifyLessThan(hAxes.YLim(1), -1);
+            testCase.verifyGreaterThan(hAxes.YLim(2), 1, ...
+                "The limits along y leave room for the knob beyond Min and Max.");
+
+            knob = findKnob(hAxes);
+            testCase.verifyEqual(midpointOf(knob.YData), 0.5, "AbsTol", 1e-3, ...
+                "In its own axes the knob sits at the value along y.");
+            testCase.verifyEqual(midpointOf(knob.XData), 0.5, "AbsTol", 1e-3, ...
+                "The knob is centred across the track.");
+            testCase.verifyEqual(pixelSize(hAxes, knob), [15, 15], "AbsTol", 0.1, ...
+                "The knob stays round on screen.");
+
+            slider.Value = -0.25;
+            testCase.verifyEqual(midpointOf(knob.YData), -0.25, "AbsTol", 1e-3);
+            testCase.verifyEqual(midpointOf(knob.XData), 0.5, "AbsTol", 1e-3);
+
+            hTrack = findTrack(hAxes);
+            testCase.verifyEqual([min(hTrack.YData), max(hTrack.YData)], [-1, 1], "AbsTol", 1e-9, ...
+                "The track spans [Min, Max] along y.");
+            trackSize = pixelSize(hAxes, hTrack);
+            testCase.verifyEqual(trackSize(1), 3, "AbsTol", 0.5, "The track is 3 pixels wide.");
+        end
+
+        function verticalSliderTrackPressReadsThePointerY(testCase)
+            hFigure = createHiddenFigure(testCase, [100, 100, 400, 300]);
+            slider = uim.widget.Slider("Parent", hFigure, "Units", "pixels", ...
+                "Position", [50, 40, 20, 200], "Orientation", "vertical", ...
+                "Min", -1, "Max", 1, "Value", 0.25, "NumSteps", 20);
+            testCase.addTeardown(@deleteValid, slider);
+            slider.Callback = @(~, value) setappdata(hFigure, "SliderValue", value);
+
+            hAxes = findall(hFigure, "Tag", "SlideBar Container");
+            knob = findKnob(hAxes);
+
+            % The pointer x is 0.5 in data units, so a slider reading x
+            % instead of y would select 0.5.
+            slider.Value = -0.62;
+            targetPoint = [midpointOf(knob.XData), midpointOf(knob.YData)];
+            slider.Value = 0.25;
+            hFigure.CurrentPoint = uim.utility.du2px(hAxes, targetPoint, true);
+
+            hBackground = findBackground(hAxes);
+            hBackground.ButtonDownFcn(hBackground, [])
+
+            testCase.assertTrue(isappdata(hFigure, "SliderValue"), "Callback fired.");
+            testCase.verifyEqual(getappdata(hFigure, "SliderValue"), -0.6, "AbsTol", 1e-9);
+            testCase.verifyEqual(slider.Value, -0.6, "AbsTol", 1e-9);
+        end
+
+        function verticalSliderInCallerAxesUsesPaddedPixelTrack(testCase)
+            hFigure = createHiddenFigure(testCase, [100, 100, 400, 400]);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [10, 10, 100, 300], ...
+                "XLim", [0, 100], "YLim", [0, 300]);
+            slider = uim.widget.Slider("Parent", hAxes, "Position", [40, 20, 30, 200], ...
+                "Orientation", "vertical", "Min", 0, "Max", 100, "Value", 25);
+            testCase.addTeardown(@deleteValid, slider);
+
+            % Default Padding is [0, 9, 3, 9]: a vertical track uses the
+            % bottom and top entries
+            trackStart = 20 + 9;
+            trackLength = 200 - 18;
+            trackCenterX = 40 + 30/2;
+
+            knob = findKnob(hAxes);
+            testCase.verifyEqual(midpointOf(knob.YData), trackStart + 0.25*trackLength, "AbsTol", 0.01);
+            testCase.verifyEqual(midpointOf(knob.XData), trackCenterX, "AbsTol", 0.01);
+
+            slider.Value = 100;
+            testCase.verifyEqual(midpointOf(knob.YData), trackStart + trackLength, "AbsTol", 0.01);
+            valueLabel = findobj(hAxes, "Type", "text");
+            testCase.verifyEqual(valueLabel.Position(1:2), ...
+                [trackCenterX + 15/2, trackStart + trackLength], "AbsTol", 0.01, ...
+                "The value label sits beside the right edge of the knob.");
+            testCase.verifyEqual(valueLabel.VerticalAlignment, 'middle');
+
+            % The pointer x is on the track centre line, which a slider
+            % reading x would map to about 14
+            targetPoint = [trackCenterX, trackStart + 0.75*trackLength];
+            hFigure.CurrentPoint = uim.utility.du2px(hAxes, targetPoint, true);
+            hBackground = findBackground(hAxes);
+            hBackground.ButtonDownFcn(hBackground, [])
+
+            testCase.verifyEqual(slider.Value, 75, "AbsTol", 0.5);
+        end
     end
 
     methods (Test) % RangeSlider
@@ -568,6 +662,25 @@ end
 
 function center = patchCenter(hPatch)
     center = (max(hPatch.XData) + min(hPatch.XData))/2;
+end
+
+function center = midpointOf(values)
+%midpointOf Middle of the range spanned by values
+    center = (max(values(:)) + min(values(:)))/2;
+end
+
+function hTrack = findTrack(hAxes)
+%findTrack The track is the patch that is neither the knob nor the background
+    patches = findobj(hAxes, "Type", "patch");
+    hTrack = patches(arrayfun(@(h) ~ismember(numel(h.XData), [5, 200]), patches));
+end
+
+function sizeInPixels = pixelSize(hAxes, hPatch)
+%pixelSize On-screen [width, height] of a patch in its axes
+    axesPosition = getpixelposition(hAxes);
+    pixelsPerDataUnit = axesPosition(3:4) ./ [diff(hAxes.XLim), diff(hAxes.YLim)];
+    dataSize = [max(hPatch.XData) - min(hPatch.XData), max(hPatch.YData) - min(hPatch.YData)];
+    sizeInPixels = dataSize .* pixelsPerDataUnit;
 end
 
 function assign(object, propertyName, value)
