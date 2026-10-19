@@ -80,11 +80,7 @@ classdef Image < uim.abstract.Component
         end
 
         function set.Alpha(obj, newValue)
-            imageSize = size(obj.CData, [1, 2]);
-            assert(isempty(newValue) || isscalar(newValue) || isequal(size(newValue), imageSize), ...
-                "uim:Image:InvalidAlpha", ...
-                "Alpha must be empty, a scalar, or an array the size of the image (%d-by-%d).", ...
-                imageSize(1), imageSize(2))
+            obj.validateAlpha(newValue)
             obj.Alpha = newValue;
             obj.onAlphaSet()
         end
@@ -137,6 +133,8 @@ classdef Image < uim.abstract.Component
                 obj.ImageHandle=[];
             end
 
+            obj.validateAlpha(obj.Alpha)
+
             % The canvas y-axis points up, so the rows are drawn flipped
             obj.ImageHandle = image(obj.CanvasAxes, 'CData', flipud(obj.CData));
             obj.ImageHandle.AlphaData = obj.getDrawnAlpha();
@@ -166,6 +164,21 @@ classdef Image < uim.abstract.Component
 
             obj.ImageHandle.XData = xPos;
             obj.ImageHandle.YData = yPos;
+        end
+
+        function validateAlpha(obj, alpha)
+        %validateAlpha Check that alpha is empty, a scalar or the size of the image
+        %
+        %   The size check needs CData. During construction it waits until
+        %   the image is first drawn, so it does not depend on the order in
+        %   which the options are assigned.
+            if ~obj.IsConstructed; return; end
+
+            imageSize = size(obj.CData, [1, 2]);
+            assert(isempty(alpha) || isscalar(alpha) || isequal(size(alpha), imageSize), ...
+                "uim:Image:InvalidAlpha", ...
+                "Alpha must be empty, a scalar, or an array the size of the image (%d-by-%d).", ...
+                imageSize(1), imageSize(2))
         end
 
         function alphaData = getDrawnAlpha(obj)

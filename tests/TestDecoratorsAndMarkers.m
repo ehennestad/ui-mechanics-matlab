@@ -84,6 +84,19 @@ classdef TestDecoratorsAndMarkers < matlab.unittest.TestCase
             img.Alpha = 0.5;
             testCase.verifyEqual(img.Alpha, 0.5);
         end
+
+        function imageAcceptsAlphaBeforeCDataAtConstruction(testCase)
+            [~, canvas] = createCanvas(testCase);
+            alphaData = reshape(linspace(0, 1, 12), 3, 4);
+
+            img = uim.decorator.Image(canvas, Alpha=alphaData, CData=zeros(3, 4, "uint8"));
+            testCase.addTeardown(@deleteValid, img);
+
+            testCase.verifyEqual(img.Alpha, alphaData);
+            testCase.verifyError(@() uim.decorator.Image(canvas, Alpha=ones(4, 3), ...
+                CData=zeros(3, 4, "uint8")), "uim:Image:InvalidAlpha", ...
+                "An Alpha of another size is still rejected when the image is drawn.");
+        end
     end
 
     methods (Test) % uim.widget.FrameMarker
