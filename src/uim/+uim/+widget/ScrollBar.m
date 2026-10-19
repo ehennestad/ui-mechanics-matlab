@@ -1,4 +1,4 @@
-classdef ScrollBar < uim.Handle
+classdef ScrollBar < uim.Handle & matlab.mixin.SetGet
 %ScrollBar A scrollbar drawn in its own axes inside a panel
 %
 %   h = uim.widget.ScrollBar(hParent) creates a scrollbar in hParent, a
@@ -120,9 +120,7 @@ classdef ScrollBar < uim.Handle
             % make assertions, e.g. check that its a valid figure/panel.
             obj.Parent = parentContainer;
 
-            for name = string(fieldnames(options))'
-                obj.(name) = options.(name);
-            end
+            set(obj, options)
 
             obj.createScrollbar;
             obj.setPointerBehavior()

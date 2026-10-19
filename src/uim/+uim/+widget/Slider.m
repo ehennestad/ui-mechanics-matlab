@@ -1,4 +1,4 @@
-classdef Slider < handle
+classdef Slider < matlab.mixin.SetGet
 %Slider A horizontal slider with a round knob, drawn in axes
 %
 %   slider = uim.widget.Slider(Name=Value) creates a slider. All options
@@ -197,9 +197,7 @@ classdef Slider < handle
                 obj.Value = min(max(obj.Value, obj.Min), obj.Max);
             end
 
-            for name = string(fieldnames(options))'
-                obj.(name) = options.(name);
-            end
+            set(obj, options)
         end
 
         function createSlider(obj)
