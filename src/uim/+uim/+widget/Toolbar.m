@@ -461,9 +461,8 @@ classdef Toolbar < uim.abstract.Container
             if ~obj.IsConstructed; return; end
             if obj.NumButtons == 0; return; end
 
-            % Resolve what is the long and short dimension (x=1, y=2)
+            % Resolve what is the long dimension (x=1, y=2)
             dimL = obj.DimL_;
-            dimS = obj.DimS_;
 
             shift = [0, 0];
 

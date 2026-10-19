@@ -1,4 +1,4 @@
-classdef PointerTool < handle & matlab.mixin.Heterogeneous
+classdef PointerTool < uim.interface.AxesAttached & matlab.mixin.Heterogeneous
 %PointerTool Abstract base class for a mouse tool that acts on an axes
 %
 %   A pointer tool turns mouse input in one axes into an action such as
@@ -36,7 +36,8 @@ classdef PointerTool < handle & matlab.mixin.Heterogeneous
 %                          is 1 on activate and 0 on suspend and
 %                          deactivate.
 %
-%   See also uim.interface.PointerManager, uim.interface.pointertools.ZoomIn
+%   See also uim.interface.PointerManager, uim.interface.AxesAttached,
+%   uim.interface.pointertools.ZoomIn
 
 % Todo: Implement callbacks for MousePressed, MouseMotion, MouseReleased,
 % MouseScrolled etc that can be configured from gui that requests/creates
@@ -168,12 +169,12 @@ classdef PointerTool < handle & matlab.mixin.Heterogeneous
                 currentPoint, obj.Axes.XLim, obj.Axes.YLim);
         end
 
-        function onPointerExitedAxes(obj)
+        function onPointerExitedAxes(~)
         %onPointerExitedAxes Called by the manager when the pointer leaves the axes
             % Subclasses may override
         end
 
-        function onPointerEnteredAxes(obj)
+        function onPointerEnteredAxes(~)
         %onPointerEnteredAxes Called by the manager when the pointer enters the axes
             % Subclasses may override
         end
