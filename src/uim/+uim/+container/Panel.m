@@ -37,12 +37,19 @@ classdef Panel < uim.abstract.Container
     end
 
     methods % Structors
-        function obj = Panel(hParent, varargin)
+        function obj = Panel(hParent, propertyValues)
         %Panel Create a panel container
         %
         %   obj = uim.container.Panel(hParent, BackgroundColor=color)
         %   See the class help for hParent and the name-value arguments.
-            obj@uim.abstract.Container(hParent, varargin{:})
+
+            arguments
+                hParent
+                propertyValues.?uim.container.Panel
+                propertyValues.CanvasMode
+            end
+
+            obj@uim.abstract.Container(hParent, propertyValues)
             obj.IsConstructed = true;
         end
     end

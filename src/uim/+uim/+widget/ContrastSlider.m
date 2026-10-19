@@ -99,13 +99,29 @@ classdef ContrastSlider < uim.widget.RangeSlider
 
     methods % Structors
 
-        function obj = ContrastSlider(hParent, varargin)
+        function obj = ContrastSlider(hParent, propertyValues)
         %ContrastSlider Create a contrast slider
         %
         %   slider = uim.widget.ContrastSlider(hParent, Name=Value). See
         %   the class help for the inputs.
 
-            obj@uim.widget.RangeSlider(hParent, varargin{:})
+            arguments
+                hParent
+                propertyValues.?uim.widget.ContrastSlider
+            end
+
+            % RangeSlider's constructor accepts only RangeSlider options.
+            % The options this class defines are assigned after it, before
+            % the histogram and glyph buttons are drawn.
+            mc = ?uim.widget.ContrastSlider;
+            isDefinedHere = arrayfun(@(p) p.DefiningClass == mc, mc.PropertyList);
+            ownNames = intersect(fieldnames(propertyValues), {mc.PropertyList(isDefinedHere).Name});
+            ownValues = rmfield(propertyValues, setdiff(fieldnames(propertyValues), ownNames));
+            rangeSliderArgs = namedargs2cell(rmfield(propertyValues, ownNames));
+
+            obj@uim.widget.RangeSlider(hParent, rangeSliderArgs{:})
+
+            set(obj, ownValues)
 
             obj.LastNotifiedLimits = obj.Limits;
 

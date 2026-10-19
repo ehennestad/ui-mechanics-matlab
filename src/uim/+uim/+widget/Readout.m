@@ -44,13 +44,18 @@ classdef Readout < uim.abstract.Control
 
     methods % Structors
 
-        function obj = Readout(hParent, varargin)
+        function obj = Readout(hParent, propertyValues)
         %Readout Create a readout
         %
         %   readout = uim.widget.Readout(hParent, Name=Value). See the
         %   class help for the inputs.
 
-            obj@uim.abstract.Control(hParent, varargin{:})
+            arguments
+                hParent
+                propertyValues.?uim.widget.Readout
+            end
+
+            obj@uim.abstract.Control(hParent, propertyValues)
 
             obj.plotValueText()
 

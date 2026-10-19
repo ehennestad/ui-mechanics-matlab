@@ -11,6 +11,27 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
 
     methods (Test) % Toolbar
 
+        function addButtonValidatesOptionsAndKeepsManualPositioning(testCase)
+            [~, canvas] = createCanvas(testCase);
+            toolbar = uim.widget.Toolbar(canvas, "Location", "northwest");
+            testCase.addTeardown(@deleteValid, toolbar);
+
+            button = toolbar.addButton("Text", "A", "Padding", [1, 1, 1, 1], "PositionMode", "auto");
+            testCase.verifyEqual(button.Padding, [1, 1, 1, 1], "An option replaces the toolbar default.");
+            testCase.verifyEqual(button.PositionMode, 'manual', "The toolbar places its buttons.");
+            testCase.verifyError(@() toolbar.addButton(NoSuchOption=1), "MATLAB:TooManyInputs");
+            testCase.verifyError(@() toolbar.addSeparator(NoSuchOption=1), "MATLAB:TooManyInputs");
+        end
+
+        function tabBarTakesToolbarOptions(testCase)
+            [~, canvas] = createCanvas(testCase);
+            tabBar = uim.widget.TabBar(canvas, "Location", "northwest", "Spacing", 4);
+            testCase.addTeardown(@deleteValid, tabBar);
+
+            testCase.verifyEqual(tabBar.Spacing, 4);
+            testCase.verifyError(@() uim.widget.TabBar(canvas, NoSuchOption=1), "MATLAB:TooManyInputs");
+        end
+
         function rightAlignedRunIncludesSpacing(testCase)
             [~, canvas] = createCanvas(testCase);
             toolbar = uim.widget.Toolbar(canvas, "Location", "northwest");
@@ -229,6 +250,26 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
     end
 
     methods (Test) % Button
+
+        function buttonMatchesOptionNamesCaseInsensitively(testCase)
+            [~, canvas] = createCanvas(testCase);
+            button = uim.control.Button(canvas, "text", "Go", "tooltip", "Start");
+            testCase.addTeardown(@deleteValid, button);
+
+            testCase.verifyEqual(string(button.Text), "Go");
+            testCase.verifyEqual(string(button.Tooltip), "Start");
+        end
+
+        function buttonRejectsOptionsItCannotTake(testCase)
+            [~, canvas] = createCanvas(testCase);
+
+            testCase.verifyError(@() uim.control.Button(canvas, NoSuchOption=1), ...
+                "MATLAB:TooManyInputs");
+            testCase.verifyError(@() uim.control.Button(canvas, Parent=canvas), ...
+                "MATLAB:TooManyInputs", "Parent is set by the constructor.");
+            testCase.verifyError(@() uim.control.Button(canvas, CanvasMode="private"), ...
+                "MATLAB:TooManyInputs", "Only containers take CanvasMode.");
+        end
 
         function tooltipStaysInsideTheVerticalLimits(testCase)
             [hFigure, canvas] = createCanvas(testCase);

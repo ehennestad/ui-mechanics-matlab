@@ -23,8 +23,9 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 %       - a uim.abstract.Container: the component is placed in the
 %         container's graphics container (see getGraphicsContainer) and,
 %         when the container has a private canvas, draws in it.
-%   Name-value arguments set public properties. Names that do not match
-%   a public property are ignored. Defaults returned by the subclass's
+%   Name-value arguments set public properties. Names are
+%   case-insensitive and may be abbreviated; a name that matches no
+%   public property raises an error. Defaults returned by the subclass's
 %   getTypeDefaults are merged with the name-value arguments; an argument
 %   for the same property replaces the default. The merged values are
 %   assigned in the order the properties are declared, not in argument
@@ -90,8 +91,11 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 %   Subclass contract:
 %       - Define the constant property Type, a character vector naming
 %         the component type.
-%       - Pass hParent and the name-value arguments on to the superclass
-%         constructor, create the subclass graphics, then set
+%       - Declare hParent and propertyValues.?SubclassName in the
+%         constructor's arguments block. A Container subclass also
+%         declares propertyValues.CanvasMode, which has protected
+%         SetAccess. Pass hParent and the propertyValues struct to the
+%         superclass constructor, create the subclass graphics, then set
 %         obj.IsConstructed = true. That runs the first layout, style
 %         and draw pass (onConstructed).
 %       - Optionally override the protected methods createBackground,
@@ -247,12 +251,18 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 
     methods % Structors
 
-        function obj = Component(hParent, varargin)
+        function obj = Component(hParent, propertyValues)
         %Component Construct the component part of a subclass instance
         %
-        %   obj@uim.abstract.Component(hParent, Name, Value, ...) is called
-        %   from a subclass constructor. See the class help for hParent
-        %   and the name-value arguments.
+        %   obj@uim.abstract.Component(hParent, propertyValues) is called
+        %   from a subclass constructor. propertyValues is a struct of
+        %   property values, validated by the subclass constructor. See
+        %   the class help for hParent.
+
+            arguments
+                hParent
+                propertyValues (1,1) struct = struct()
+            end
 
             if isa(hParent, 'uim.abstract.Container')
                 obj.Parent = hParent.getGraphicsContainer();
@@ -275,7 +285,7 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
 
             obj.createListeners()
 
-            obj.parseInputs(varargin{:})
+            obj.parseInputs(propertyValues)
 
             obj.assignComponentCanvas()
 
@@ -326,31 +336,28 @@ classdef Component < uim.Handle & matlab.mixin.Heterogeneous & uim.mixin.NameVal
                 'ObjectBeingDestroyed', @(s,e) obj.delete());
         end
 
-        function parseInputs(obj, varargin)
-        %parseInputs Collect type defaults and name-value pairs and assign.
+        function parseInputs(obj, propertyValues)
+        %parseInputs Assign the type defaults, then the given property values
 
             S = obj.getTypeDefaults();
 
-            callerArgs = varargin;
-            callerNames = cellfun(@char, callerArgs(1:2:end), 'UniformOutput', false);
-            callerArgs(1:2:end) = callerNames;
-
-            % Special treatment because this has protected setAccess
-            isCanvasMode = strcmp(callerNames, 'CanvasMode');
-            if any(isCanvasMode)
-                obj.CanvasMode = callerArgs{find(isCanvasMode, 1, 'last')*2};
+            % CanvasMode has protected SetAccess, which NameValueAssignable
+            % does not assign
+            if isfield(propertyValues, 'CanvasMode')
+                obj.CanvasMode = propertyValues.CanvasMode;
+                propertyValues = rmfield(propertyValues, 'CanvasMode');
             elseif isfield(S, 'CanvasMode')
                 obj.CanvasMode = S.CanvasMode;
             end
-            callerArgs(sort([find(isCanvasMode)*2-1, find(isCanvasMode)*2])) = [];
             if isfield(S, 'CanvasMode'); S = rmfield(S, 'CanvasMode'); end
 
             % Assign the type defaults first and the caller's options
             % second. An option can set other properties in its set
             % method (a Toolbar's Orientation sets IsFixedSize), so the
             % caller's options must be the last values assigned.
-            S = rmfield(S, intersect(fieldnames(S), callerNames));
-            defaultArgs = cat(1, fieldnames(S)', struct2cell(S)');
+            S = rmfield(S, intersect(fieldnames(S), fieldnames(propertyValues)));
+            defaultArgs = namedargs2cell(S);
+            callerArgs = namedargs2cell(propertyValues);
             parseInputs@uim.mixin.NameValueAssignable(obj, defaultArgs{:})
             parseInputs@uim.mixin.NameValueAssignable(obj, callerArgs{:})
         end

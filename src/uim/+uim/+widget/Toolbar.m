@@ -154,7 +154,7 @@ classdef Toolbar < uim.abstract.Container
 
     methods % Structors
 
-        function obj = Toolbar(hParent, varargin)
+        function obj = Toolbar(hParent, propertyValues)
         %Toolbar Create an empty toolbar
         %
         %   toolbar = uim.widget.Toolbar(parent)
@@ -162,7 +162,13 @@ classdef Toolbar < uim.abstract.Container
         %
         %   See the class help for the accepted parents and options.
 
-            obj@uim.abstract.Container(hParent, varargin{:})
+            arguments
+                hParent
+                propertyValues.?uim.widget.Toolbar
+                propertyValues.CanvasMode
+            end
+
+            obj@uim.abstract.Container(hParent, propertyValues)
 
             % Visible can be assigned before the background exists
             if ~isempty(obj.Background)
@@ -183,7 +189,7 @@ classdef Toolbar < uim.abstract.Container
 
     methods % Methods to add toolbar objects
 
-        function hSep = addSeparator(obj, varargin)
+        function hSep = addSeparator(obj, separatorProperties)
         %addSeparator Add a separator at the end of the toolbar
         %
         %   toolbar.addSeparator() adds a uim.decorator.Separator after the
@@ -198,18 +204,25 @@ classdef Toolbar < uim.abstract.Container
         %
         %   See also uim.decorator.Separator
 
+            arguments
+                obj
+                separatorProperties.?uim.decorator.Separator
+            end
+
             separatorPosition = obj.NextButtonPosition;
 
             % todo: switch orientation...
             separatorPosition(3) = 0;
 
-            varargin = [{'Position', separatorPosition, ...
+            % A repeated name keeps its last value, so the options replace
+            % the layout defaults and the toolbar's Visible replaces both
+            separatorArgs = [{'Position', separatorPosition, ...
                          'Size', separatorPosition(3:4), ...
                          'PositionMode', 'manual', ...
-                         'SizeMode', 'manual'}, varargin, ...
-                         'Visible', obj.Visible];
+                         'SizeMode', 'manual'}, namedargs2cell(separatorProperties), ...
+                         {'Visible', obj.Visible}];
 
-            hSep = uim.decorator.Separator(obj, varargin{:});
+            hSep = uim.decorator.Separator(obj, separatorArgs{:});
 
             % Add listener for SizeChanged event on button
             el = addlistener(hSep, 'SizeChanged', @obj.onButtonSizeChanged);
@@ -229,7 +242,7 @@ classdef Toolbar < uim.abstract.Container
             end
         end
 
-        function hButton = addButton(obj, varargin)
+        function hButton = addButton(obj, buttonProperties)
         %addButton Add a button at the end of the toolbar
         %
         %   hButton = toolbar.addButton(Name=Value) creates a
@@ -252,18 +265,21 @@ classdef Toolbar < uim.abstract.Container
         %
         %   See also uim.control.Button
 
-            % Specify some toolbar defaults for toolbar button.
-            varargin = [{'Position', obj.NextButtonPosition, ...
-                        'Style', obj.Style}, ...
+            arguments
+                obj
+                buttonProperties.?uim.control.Button
+            end
+
+            % A repeated name keeps its last value, so the options replace
+            % the toolbar defaults and PositionMode 'manual' replaces both
+            buttonArgs = [{'Position', obj.NextButtonPosition, ...
+                        'Style', obj.Style, ...
                         'Size', obj.NextButtonPosition(3:4), ...
                         'Padding', [3,3,3,3], ...
-                        'Visible', obj.Visible, varargin, ...
-                        'PositionMode', 'manual'];
+                        'Visible', obj.Visible}, namedargs2cell(buttonProperties), ...
+                        {'PositionMode', 'manual'}];
 
-            % Concatenate with varargin at the end. Input parser will
-            % choose the last entry (if there are duplicates) during parsing.
-
-            hButton = uim.control.Button(obj, varargin{:});
+            hButton = uim.control.Button(obj, buttonArgs{:});
 
             % Add listener for SizeChanged event on button
             el = addlistener(hButton, 'SizeChanged', @obj.onButtonSizeChanged);

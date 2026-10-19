@@ -45,12 +45,17 @@ classdef Line < uim.abstract.Control
     end
 
     methods
-        function obj = Line(varargin)
+        function obj = Line(hParent, propertyValues)
         %Line Create a line decorator
         %
         %   ln = uim.decorator.Line(parent, Name=Value)
 
-            obj@uim.abstract.Control(varargin{:})
+            arguments
+                hParent
+                propertyValues.?uim.decorator.Line
+            end
+
+            obj@uim.abstract.Control(hParent, propertyValues)
 
             %delete(obj.Background);
             obj.Background.Visible = 'off';
