@@ -31,11 +31,11 @@ function options = parseNameValue(defaults, nameValuePairs)
     end
 
     inputs = nameValuePairs;
-    if numel(inputs) == 1 && iscell(inputs{1})
+    if isscalar(inputs) && iscell(inputs{1})
         inputs = inputs{1};
     end
 
-    if numel(inputs) == 1 && isstruct(inputs{1})
+    if isscalar(inputs) && isstruct(inputs{1})
         inputStruct = inputs{1};
         inputNames = intersect(fieldnames(defaults), fieldnames(inputStruct), "stable");
         inputs = reshape([inputNames.'; cellfun(@(name) inputStruct.(name), ...

@@ -163,7 +163,7 @@ classdef Control < uim.abstract.Component
             obj.TooltipPosition = [centerX, centerY - 0.5*obj.Size(2)-obj.TooltipYOffset];
         end
 
-        function changeAppearance(obj)
+        function changeAppearance(~)
         end
 
         function onMouseEntered(obj, ~, ~)
