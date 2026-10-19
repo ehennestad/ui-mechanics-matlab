@@ -123,6 +123,22 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
                 "AbsTol", 1e-9, "Padding(3) is the gap after the last button along the bar.");
         end
 
+        function privateToolbarStaysInsideAPanelBorder(testCase)
+            hFigure = figure("Visible", "off", "Position", [100, 100, 500, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hPanel = uipanel(hFigure, "Units", "pixels", "Position", [20, 20, 200, 60], ...
+                "BorderType", "etchedin");
+            toolbar = uim.widget.Toolbar(hPanel, "CanvasMode", "private", "Location", "northwest");
+            testCase.addTeardown(@deleteValid, toolbar);
+            toolbar.addButton("Text", "P");
+
+            hChild = axes(hPanel, "Units", "normalized", "Position", [0, 0, 1, 1], "Visible", "off");
+            contentHeight = getpixelposition(hChild) * [0; 0; 0; 1];
+            % Pixel positions start at 1, so the top pixel row is y + height - 1
+            testCase.verifyLessThanOrEqual(sum(toolbar.Position([2, 4])) - 1, contentHeight, ...
+                "A 'northwest' toolbar ends inside the panel's content area.");
+        end
+
         function toolbarAppliesOptionsGivenAtConstruction(testCase)
             [~, canvas] = createCanvas(testCase);
 
@@ -214,6 +230,39 @@ classdef TestToolbarAndButtons < matlab.unittest.TestCase
 
     methods (Test) % Button
 
+        function tooltipStaysInsideTheVerticalLimits(testCase)
+            [hFigure, canvas] = createCanvas(testCase);
+            yLim = canvas.Axes.YLim;
+
+            canvas.showTooltip('Near the bottom', [100, yLim(1) + 2])
+            hTooltip = findall(hFigure, "Type", "text", "String", "Near the bottom");
+            testCase.verifyGreaterThanOrEqual(hTooltip.Extent(2), yLim(1), ...
+                "A tooltip near the bottom is moved up to fit.");
+
+            canvas.showTooltip('Near the top', [100, yLim(2) - 2])
+            hTooltip = findall(hFigure, "Type", "text", "String", "Near the top");
+            testCase.verifyEqual(hTooltip.Position(2), yLim(2) - 2, "AbsTol", 1e-9, ...
+                "A tooltip that fits below its point is not moved.");
+        end
+
+        function hoveringAControlOnAPrivateCanvasWorks(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 500, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            toolbar = uim.widget.Toolbar(uipanel(hFigure), "CanvasMode", "private");
+            testCase.addTeardown(@deleteValid, toolbar);
+            button = toolbar.addButton("Text", "A", "Tooltip", "Tip");
+
+            testCase.assumeTrue(exist("iptGetPointerBehavior", "file") > 0, ...
+                "Hover needs the Image Processing Toolbox pointer manager.");
+            patches = findall(hFigure, "Type", "patch");
+            isPressable = arrayfun(@(h) isa(h.ButtonDownFcn, "function_handle") && ...
+                contains(func2str(h.ButtonDownFcn), "onMousePressed"), patches);
+            hBackground = patches(find(isPressable, 1));
+            behavior = iptGetPointerBehavior(hBackground);
+            testCase.verifyWarningFree(@() behavior.enterFcn(hFigure, [0, 0]));
+            testCase.verifyWarningFree(@() behavior.exitFcn(hFigure, [0, 0]));
+            testCase.verifyTrue(isvalid(button));
+        end
         function buttonTextFollowsAlignmentSettings(testCase)
             [~, canvas] = createCanvas(testCase);
             button = uim.control.Button(canvas, "Text", "Go", "Position", [10, 10, 120, 40], ...

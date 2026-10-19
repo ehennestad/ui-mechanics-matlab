@@ -84,8 +84,8 @@ classdef ToolTip < uim.Handle
         %   tooltip.showTooltip(text, position) shows text (character
         %   vector, string or cell array of lines) with its upper-left
         %   corner at position, an [x, y] point in data units of the
-        %   canvas axes. The x position is adjusted so the text does not
-        %   extend past the left or right edge of the axes limits.
+        %   canvas axes. The position is adjusted so the text stays inside
+        %   the axes limits.
 
             if ~isempty(obj.TooltipHandle) && isvalid(obj.TooltipHandle)
 
@@ -97,15 +97,23 @@ classdef ToolTip < uim.Handle
                 obj.TooltipHandle.Visible = 'on';
 
                 % Nudge the tooltip back inside the axes limits if it
-                % would extend past either edge.
+                % would extend past an edge. The text extends right of
+                % position and, being top-aligned, down from it.
                 extent = obj.TooltipHandle.Extent;
-                lim = {'XLim', 'YLim'};
-                for i = 1:2
-                    if position(i) < obj.Axes.(lim{i})(1)
-                        position(i) = obj.Axes.(lim{i})(1) + obj.TooltipHandle.Margin*2;
-                    elseif position(i) + extent(i+2) > obj.Axes.(lim{i})(2)
-                        position(i) = obj.Axes.(lim{i})(2) - extent(i+2)*1.1;
-                    end
+                xLim = obj.Axes.XLim;
+                yLim = obj.Axes.YLim;
+                margin = obj.TooltipHandle.Margin*2;
+
+                if position(1) < xLim(1)
+                    position(1) = xLim(1) + margin;
+                elseif position(1) + extent(3) > xLim(2)
+                    position(1) = xLim(2) - extent(3)*1.1;
+                end
+
+                if position(2) - extent(4) < yLim(1)
+                    position(2) = yLim(1) + extent(4)*1.1;
+                elseif position(2) > yLim(2)
+                    position(2) = yLim(2) - margin;
                 end
 
                 obj.TooltipHandle.Position(1:2) = position;

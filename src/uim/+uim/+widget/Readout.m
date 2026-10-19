@@ -14,8 +14,7 @@ classdef Readout < uim.abstract.Control
 %   The Value property accepts a numeric scalar (rendered with the
 %   sprintf-style Format property) or text. When the inherited Label
 %   property is nonempty, the displayed text is "<Label>: <value>". The
-%   text is rebuilt when Value or Format is assigned; assigning Label
-%   alone does not update it.
+%   text is rebuilt when Value, Format or Label is assigned.
 %
 %   The readout is display-only: it captures no mouse events beyond the
 %   inherited tooltip behavior.
@@ -175,6 +174,10 @@ classdef Readout < uim.abstract.Control
     end
 
     methods (Access = protected)
+
+        function onLabelChanged(obj)
+            obj.updateDisplayedText()
+        end
 
         function onStyleChanged(obj)
             onStyleChanged@uim.abstract.Component(obj)

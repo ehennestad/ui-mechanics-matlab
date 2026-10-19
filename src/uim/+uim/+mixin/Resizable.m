@@ -202,14 +202,23 @@ classdef Resizable < uim.Handle
             lim = obj.Position([1,2,1,2]) + [0, 0, obj.Position(3:4)];
         end
 
-        function pixelpos = getpixelposition(obj)
-        %getpixelposition Intended to return the position in pixels
+        function pixelpos = getpixelposition(obj, recursive)
+        %getpixelposition Return the position in pixels
         %
-        %   This method multiplies two 1-by-4 vectors with the matrix
-        %   operator *, so every call raises a dimension error.
-            pixelPosParent = getpixelposition(obj.Parent);
-            pixelpos = pixelPosParent([1,2,1,2]) + ...
-                            pixelPosParent([3,4,3,4])*obj.Position;
+        %   pixelpos = obj.getpixelposition() converts Position, which is
+        %   in data units of the Parent axes, to [x, y, width, height] in
+        %   pixels from the lower-left corner of that axes.
+        %
+        %   pixelpos = obj.getpixelposition(true) returns the pixels
+        %   relative to the figure instead.
+        %
+        %   See also uim.utility.du2px
+            if nargin < 2; recursive = false; end
+
+            corners = [obj.Position(1:2); obj.Position(1:2) + obj.Position(3:4)];
+            corners = uim.utility.du2px(obj.Parent, corners, recursive);
+            % A reversed axis direction swaps the corners
+            pixelpos = [min(corners, [], 1), abs(diff(corners, 1, 1))];
         end
 
         function hArray = getImrectHandles(obj)

@@ -95,7 +95,7 @@ classdef Button < uim.abstract.Control
         AutoWrapText = false % Similar to BarExtensionMode
         IconAlignment = 'left'; % Icon position in the button: 'left', 'center' or 'right'.
         IconSize = [nan, nan]; % Icon [width, height] in pixels; NaN fits the icon to the padded button.
-        IconTextSpacing = 5; % Gap in pixels between the icon and the text.
+        IconTextSpacing (1,1) double {mustBeNonnegative, mustBeFinite} = 5; % Gap in pixels between the icon and the text.
 
         % Not used by the button.
         FixedAspectRatio = true; % Do I need this?? Maybe sometime...

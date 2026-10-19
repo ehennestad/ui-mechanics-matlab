@@ -174,11 +174,13 @@ classdef TestGeometry < matlab.unittest.TestCase
             testCase.verifyEqual(shifted, [90, 100; 0, 10]);
         end
 
-        function oversizedWindowIsShiftedByNetOvershoot(testCase)
-            % A window wider than the extent cannot fit: the two edge
-            % corrections cancel to a net shift of the window.
-            shifted = uim.geometry.internal.shiftLimitsInside([-10, 120; 0, 50], [0, 100; 0, 100]);
-            testCase.verifyEqual(shifted, [-20, 110; 0, 50]);
+        function oversizedWindowIsCenteredOnTheExtent(testCase)
+            % A window wider than the extent cannot fit: it overhangs both
+            % edges equally, and shifting again leaves it in place.
+            extent = [0, 100; 0, 100];
+            shifted = uim.geometry.internal.shiftLimitsInside([-10, 120; 0, 50], extent);
+            testCase.verifyEqual(shifted, [-15, 115; 0, 50]);
+            testCase.verifyEqual(uim.geometry.internal.shiftLimitsInside(shifted, extent), shifted);
         end
 
         function centeredLimitsSurroundTheCenter(testCase)
