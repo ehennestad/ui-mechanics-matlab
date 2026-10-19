@@ -25,12 +25,17 @@ classdef Box < uim.abstract.Control
     end
 
     methods % Structors
-        function obj = Box(varargin)
+        function obj = Box(hParent, propertyValues)
         %Box Create a decorative box
         %
         %   box = uim.decorator.Box(parent, Name=Value)
 
-            obj@uim.abstract.Control(varargin{:})
+            arguments
+                hParent
+                propertyValues.?uim.decorator.Box
+            end
+
+            obj@uim.abstract.Control(hParent, propertyValues)
 
             obj.IsConstructed = true;
         end

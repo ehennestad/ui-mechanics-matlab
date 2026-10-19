@@ -134,13 +134,18 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
     methods % Structors
 
-        function obj = RangeSlider(hParent, varargin)
+        function obj = RangeSlider(hParent, propertyValues)
         %RangeSlider Create a range slider
         %
         %   slider = uim.widget.RangeSlider(hParent, Name=Value). See the
         %   class help for the inputs.
 
-            obj@uim.abstract.Control(hParent, varargin{:})
+            arguments
+                hParent
+                propertyValues.?uim.widget.RangeSlider
+            end
+
+            obj@uim.abstract.Control(hParent, propertyValues)
 
             % Knob drags read CurrentPoint from motion listeners; in
             % java figures that requires a WindowButtonMotionFcn.

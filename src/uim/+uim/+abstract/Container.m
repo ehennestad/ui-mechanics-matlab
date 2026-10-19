@@ -37,12 +37,18 @@ classdef Container < uim.abstract.Component
     end
 
     methods
-        function obj = Container(varargin)
+        function obj = Container(hParent, propertyValues)
         %Container Construct the container part of a subclass instance
         %
-        %   obj@uim.abstract.Container(hParent, Name, Value, ...) is called
+        %   obj@uim.abstract.Container(hParent, propertyValues) is called
         %   from a subclass constructor. See the class help.
-        	obj@uim.abstract.Component(varargin{:})
+
+            arguments
+                hParent
+                propertyValues (1,1) struct = struct()
+            end
+
+            obj@uim.abstract.Component(hParent, propertyValues)
         end
     end
 

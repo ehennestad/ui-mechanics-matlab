@@ -65,12 +65,18 @@ classdef Control < uim.abstract.Component
     end
 
     methods
-        function obj = Control(varargin)
+        function obj = Control(hParent, propertyValues)
         %Control Construct the control part of a subclass instance
         %
-        %   obj@uim.abstract.Control(hParent, Name, Value, ...) is called
+        %   obj@uim.abstract.Control(hParent, propertyValues) is called
         %   from a subclass constructor. See uim.abstract.Component.
-            obj@uim.abstract.Component( varargin{:} )
+
+            arguments
+                hParent
+                propertyValues (1,1) struct = struct()
+            end
+
+            obj@uim.abstract.Component(hParent, propertyValues)
         end
 
         function delete(obj)

@@ -54,13 +54,18 @@ classdef Spinner < uim.abstract.Control
 
     methods % Structors
 
-        function obj = Spinner(hParent, varargin)
+        function obj = Spinner(hParent, propertyValues)
         %Spinner Create a spinner
         %
         %   spinner = uim.widget.Spinner(hParent, Name=Value). See the
         %   class help for the inputs.
 
-            obj@uim.abstract.Control(hParent, varargin{:})
+            arguments
+                hParent
+                propertyValues.?uim.widget.Spinner
+            end
+
+            obj@uim.abstract.Control(hParent, propertyValues)
 
             obj.plotSpinnerComponents()
 

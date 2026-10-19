@@ -139,12 +139,17 @@ classdef Button < uim.abstract.Control
 
     methods % Structors
 
-        function obj = Button(varargin)
+        function obj = Button(hParent, propertyValues)
         %Button Create a button
         %
         %   button = uim.control.Button(parent, Name=Value)
 
-            obj@uim.abstract.Control( varargin{:} )
+            arguments
+                hParent
+                propertyValues.?uim.control.Button
+            end
+
+            obj@uim.abstract.Control(hParent, propertyValues)
 
             % Create button foreground, i.e plot text label or icon.
             obj.create() % Todo...

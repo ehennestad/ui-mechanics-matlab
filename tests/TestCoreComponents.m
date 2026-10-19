@@ -1569,6 +1569,22 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyEqual(slider.Limits, [10, 200]);
         end
 
+        function contrastSliderAssignsItsOwnAndInheritedOptions(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+
+            slider = uim.widget.ContrastSlider(canvas, "DataLimits", [0, 255], ...
+                "Limits", [10, 200], "ShowAutoButton", "off", "NumSteps", 51);
+            testCase.addTeardown(@deleteValid, slider);
+
+            testCase.verifyEqual(slider.Limits, [10, 200]);
+            testCase.verifyEqual(slider.ShowAutoButton, 'off');
+            testCase.verifyEqual(slider.NumSteps, 51, "RangeSlider options reach the superclass.");
+            testCase.verifyError(@() uim.widget.ContrastSlider(canvas, NoSuchOption=1), ...
+                "MATLAB:TooManyInputs");
+        end
+
         function contrastSliderCallbackMatchesClampedLimitsChangedFcn(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
