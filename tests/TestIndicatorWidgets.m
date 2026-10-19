@@ -217,6 +217,117 @@ classdef TestIndicatorWidgets < matlab.unittest.TestCase
         end
     end
 
+    methods (Test) % ChannelIndicator fixes
+
+        function channelIndicatorRejectsMoreChannelsThanColors(testCase)
+            [~, hPanel] = createPanel(testCase);
+            testCase.verifyError(@() uim.widget.ChannelIndicator(hPanel, "NumChannels", 7), ...
+                "uim:ChannelIndicator:TooFewColors");
+
+            indicator = uim.widget.ChannelIndicator(hPanel, "NumChannels", 2);
+            testCase.addTeardown(@deleteValid, indicator);
+            testCase.verifyError(@() assignProperty(indicator, "NumChannels", 7), ...
+                "uim:ChannelIndicator:TooFewColors");
+
+            colors = repmat({[1, 0, 0]}, 1, 8);
+            wide = uim.widget.ChannelIndicator(hPanel, "NumChannels", 8, "ChannelColors", colors);
+            testCase.addTeardown(@deleteValid, wide);
+            testCase.verifyEqual(wide.NumChannels, 8, "Enough colours allow more channels.");
+        end
+
+        function channelIndicatorUsesItsSpacing(testCase)
+            [~, hPanel] = createPanel(testCase);
+            indicator = uim.widget.ChannelIndicator(hPanel, "NumChannels", 2, ...
+                "ChannelIndicatorSpacing", 20);
+            testCase.addTeardown(@deleteValid, indicator);
+
+            centers = sort(arrayfun(@(h) mean([min(h.XData), max(h.XData)]), ...
+                findall(hPanel, "Tag", "ChannelIndicator")));
+            testCase.verifyEqual(diff(centers), indicator.ChannelIndicatorSize + 20, "AbsTol", 1e-6);
+        end
+
+        function channelIndicatorFollowsVisibleAndPosition(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "NextPlot", "add");
+            indicator = uim.widget.ChannelIndicator(hAxes, "NumChannels", 2);
+            testCase.addTeardown(@deleteValid, indicator);
+            hIndicators = findall(hAxes, "Tag", "ChannelIndicator");
+            xBefore = arrayfun(@(h) min(h.XData), hIndicators);
+
+            indicator.Position(1) = indicator.Position(1) + 50;
+            testCase.verifyEqual(arrayfun(@(h) min(h.XData), hIndicators), xBefore + 50, "AbsTol", 1e-6);
+
+            indicator.Visible = 'off';
+            testCase.verifyEmpty(findobj(hAxes, "Visible", "on", "-not", "Type", "axes"), ...
+                "Visible='off' hides every indicator part.");
+            indicator.Visible = 'on';
+            testCase.verifyEqual(string(get(hIndicators, "Visible")), ["on"; "on"]);
+        end
+
+        function channelIndicatorSelectionMovesTheThickOutline(testCase)
+            [~, hPanel] = createPanel(testCase);
+            indicator = uim.widget.ChannelIndicator(hPanel, "NumChannels", 2);
+            testCase.addTeardown(@deleteValid, indicator);
+
+            indicator.selectChannel(1)
+            indicator.selectChannel(2)
+
+            hIndicators = findall(hPanel, "Tag", "ChannelIndicator");
+            [~, order] = sort(arrayfun(@(h) min(h.XData), hIndicators));
+            testCase.verifyEqual([hIndicators(order).LineWidth], [0.5, 1]);
+        end
+
+        function channelIndicatorRemovesIndicatorsAboveNumChannels(testCase)
+            [~, hPanel] = createPanel(testCase);
+            indicator = uim.widget.ChannelIndicator(hPanel, "NumChannels", 4);
+            testCase.addTeardown(@deleteValid, indicator);
+
+            indicator.NumChannels = 2;
+
+            testCase.verifyNumElements(findall(hPanel, "Tag", "ChannelIndicator"), 2);
+        end
+    end
+
+    methods (Test) % PlaneSwitcher fixes
+
+        function planeSwitcherWorksWithOnePlane(testCase)
+            [~, hPanel] = createPanel(testCase);
+            switcher = uim.widget.PlaneSwitcher(hPanel);
+            testCase.addTeardown(@deleteValid, switcher);
+
+            toggleButton = findall(hPanel, "Tag", "PlaneSwitcherToggleButton");
+            testCase.verifyWarningFree(@() toggleButton.ButtonDownFcn(toggleButton, []), ...
+                "Pressing the button with one plane does nothing.");
+        end
+
+        function planeSwitcherSliderFollowsNumPlanes(testCase)
+            [hFigure, hPanel] = createPanel(testCase);
+            switcher = uim.widget.PlaneSwitcher(hPanel, "NumPlanes", 3);
+            testCase.addTeardown(@deleteValid, switcher);
+            hSliderAxes = findall(hFigure, "Tag", "SlideBar Container");
+
+            switcher.NumPlanes = 8;
+
+            testCase.verifyEqual(hSliderAxes.XLim(2) > 7.5, true, ...
+                "The slider range grows to the new NumPlanes.");
+        end
+
+        function planeSwitcherFollowsVisibleAndPosition(testCase)
+            [~, hPanel] = createPanel(testCase);
+            switcher = uim.widget.PlaneSwitcher(hPanel, "NumPlanes", 3);
+            testCase.addTeardown(@deleteValid, switcher);
+            toggleButton = findall(hPanel, "Tag", "PlaneSwitcherToggleButton");
+            xBefore = toggleButton.Position(1);
+
+            switcher.Position(1) = switcher.Position(1) + 50;
+            testCase.verifyEqual(toggleButton.Position(1), xBefore + 50, "AbsTol", 1e-6);
+
+            switcher.Visible = 'off';
+            testCase.verifyEqual(char(toggleButton.Visible), 'off');
+        end
+    end
+
     methods (Test) % PlaneSwitcher
 
         function planeSwitcherTogglesItsSliderAndNotifies(testCase)
@@ -293,6 +404,10 @@ end
 function hBackground = sliderBackground(hAxes)
     patches = findobj(hAxes, "Type", "patch");
     hBackground = patches(arrayfun(@(h) numel(h.XData) == 5, patches));
+end
+
+function assignProperty(object, propertyName, value)
+    object.(propertyName) = value;
 end
 
 function deleteValid(object)
