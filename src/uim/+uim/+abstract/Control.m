@@ -91,6 +91,11 @@ classdef Control < uim.abstract.Component
             obj.Tooltip = newValue;
             obj.onTooltipChanged()
         end
+
+        function set.Label(obj, newValue)
+            obj.Label = newValue;
+            obj.onLabelChanged()
+        end
     end
 
     methods (Access = protected)
@@ -98,6 +103,12 @@ classdef Control < uim.abstract.Component
         function relocate(obj, shift)
             relocate@uim.abstract.Component(obj, shift)
             obj.setTooltipPosition()
+        end
+
+        function onLabelChanged(~)
+        %onLabelChanged Called after Label is assigned
+        %
+        %   Subclasses that display Label override this to redraw it.
         end
     end
 

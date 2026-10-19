@@ -230,6 +230,18 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 "A second change within 1 s is not notified at a rate of 1.");
         end
 
+        function readoutShowsANewLabel(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            readout = uim.widget.Readout(canvas, "Label", "Frame", "Value", 1);
+            testCase.addTeardown(@deleteValid, readout);
+
+            readout.Label = "Time";
+
+            testCase.verifyNotEmpty(findall(hFigure, "Type", "text", "String", 'Time: 1'));
+        end
+
         function borderWidthChangeIsDrawn(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
