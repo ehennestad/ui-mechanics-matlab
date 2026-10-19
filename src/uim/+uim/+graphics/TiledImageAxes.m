@@ -215,7 +215,8 @@ methods %Structors
 
     % % Destructor
     function delete(obj)
-        if isvalid(obj.Axes_)
+        % Axes_ is empty if the constructor failed before creating the axes
+        if ~isempty(obj.Axes_) && isvalid(obj.Axes_)
             delete(obj.Axes_)
         end
     end

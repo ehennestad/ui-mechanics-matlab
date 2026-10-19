@@ -261,6 +261,31 @@ classdef TestTileLayout < matlab.unittest.TestCase
             testCase.verifyFalse(isvalid(hAxes));
             testCase.verifyTrue(isvalid(hFigure), "The host figure is left alone.");
         end
+
+        function failedConstructionDestroysObjectWithoutWarning(testCase)
+            % An invalid GridSize errors before the axes are created, so
+            % the destructor runs on an object without axes.
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+
+            exception = testCase.verifyWarningFree(...
+                @() captureConstructorError(hFigure, "GridSize", [1, 2, 3]));
+            testCase.verifyClass(exception, "MException", "The constructor errors.");
+            testCase.verifyEqual(exception.identifier, 'MATLAB:incorrectNumel');
+        end
+    end
+end
+
+function exception = captureConstructorError(varargin)
+%captureConstructorError Construct a TiledImageAxes and return its error
+%
+%   The error is caught here so that verifyWarningFree sees the warnings
+%   issued while the partly constructed object is destroyed.
+    exception = [];
+    try
+        uim.graphics.TiledImageAxes(varargin{:});
+    catch exception
+        % Returned for the caller to verify
     end
 end
 
