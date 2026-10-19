@@ -72,6 +72,72 @@ classdef TestSliderDetails < matlab.unittest.TestCase
             testCase.verifyEqual(hLow.FaceColor, ones(1, 3)*0.8);
         end
 
+        function rangeSliderKnobHoverShowsTheHandPointer(testCase)
+            [hFigure, canvas] = createCanvas(testCase);
+            slider = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 100, ...
+                "Low", 20, "High", 80);
+            testCase.addTeardown(@deleteValid, slider);
+            hBackground = findobj(canvas.Axes, "Tag", "Range Slider Background");
+            hLow = findobj(canvas.Axes, "Tag", "Range Slider Low");
+            backgroundBehavior = iptGetPointerBehavior(hBackground);
+            knobBehavior = iptGetPointerBehavior(hLow);
+            testCase.assertNotEmpty(backgroundBehavior);
+            testCase.assertNotEmpty(knobBehavior);
+
+            % The pointer manager runs the exit function of the object the
+            % pointer leaves before the enter function of the one it enters
+            backgroundBehavior.enterFcn(hFigure, [0, 0])
+            backgroundBehavior.exitFcn(hFigure, [0, 0])
+            knobBehavior.enterFcn(hFigure, [0, 0])
+            testCase.verifyEqual(char(hFigure.Pointer), 'hand', ...
+                "The pointer is a hand over the knob.");
+
+            knobBehavior.exitFcn(hFigure, [0, 0])
+            testCase.verifyEqual(char(hFigure.Pointer), 'arrow', ...
+                "Leaving the knob restores the arrow.");
+
+            backgroundBehavior.enterFcn(hFigure, [0, 0])
+            testCase.verifyEqual(char(hFigure.Pointer), 'hand', ...
+                "Moving from the knob onto the background keeps the hand.");
+        end
+
+        function rangeSliderKnobHoverFollowsTheKnobColor(testCase)
+            [hFigure, canvas] = createCanvas(testCase);
+            slider = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 100, ...
+                "Low", 20, "High", 80, "KnobFaceColorInactive", [1, 0, 0]);
+            testCase.addTeardown(@deleteValid, slider);
+            hLow = findobj(canvas.Axes, "Tag", "Range Slider Low");
+
+            behavior = iptGetPointerBehavior(hLow);
+            behavior.enterFcn(hFigure, [0, 0])
+            testCase.verifyEqual(hLow.FaceColor, [1, 0.75, 0.75], "AbsTol", 1e-12, ...
+                "Hovering lightens KnobFaceColorInactive.");
+            behavior.exitFcn(hFigure, [0, 0])
+            testCase.verifyEqual(hLow.FaceColor, [1, 0, 0], ...
+                "Leaving the knob restores KnobFaceColorInactive.");
+        end
+
+        function rangeSliderPositionMovesTheWholeSlider(testCase)
+            [~, canvas] = createCanvas(testCase);
+            for sliderClass = ["RangeSlider", "ContrastSlider"]
+                if sliderClass == "RangeSlider"
+                    slider = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 10, ...
+                        "Position", [20, 20, 200, 30]);
+                else
+                    slider = uim.widget.ContrastSlider(canvas, "DataLimits", [0, 255], ...
+                        "Limits", [10, 200], "Position", [20, 20, 200, 30]);
+                end
+                hLow = findobj(canvas.Axes, "Tag", "Range Slider Low");
+                lowXBefore = mean(hLow.XData);
+
+                slider.Position = slider.Position + [50, 40, 0, 0];
+
+                testCase.verifyEqual(mean(hLow.XData), lowXBefore + 50, "AbsTol", 1e-6, ...
+                    sliderClass + ": the knob moves with Position.");
+                delete(slider)
+            end
+        end
+
         function rangeSliderReportsValuesWhileChanging(testCase)
             [hFigure, canvas] = createCanvas(testCase);
             slider = uim.widget.RangeSlider(canvas, "Min", 0, "Max", 100, ...
@@ -205,6 +271,98 @@ classdef TestSliderDetails < matlab.unittest.TestCase
         end
     end
 
+    methods (Test) % Slider construction and own-axes geometry
+
+        function sliderAcceptsARangeBelowZero(testCase)
+            hFigure = createHiddenFigure(testCase);
+            slider = uim.widget.Slider("Parent", hFigure, "Units", "pixels", ...
+                "Position", [20, 20, 200, 30], "Min", -10, "Max", -5, "Value", -7);
+            testCase.addTeardown(@deleteValid, slider);
+
+            testCase.verifyEqual([slider.Min, slider.Max, slider.Value], [-10, -5, -7]);
+            testCase.verifyError(@() uim.widget.Slider("Parent", hFigure, "Min", 3, "Max", 2), ...
+                "uim:Slider:InvalidLimits");
+        end
+
+        function sliderMovesTheDefaultValueIntoItsRange(testCase)
+            hFigure = createHiddenFigure(testCase);
+            slider = uim.widget.Slider("Parent", hFigure, "Units", "pixels", ...
+                "Position", [20, 20, 200, 30], "Min", 10, "Max", 20);
+            testCase.addTeardown(@deleteValid, slider);
+
+            testCase.verifyEqual(slider.Value, 10, "The default 0.5 is moved to Min.");
+        end
+
+        function sliderTrackFollowsTheAxesSizeInNormalizedUnits(testCase)
+            hFigure = createHiddenFigure(testCase);
+            hFigure.Position = [100, 100, 400, 300];
+            slider = uim.widget.Slider("Parent", hFigure); % normalized [0 0 0.1 0.3]
+            testCase.addTeardown(@deleteValid, slider);
+
+            hAxes = findall(hFigure, "Tag", "SlideBar Container");
+            hTrack = findTrack(hAxes);
+            testCase.verifyGreaterThanOrEqual(spanOf(hTrack.XData), 0.99 * (slider.Max - slider.Min), ...
+                "The track spans at least the value range, not a fraction of a pixel.");
+        end
+
+        function sliderLimitsStayFixedAsValueChanges(testCase)
+            hFigure = createHiddenFigure(testCase);
+            slider = uim.widget.Slider("Parent", hFigure, "Units", "pixels", ...
+                "Position", [20, 20, 200, 30], "Min", 0, "Max", 1);
+            testCase.addTeardown(@deleteValid, slider);
+            hAxes = findall(hFigure, "Tag", "SlideBar Container");
+            xLimBefore = hAxes.XLim;
+
+            for value = 0.1:0.1:0.9
+                slider.Value = value;
+            end
+
+            testCase.verifyEqual(hAxes.XLim, xLimBefore, "AbsTol", 1e-12, ...
+                "Value changes do not widen XLim.");
+        end
+
+        function sliderGeometryIsTheSameBeforeAndAfterAPositionChange(testCase)
+            hFigure = createHiddenFigure(testCase);
+            slider = uim.widget.Slider("Parent", hFigure, "Units", "pixels", ...
+                "Position", [20, 20, 200, 30], "Min", 0, "Max", 1, "TickLength", 4);
+            testCase.addTeardown(@deleteValid, slider);
+            hAxes = findall(hFigure, "Tag", "SlideBar Container");
+            hTrack = findTrack(hAxes);
+            hBackground = findobj(hAxes, "Type", "patch", "FaceAlpha", 0);
+            hTicks = findobj(hAxes, "Type", "line");
+
+            testCase.verifyEqual([min(hTrack.XData), max(hTrack.XData)], [0, 1], "AbsTol", 1e-12, ...
+                "At construction the track spans [Min, Max].");
+            testCase.verifyEqual([min(hBackground.XData), max(hBackground.XData)], hAxes.XLim, ...
+                "AbsTol", 1e-12, "At construction the background spans the axes.");
+            trackBefore = hTrack.XData;
+            backgroundBefore = hBackground.XData;
+            ticksBefore = get(hTicks, "XData");
+
+            % Moving without resizing leaves every part where it was in
+            % data units
+            slider.Position = [40, 30, 200, 30];
+
+            testCase.verifyEqual(hTrack.XData, trackBefore, "AbsTol", 1e-12);
+            testCase.verifyEqual(hBackground.XData, backgroundBefore, "AbsTol", 1e-12);
+            testCase.verifyEqual(get(hTicks, "XData"), ticksBefore, "AbsTol", 1e-12);
+
+            slider.Position = [40, 30, 300, 30];
+
+            testCase.verifyEqual([min(hTrack.XData), max(hTrack.XData)], [0, 1], "AbsTol", 1e-12, ...
+                "After a resize the track still spans [Min, Max].");
+            testCase.verifyEqual([min(hBackground.XData), max(hBackground.XData)], hAxes.XLim, ...
+                "AbsTol", 1e-12, "After a resize the background spans the axes.");
+        end
+
+        function pointerValuesSnapToStepsFromMin(testCase)
+            testCase.verifyEqual(uim.widget.internal.snapToStep(2.4, 1.5, 1), 2.5, "AbsTol", 1e-12);
+            testCase.verifyEqual(uim.widget.internal.snapToStep([1.6, 3.4], 1.5, 1), [1, 4], "AbsTol", 1e-12);
+            testCase.verifyEqual(uim.widget.internal.snapToStep(2.4, 1.5), 3, "AbsTol", 1e-12, ...
+                "Without an origin the grid starts at 0.");
+        end
+    end
+
     methods (Test) % ScrollBar and Button details
 
         function reversedScrollBarFlipsItsAxis(testCase)
@@ -309,6 +467,21 @@ function hLabel = valueLabel(hAxes)
     hTexts = findobj(hAxes, "Type", "text");
     hLabel = hTexts(arrayfun(@(h) ~isempty(regexp(h.String, '^[\d.]+$', 'once')), hTexts));
     if numel(hLabel) > 1; hLabel = hLabel(1); end
+end
+
+function hTrack = findTrack(hAxes)
+%findTrack The slider track: the patch that is neither the knob nor the background
+    patches = findobj(hAxes, "Type", "patch");
+    widths = arrayfun(@(h) spanOf(h.XData), patches);
+    heights = arrayfun(@(h) spanOf(h.YData), patches);
+    % The track is the long, thin patch
+    [~, index] = max(widths ./ max(heights, eps));
+    hTrack = patches(index);
+end
+
+function span = spanOf(values)
+%spanOf Difference between the largest and smallest value
+    span = max(values(:)) - min(values(:));
 end
 
 function deleteValid(object)
