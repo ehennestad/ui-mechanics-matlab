@@ -25,12 +25,12 @@ classdef Toolbar < uim.abstract.Container
 %   getTypeDefaults), so Orientation and DarkMode given at construction
 %   take effect. Set Orientation before adding buttons.
 %
-%   Padding is relative to the bar, not to the screen: Padding(1) and
-%   Padding(3) are the gaps before the first and after the last button
-%   along the bar, for a horizontal toolbar on the left and right and for
-%   a vertical one at the bottom and top. Buttons are centred across the
-%   bar's thickness (Size across the bar), so Padding(2) and Padding(4)
-%   are not used.
+%   Padding is [left, bottom, right, top] in pixels, as for other
+%   components. Along the bar it sets the gaps before the first and after
+%   the last button: Padding(1) and Padding(3) for a horizontal toolbar,
+%   Padding(2) and Padding(4) for a vertical one. Buttons are centred
+%   across the bar's thickness (Size across the bar), so the padding
+%   across the bar is not used.
 %
 %   Example:
 %       toolbar = uim.widget.Toolbar(hAxes, Location="northeast");
@@ -429,7 +429,7 @@ classdef Toolbar < uim.abstract.Container
             end
 
             extent = zeros(1,2);
-            extent(dimL) = maxPositionL - minPositionL + sum(obj.Padding([1, 3]));
+            extent(dimL) = maxPositionL - minPositionL + sum(obj.Padding([dimL, dimL+2]));
         end
 
         function setNextButtonPosition(obj)
@@ -439,7 +439,7 @@ classdef Toolbar < uim.abstract.Container
 
             pos = zeros(1, 4);
             if isempty(obj.AllButtonPosition)
-                pos(i) = obj.CanvasPosition(i) + obj.Padding(1);
+                pos(i) = obj.CanvasPosition(i) + obj.Padding(i);
             else
                 lastButtonPosition = obj.AllButtonPosition(end, :);
                 pos(i) = sum(lastButtonPosition([i,i+2])) + obj.Spacing;
@@ -472,7 +472,7 @@ classdef Toolbar < uim.abstract.Container
             extent = maxPosition - minPosition;
 
             if any( strcmp(obj.ComponentAlignment, {'left', 'top'}) )
-                targetPosition = obj.CanvasPosition(dimL) + obj.Padding(1);
+                targetPosition = obj.CanvasPosition(dimL) + obj.Padding(dimL);
                 offset = targetPosition - minPosition;
 
             elseif any( strcmp(obj.ComponentAlignment, {'center', 'middle'}) )
@@ -485,7 +485,7 @@ classdef Toolbar < uim.abstract.Container
             end
 
             if  any( strcmp(obj.ComponentAlignment, {'right', 'bottom'}) )
-                targetPosition = sum(obj.CanvasPosition([dimL, dimL+2])) - obj.Padding(3) - extent;
+                targetPosition = sum(obj.CanvasPosition([dimL, dimL+2])) - obj.Padding(dimL+2) - extent;
                 offset = targetPosition-minPosition;
             end
 
@@ -527,8 +527,8 @@ classdef Toolbar < uim.abstract.Container
             runLength = sum(obj.AllButtonPosition(:, obj.DimL_+2), 1) + ...
                 (numItems - 1) * obj.Spacing;
 
-            toolbarLocation = obj.Position(obj.DimL_) + obj.Padding(1);
-            toolbarSize = obj.Position(obj.DimL_+2) - obj.Padding(1) - obj.Padding(3);
+            toolbarLocation = obj.Position(obj.DimL_) + obj.Padding(obj.DimL_);
+            toolbarSize = obj.Position(obj.DimL_+2) - obj.Padding(obj.DimL_) - obj.Padding(obj.DimL_+2);
 
             anchorPoint = uim.widget.internal.alignRunStart(...
                 toolbarLocation, toolbarSize, runLength, obj.ComponentAlignment);
@@ -603,7 +603,7 @@ classdef Toolbar < uim.abstract.Container
                         extent(obj.DimS_) = obj.CanvasPosition(obj.DimS_+2);
 
                         minPos = zeros(1,2);
-                        minPos(obj.DimL_) = minPositionL - obj.Padding(1);
+                        minPos(obj.DimL_) = minPositionL - obj.Padding(obj.DimL_);
                         minPos(obj.DimS_) = obj.CanvasPosition(obj.DimS_);
 
                         [X, Y] = uim.shape.rectangle(extent, obj.CornerRadius);
