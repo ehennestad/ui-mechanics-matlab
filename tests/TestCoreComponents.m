@@ -83,8 +83,9 @@ classdef TestCoreComponents < matlab.unittest.TestCase
 
             contentPosition = uim.utility.getContentPixelPosition(hPanel);
 
-            testCase.verifyEqual(contentPosition(3:4), getpixelposition(hChild) * [0 0; 0 0; 1 0; 0 1], ...
-                "The content area is the area a normalized child fills.");
+            childSize = getpixelposition(hChild) * [0 0; 0 0; 1 0; 0 1];
+            testCase.verifyEqual(contentPosition(3:4), round(childSize), ...
+                "The content area is the area a normalized child fills, in whole pixels.");
             testCase.verifyLessThan(contentPosition(3:4), [200, 60], ...
                 "The border and title are not part of the content area.");
         end
