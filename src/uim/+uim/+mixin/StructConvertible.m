@@ -18,13 +18,11 @@ classdef StructConvertible < uim.Handle & matlab.mixin.SetGet
 %         selects them by the Transient attribute.
 %
 %   Methods:
-%       toStruct   - Property values as a struct (object arrays allowed)
-%       fromStruct - Not implemented; does nothing
+%       toStruct - Property values as a struct (object arrays allowed)
 %
 %   See also uim.mixin.NameValueAssignable, uim.utility.parseNameValue
 
 %   Todo:
-%       1) implement fromStruct method...
 %       2) apply on children objects as well.
 %       3) remove point 2 from list above. if there is no default property
 %       value, this class should just assume it is empty.
@@ -94,10 +92,6 @@ classdef StructConvertible < uim.Handle & matlab.mixin.SetGet
                     end
                 end
             end
-        end
-
-        function fromStruct(obj)
-        %fromStruct Not implemented; does nothing
         end
 
 % % %         function saveobj()

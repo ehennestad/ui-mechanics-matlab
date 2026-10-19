@@ -18,12 +18,9 @@ classdef NameValueAssignable < uim.Handle & matlab.mixin.SetGet
 %         take precedence.
 %
 %   Methods:
-%       toStruct   - Property values as a struct
-%       fromStruct - Not implemented; does nothing
+%       toStruct - Property values as a struct
 %
 %   See also uim.abstract.Component
-
-%   Todo: implement fromStruct method...
 
     methods (Access = protected)
 
@@ -119,10 +116,6 @@ classdef NameValueAssignable < uim.Handle & matlab.mixin.SetGet
             propertyNames = uim.mixin.internal.publicPropertyNames(obj);
             values = get(obj, propertyNames);
             S = cell2struct(values, propertyNames, 2);
-        end
-
-        function fromStruct(obj)
-        %fromStruct Not implemented; does nothing
         end
 
 % % %         function saveobj()
