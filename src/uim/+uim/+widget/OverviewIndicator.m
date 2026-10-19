@@ -89,12 +89,17 @@ classdef OverviewIndicator < uim.abstract.Control
 
     methods % Structors
 
-        function obj = OverviewIndicator(hParent, varargin)
+        function obj = OverviewIndicator(hParent, propertyValues)
         %OverviewIndicator Create the overview chip in an axes, canvas or container
         %
         %   indicator = uim.widget.OverviewIndicator(hParent, Name=Value)
 
-            obj@uim.abstract.Control(hParent, varargin{:})
+            arguments
+                hParent
+                propertyValues.?uim.widget.OverviewIndicator
+            end
+
+            obj@uim.abstract.Control(hParent, propertyValues)
 
             % View-rect drags read CurrentPoint from motion listeners; in
             % java figures that requires a WindowButtonMotionFcn.

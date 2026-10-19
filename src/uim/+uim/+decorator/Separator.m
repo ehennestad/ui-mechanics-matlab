@@ -39,12 +39,17 @@ classdef Separator < uim.abstract.Control
     end
 
     methods
-        function obj = Separator(varargin)
+        function obj = Separator(hParent, propertyValues)
         %Separator Create a separator
         %
         %   sep = uim.decorator.Separator(parent, Name=Value)
 
-            obj@uim.abstract.Control(varargin{:})
+            arguments
+                hParent
+                propertyValues.?uim.decorator.Separator
+            end
+
+            obj@uim.abstract.Control(hParent, propertyValues)
 
             %delete(obj.Background);
             obj.Background.Visible = 'off';

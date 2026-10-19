@@ -88,13 +88,18 @@ classdef DropDown < uim.abstract.Control
 
     methods % Structors
 
-        function obj = DropDown(hParent, varargin)
+        function obj = DropDown(hParent, propertyValues)
         %DropDown Create a dropdown
         %
         %   dropdown = uim.widget.DropDown(hParent, Name=Value). See the
         %   class help for the inputs.
 
-            obj@uim.abstract.Control(hParent, varargin{:})
+            arguments
+                hParent
+                propertyValues.?uim.widget.DropDown
+            end
+
+            obj@uim.abstract.Control(hParent, propertyValues)
 
             obj.plotClosedComponents()
 

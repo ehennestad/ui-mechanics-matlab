@@ -41,12 +41,17 @@ classdef Image < uim.abstract.Component
     end
 
     methods
-        function obj = Image(hParent, varargin)
+        function obj = Image(hParent, propertyValues)
         %Image Create an image component
         %
         %   img = uim.decorator.Image(parent, Name=Value)
 
-            obj@uim.abstract.Component(hParent, varargin{:})
+            arguments
+                hParent
+                propertyValues.?uim.decorator.Image
+            end
+
+            obj@uim.abstract.Component(hParent, propertyValues)
 
             % Image specific construction....
 
