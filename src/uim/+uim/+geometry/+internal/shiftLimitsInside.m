@@ -4,9 +4,9 @@ function limits = shiftLimitsInside(limits, extent)
 %   limits = uim.geometry.internal.shiftLimitsInside(limits, extent)
 %   translates each row of limits (2-by-2, [min, max] per dimension)
 %   back inside the corresponding row of extent, without changing its
-%   size. A window larger than the extent cannot fit; its two edge
-%   corrections cancel to a net shift, so it ends up straddling the
-%   extent.
+%   size. A window larger than the extent cannot fit; it is centred on
+%   the extent, so it overhangs both edges equally and a second call
+%   leaves it unchanged.
 %
 %   This differs from uim.geometry.fitRangeInside, which narrows a range
 %   that is too wide. Overview widgets rely on the size being preserved.
@@ -19,8 +19,13 @@ function limits = shiftLimitsInside(limits, extent)
     end
 
     for dim = 1:2
-        overshoot = max(0, extent(dim,1) - limits(dim,1)) ...
-            - max(0, limits(dim,2) - extent(dim,2));
-        limits(dim,:) = limits(dim,:) + overshoot;
+        windowWidth = diff(limits(dim,:));
+        if windowWidth > diff(extent(dim,:))
+            limits(dim,:) = mean(extent(dim,:)) + [-1, 1] .* windowWidth/2;
+        else
+            overshoot = max(0, extent(dim,1) - limits(dim,1)) ...
+                - max(0, limits(dim,2) - extent(dim,2));
+            limits(dim,:) = limits(dim,:) + overshoot;
+        end
     end
 end

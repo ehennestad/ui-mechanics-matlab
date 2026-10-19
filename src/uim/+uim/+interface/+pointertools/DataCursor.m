@@ -12,8 +12,8 @@ classdef DataCursor < uim.interface.PointerTool
 %   and then calls CursorMovedFcn. suspend and deactivate hide the
 %   crosshair. Mouse presses do nothing else.
 %
-%   The crosshair is drawn with plot, so the axes must be held
-%   (PointerManager holds it).
+%   The crosshair is added to the axes content whether or not the axes
+%   is held.
 %
 %   ExitMode is 'default': a 'previous' tool such as ZoomIn suspends it
 %   while on, and it becomes current again when that tool turns off.
@@ -50,6 +50,10 @@ classdef DataCursor < uim.interface.PointerTool
     end
 
     methods
+
+        function delete(obj)
+            delete(obj.Crosshair(isgraphics(obj.Crosshair)))
+        end
 
         function obj = DataCursor(hAxes)
         %DataCursor Create the tool for an axes
@@ -144,11 +148,20 @@ classdef DataCursor < uim.interface.PointerTool
 
             % Plot Line
             if isempty(obj.Crosshair)
+                % Plot replaces the content of an axes that is not held,
+                % so hold it while the crosshair lines are created. The
+                % previous NextPlot is restored on exit, also on an error.
+                nextPlot = hAx.NextPlot;
+                hAx.NextPlot = 'add';
+                restoreNextPlot = onCleanup(@() set(hAx, 'NextPlot', nextPlot));
+
+                % The black outline lines 3 and 4 are created first so
+                % that the thinner coloured lines 1 and 2 are drawn on top
                 obj.Crosshair = gobjects(4,1);
-                obj.Crosshair(1) = plot(hAx, xdata1, ydata1);
-                obj.Crosshair(2) = plot(hAx, xdata2, ydata2);
                 obj.Crosshair(3) = plot(hAx, xdata1, ydata1);
                 obj.Crosshair(4) = plot(hAx, xdata2, ydata2);
+                obj.Crosshair(1) = plot(hAx, xdata1, ydata1);
+                obj.Crosshair(2) = plot(hAx, xdata2, ydata2);
                 set( obj.Crosshair(1:2), 'Color', obj.CursorColor)
                 set( obj.Crosshair(1:2), 'LineWidth', 0.5)
                 set( obj.Crosshair(3:4), 'Color', [0,0,0])
@@ -170,7 +183,10 @@ classdef DataCursor < uim.interface.PointerTool
         end
 
         function updateCursorColor(obj)
-            set( obj.Crosshair, 'Color', obj.CursorColor)
+            % Lines 3 and 4 are the black outline under the coloured lines
+            % 1 and 2; line 5 is the centre dot
+            if numel(obj.Crosshair) < 5; return; end
+            set(obj.Crosshair([1, 2, 5]), 'Color', obj.CursorColor)
         end
     end
 end

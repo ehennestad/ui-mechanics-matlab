@@ -37,6 +37,12 @@ classdef DraggableRectangle < handle
 
     methods
 
+        function delete(obj)
+            if ~isempty(obj.RectanglePlotHandle) && isvalid(obj.RectanglePlotHandle)
+                delete(obj.RectanglePlotHandle)
+            end
+        end
+
         function plotRectangle(obj)
         %plotRectangle Create the outline, or clear the existing one, and show it
         %

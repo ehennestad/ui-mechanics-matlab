@@ -499,6 +499,22 @@ classdef TestSliderWidgets < matlab.unittest.TestCase
             testCase.verifyEqual([evt.OldValue; evt.NewValue], [20, 60; 30, 60]);
         end
 
+        function playbackControlAppliesOptionsGivenAtConstruction(testCase)
+            hFigure = createHiddenFigure(testCase, [100, 100, 600, 200]);
+            widget = uim.widget.PlaybackControl(hFigure, "Position", [10, 10, 400, 30], ...
+                "Minimum", 1, "Maximum", 50, "ActiveRange", [2, 5], ...
+                "Visible", "off", "BackgroundColor", [1, 0, 0]);
+            testCase.addTeardown(@deleteValid, widget);
+
+            testCase.verifyEqual(widget.ActiveRange, [2, 5]);
+            hSliderAxes = findall(hFigure, "Tag", "Playback Widget (Slider Axes)");
+            hButtonAxes = findall(hFigure, "Tag", "Playback Widget (Button Axes)");
+            testCase.verifyEqual(string([hSliderAxes.Visible, hButtonAxes.Visible]), ["off", "off"], ...
+                "Visible='off' hides both axes.");
+            testCase.verifyEqual([hSliderAxes.Color; hButtonAxes.Color], [1, 0, 0; 1, 0, 0], ...
+                "BackgroundColor colours both axes.");
+        end
+
         function playbackControlHostsChannelAndPlaneSelectors(testCase)
             hFigure = createHiddenFigure(testCase, [100, 100, 500, 200]);
             widget = uim.widget.PlaybackControl(hFigure, "Position", [10, 10, 400, 30], ...

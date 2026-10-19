@@ -16,7 +16,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 %   The track runs along Position, inset by the left and right Padding.
 %   Dragging a knob moves Low or High; pressing the track moves the
 %   nearest knob to the pressed point. Values from the pointer are
-%   rounded to the nearest multiple of (Max - Min)/NumTicks, clamped to
+%   rounded to the nearest Min + k*(Max - Min)/NumTicks, clamped to
 %   [Min, Max] and kept so that Low <= High. While a knob is pressed, a
 %   value label is shown above it (see ShowLabel). The inherited Label
 %   is drawn beside the track at LabelLocation.
@@ -65,8 +65,8 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
     properties
         % Number of value steps between Min and Max. Pointer values are
-        % rounded to multiples of (Max - Min)/NumTicks; no tick marks
-        % are drawn.
+        % rounded to the nearest Min + k*(Max - Min)/NumTicks; no tick
+        % marks are drawn.
         NumTicks = 100
 
         % Side of the track where Label is drawn: 'left', 'right', 'top'
@@ -363,6 +363,29 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
     methods (Access = protected)
 
+        function resize(obj)
+        %resize Redraw the slider after its Size changes
+            resize@uim.abstract.Control(obj)
+            obj.redrawSliderParts()
+        end
+
+        function relocate(obj, shift)
+        %relocate Redraw the slider after its location changes
+            relocate@uim.abstract.Control(obj, shift)
+            obj.redrawSliderParts()
+        end
+
+        function redrawSliderParts(obj)
+        %redrawSliderParts Redraw the track, knobs and labels at Position
+        %
+        %   Component redraws only the background when Position or Size
+        %   is assigned, so the slider redraws the rest itself.
+            obj.plotTrack()
+            obj.plotKnobs()
+            obj.plotText()
+            obj.plotLabel()
+        end
+
         function updateLocation(obj, mode)
             if ~obj.IsConstructed; return; end
 
@@ -377,7 +400,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         function updateSize(obj, mode)
             if ~obj.IsConstructed; return; end
 
-            if nargin < 2; mode = obj.PositionMode; end
+            if nargin < 2; mode = obj.SizeMode; end
             updateSize@uim.abstract.Component(obj, mode)
             obj.plotTrack()
             obj.plotKnobs()
@@ -531,7 +554,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
             [trackStart, trackLength] = obj.getTrackExtent();
             newValue = uim.widget.internal.mapPixelToValue(...
                 mousePoint(1), obj.getValueLimits(), trackStart, trackLength);
-            newValue = uim.widget.internal.snapToStep(newValue, obj.StepSize);
+            newValue = uim.widget.internal.snapToStep(newValue, obj.StepSize, obj.Min);
 
             switch src.Tag
                 case 'Range Slider Low'
@@ -634,9 +657,13 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
 
         function onMouseEnterKnob(obj, hSource)
         %onMouseEnterKnob Lighten a knob while the pointer rests on it
+        %
+        %   The hover colour is KnobFaceColorInactive moved three
+        %   quarters of the way to white (0.8 grey becomes 0.95).
 
             if ~obj.IsKnobPressed
-                hSource.FaceColor = ones(1,3) * 0.95;
+                faceColor = validatecolor(obj.KnobFaceColorInactive);
+                hSource.FaceColor = faceColor + (1 - faceColor) * 0.75;
             end
         end
 
@@ -644,7 +671,7 @@ classdef RangeSlider < uim.abstract.Control & matlab.mixin.SetGet
         %onMouseExitKnob Restore a knob when the pointer leaves it
 
             if ~obj.IsKnobPressed
-                hSource.FaceColor = ones(1,3) * 0.8;
+                hSource.FaceColor = obj.KnobFaceColorInactive;
             end
         end
     end

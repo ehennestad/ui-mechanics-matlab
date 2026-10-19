@@ -215,6 +215,11 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
 
             obj.createWidgetComponents()
 
+            % Visible and BackgroundColor options were assigned before the
+            % axes existed, when their handlers return without drawing
+            obj.onBackgroundColorSet()
+            obj.onVisibleChanged()
+
             if ~nargout
                 clear obj
             end
@@ -683,6 +688,9 @@ classdef PlaybackControl < uim.mixin.NameValueAssignable
         end
 
         function drawRangeButtons(obj)
+
+            % ActiveRange can be assigned before the slider axes exist
+            if ~obj.IsConstructed; return; end
 
             for i = 1:2
                 % Offset from Minimum, like the knob and the indicator bar,

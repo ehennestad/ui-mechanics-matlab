@@ -23,55 +23,36 @@ else
     lowerlim = fullAr-0.2;
 end
 
-finished = false;
-
-while ~finished
+% Candidate grids are divisor pairs [d, n/d] with 1 < d < n, where d is
+% a product of at most half of the prime factors of n, ordered by d and
+% followed by the same pairs flipped. The first pair whose aspect ratio
+% lies within the limits is used.
+while true
 
     factors = factor(n);
 
     if isscalar(factors)
-        n=n+1;
+        n = n + 1;
         continue
     end
 
-    P = perms(factors);
-    P = unique(P, 'rows');
+    divisors = find(mod(n, 1:n) == 0);
+    divisors = divisors(divisors > 1 & divisors < n);
+    numDivisorFactors = arrayfun(@(d) numel(factor(d)), divisors);
+    divisors = divisors(numDivisorFactors <= floor(numel(factors) / 2));
 
-    candidates = zeros(0, 2);
-
-    nFactors = numel(factors);
-    for i = 1 : floor(nFactors / 2)
-
-        prod1 = arrayfun( @(j) sprintf('P(:, %d)', j), 1:i , 'uni', 0 );
-        prod2 = arrayfun( @(j) sprintf('P(:, %d)', j), i+1:nFactors , 'uni', 0 );
-
-        prod1 = strcat(prod1{:});
-        prod2 = strcat(prod2{:});
-
-        prod1 = strrep(prod1, ')P', ').*P' );
-        prod2 = strrep(prod2, ')P', ').*P' );
-
-        prod1 = eval( prod1 );
-        prod2 = eval( prod2 );
-
-        candidates = vertcat(candidates, horzcat(prod1, prod2));
-        candidates = unique(candidates, 'rows');
-    end
-
-    candidates = vertcat(candidates, fliplr(candidates));
+    candidates = [divisors(:), n ./ divisors(:)];
+    candidates = vertcat(candidates, fliplr(candidates)); %#ok<AGROW> rebuilt for each n, not grown
 
     ratio = candidates(:,1) ./ candidates(:,2);
-
-%     lowerlim = 4/3;
-%     upperlim = 16/9;
-
     hits = ratio < upperlim & ratio > lowerlim;
 
     if any(hits)
         candidates = candidates(hits, :);
         nCols = candidates(1, 1); nRows = candidates(1, 2);
-        finished = true;
-    else
-        n = n+1;
+        return
     end
+
+    n = n + 1;
+end
 end
