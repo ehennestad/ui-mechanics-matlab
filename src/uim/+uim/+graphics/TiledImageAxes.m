@@ -159,12 +159,16 @@ end
 methods %Structors
 
     % % Constructor
-    function obj = TiledImageAxes(varargin)
+    function obj = TiledImageAxes(parentHandle, propertyValues)
     %TiledImageAxes Create a tiled image axes
     %
     %   obj = uim.graphics.TiledImageAxes()
-    %   obj = uim.graphics.TiledImageAxes(parent)
-    %   obj = uim.graphics.TiledImageAxes(parent, Name=Value)
+    %   obj = uim.graphics.TiledImageAxes(parentHandle)
+    %   obj = uim.graphics.TiledImageAxes(parentHandle, Name=Value)
+    %   obj = uim.graphics.TiledImageAxes(Name=Value)
+    %
+    %   parentHandle is a figure, panel or tab. Without it, or when it is
+    %   empty, the object creates a figure of its own.
     %
     %   Name-Value arguments (see the class properties):
     %       GridSize          - [nRows, nCols], default [3, 5]
@@ -179,24 +183,28 @@ methods %Structors
     %   Names are case-insensitive and may be abbreviated; an unknown name
     %   raises an error.
 
-        % The parent is optional and comes before the name-value
-        % arguments. An arguments block would bind a leading name such as
-        % "GridSize" to the parent, so the parent is taken from varargin
-        % here and assignOptions validates the rest.
-        hasParent = nargin > 0 && ...
-            (isa(varargin{1}, 'matlab.ui.Figure') || ...
-             isa(varargin{1}, 'matlab.ui.container.Panel') || ...
-             isa(varargin{1}, 'matlab.ui.container.Tab'));
-
-        if hasParent
-            parent = varargin{1};
-            varargin = varargin(2:end);
-
-            obj.Figure_ = ancestor(parent, 'figure');
-            obj.Parent = parent;
+        arguments
+            parentHandle {mustBeEmptyOrContainer} = []
+            propertyValues.ImageSize
+            propertyValues.GridSize
+            propertyValues.Spacing
+            propertyValues.TileConfiguration
+            propertyValues.NumChannels
+            propertyValues.NormalizedPadding
+            propertyValues.TileUnits
+            propertyValues.Visible
         end
 
-        obj.assignOptions(varargin{:})
+        hasParent = ~isempty(parentHandle);
+
+        if hasParent
+            obj.Figure_ = ancestor(parentHandle, 'figure');
+            obj.Parent = parentHandle;
+        end
+
+        for name = string(fieldnames(propertyValues))'
+            obj.(name) = propertyValues.(name);
+        end
 
         % Options are parsed first so that they apply to a new figure
         if ~hasParent
@@ -226,26 +234,6 @@ methods %Structors
 end
 
 methods (Access = private) % Methods for setting up gui
-
-    function assignOptions(obj, options)
-    %assignOptions Assign the constructor's name-value options
-
-        arguments
-            obj
-            options.ImageSize
-            options.GridSize
-            options.Spacing
-            options.TileConfiguration
-            options.NumChannels
-            options.NormalizedPadding
-            options.TileUnits
-            options.Visible
-        end
-
-        for name = string(fieldnames(options))'
-            obj.(name) = options.(name);
-        end
-    end
 
     function createFigure(obj)
 
@@ -1241,4 +1229,15 @@ methods(Static)
         points(4, 2, :) = bbox(:, 2) + bbox(:, 4);
     end
 end
+end
+
+function mustBeEmptyOrContainer(value)
+%mustBeEmptyOrContainer Validate the parent of a TiledImageAxes
+    isContainer = isa(value, 'matlab.ui.Figure') || ...
+        isa(value, 'matlab.ui.container.Panel') || ...
+        isa(value, 'matlab.ui.container.Tab');
+    if ~(isempty(value) || isContainer)
+        error("uim:TiledImageAxes:InvalidParent", ...
+            "The parent must be a figure, panel or tab, or empty.")
+    end
 end

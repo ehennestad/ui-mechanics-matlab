@@ -275,10 +275,14 @@ classdef TestGraphicsHelpers < matlab.unittest.TestCase
                 "Cropping shifts the traced coordinates.");
         end
 
-        function lineDrawingRejectsInvalidOptions(testCase)
-            [~, hAxes] = createAxes(testCase);
+        function lineDrawingRejectsInvalidInputs(testCase)
+            [hFigure, hAxes] = createAxes(testCase);
             image = drawingWithSquares();
 
+            testCase.verifyError(@() uim.graphics.patchLineDrawing(hFigure, image), ...
+                "MATLAB:validators:mustBeA");
+            testCase.verifyError(@() uim.graphics.patchLineDrawing(hAxes, "image.png"), ...
+                "MATLAB:validators:mustBeNumeric");
             testCase.verifyError(@() uim.graphics.patchLineDrawing(hAxes, image, "plotType", "line"), ...
                 "MATLAB:validators:mustBeMember");
             testCase.verifyError(@() uim.graphics.patchLineDrawing(hAxes, image, "NoSuchOption", 1), ...

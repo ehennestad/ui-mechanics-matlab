@@ -198,6 +198,22 @@ classdef TestTileLayout < matlab.unittest.TestCase
                 "Only the documented options are accepted at construction.");
         end
 
+        function tiledAxesAcceptsAnEmptyParent(testCase)
+            tiledAxes = uim.graphics.TiledImageAxes([], "GridSize", [1, 2], "Visible", "off");
+            testCase.addTeardown(@deleteValid, tiledAxes.Figure);
+
+            testCase.verifyEqual(tiledAxes.NumTiles, 2, "Options after an empty parent apply.");
+        end
+
+        function tiledAxesRejectsAParentThatIsNotAContainer(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure);
+
+            testCase.verifyError(@() uim.graphics.TiledImageAxes(hAxes), ...
+                "uim:TiledImageAxes:InvalidParent");
+        end
+
         function escapeEndsUiwaitWithNaN(testCase)
             tiledAxes = uim.graphics.TiledImageAxes("GridSize", [1, 2], "Visible", "off");
             hFigure = tiledAxes.Figure;

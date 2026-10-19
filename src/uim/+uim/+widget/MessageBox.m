@@ -1,4 +1,4 @@
-classdef MessageBox < uim.Handle
+classdef MessageBox < uim.Handle & matlab.mixin.SetGet
 %MessageBox Overlay box that shows text messages and progress in a figure
 %
 %   messageBox = uim.widget.MessageBox(hParent) creates a hidden message
@@ -96,9 +96,7 @@ classdef MessageBox < uim.Handle
                 options.?uim.widget.MessageBox
             end
 
-            for name = string(fieldnames(options))'
-                obj.(name) = options.(name);
-            end
+            set(obj, options)
 
             obj.ReferenceAxes = hParent;
             % Draggable parts read CurrentPoint from motion listeners; in

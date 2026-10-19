@@ -1,19 +1,20 @@
-function hP = patchLineDrawing(ax, im, opt)
+function hP = patchLineDrawing(hAxes, imageArray, options)
 %patchLineDrawing Trace the dark shapes of a line drawing as filled polygons
 %
-%   hP = uim.graphics.patchLineDrawing(ax, im) traces the boundaries of
-%   the dark regions of the image im and plots them into the axes ax as
-%   one black polygon object. im is a grayscale or RGB image with values
-%   from 0 to 255; pixels whose mean over the color channels is below
-%   100 count as dark. Very short boundaries are dropped; with plotType
-%   'polygon' at least one boundary must remain.
+%   hP = uim.graphics.patchLineDrawing(hAxes, imageArray) traces the
+%   boundaries of the dark regions of imageArray and plots them into the
+%   axes hAxes as one black polygon object. imageArray is a grayscale or
+%   RGB image with values from 0 to 255; pixels whose mean over the color
+%   channels is below 100 count as dark. Very short boundaries are
+%   dropped; with plotType 'polygon' at least one boundary must remain.
 %
 %   Coordinates are image pixels centred on the image: x is the column
 %   and y is the row, each minus half the image size. y grows with the
 %   row number, so the drawing appears upright only in an axes with
 %   YDir 'reverse'.
 %
-%   hP = uim.graphics.patchLineDrawing(ax, im, Name=Value) sets options:
+%   hP = uim.graphics.patchLineDrawing(hAxes, imageArray, Name=Value)
+%   sets options:
 %     SmoothIter   - Number of circular moving-mean passes over each
 %                    boundary. Default 2; 0 disables smoothing.
 %     SmoothWindow - Moving-mean window length in points. Default 10.
@@ -26,38 +27,38 @@ function hP = patchLineDrawing(ax, im, opt)
 %                    returns a column of patch handles.
 %   Option names are case insensitive and may be abbreviated; an unknown
 %   name raises an error. The function does not change the hold state
-%   of ax, so with plotType 'polygon' the plot replaces the axes content
-%   unless the axes is held.
+%   of hAxes, so with plotType 'polygon' the plot replaces the axes
+%   content unless the axes is held.
 %
 %   The tracing uses bwboundaries from the Image Processing Toolbox.
 %
 %   See also uim.graphics.ImageVector, uim.style.IconSet
 
     arguments
-        ax
-        im
-        opt.SmoothIter (1,1) double {mustBeInteger, mustBeNonnegative} = 2
-        opt.SmoothWindow (1,1) double {mustBePositive} = 10
-        opt.cropImage (1,1) logical = true
-        opt.plotType (1,1) string {mustBeMember(opt.plotType, ["polygon", "patch"])} = "polygon"
+        hAxes (1,1) {mustBeA(hAxes, ["matlab.graphics.axis.Axes", "matlab.ui.control.UIAxes"])}
+        imageArray {mustBeNumeric, mustBeNonempty}
+        options.SmoothIter (1,1) double {mustBeInteger, mustBeNonnegative} = 2
+        options.SmoothWindow (1,1) double {mustBePositive} = 10
+        options.cropImage (1,1) logical = true
+        options.plotType (1,1) string {mustBeMember(options.plotType, ["polygon", "patch"])} = "polygon"
     end
 
-    if opt.cropImage
-        im = uim.graphics.internal.cropImageToContent(im);
+    if options.cropImage
+        imageArray = uim.graphics.internal.cropImageToContent(imageArray);
     end
 
     %% Get coordinates of edges
-    BW = mean(im, 3) < 100;
+    BW = mean(imageArray, 3) < 100;
 
-    switch opt.plotType
+    switch options.plotType
         case 'polygon'
-            hP = plotObjectsAsPolygons(ax, BW, opt);
+            hP = plotObjectsAsPolygons(hAxes, BW, options);
         case 'patch'
-            hP = patchObjects(ax, BW, opt);
+            hP = patchObjects(hAxes, BW, options);
     end
 end
 
-function hP = patchObjects(ax, BW, opt)
+function hP = patchObjects(hAxes, BW, options)
 %patchObjects Plot binary objects using patches.
 
     % Get size of image
@@ -70,7 +71,7 @@ function hP = patchObjects(ax, BW, opt)
     % Loop through object boundaries (Example from bwboundaries doc)
     for k = 1:N
 
-        [xDataOuter, yDataOuter] = getBoundary(B{k}, imSize, opt);
+        [xDataOuter, yDataOuter] = getBoundary(B{k}, imSize, options);
         if numel(xDataOuter) < 20; continue; end
 
         xData = xDataOuter; yData = yDataOuter;
@@ -80,7 +81,7 @@ function hP = patchObjects(ax, BW, opt)
         if (nnz(A(:,k)) > 0)
             % Loop through the children of boundary k
             for l = find(A(:,k))'
-                [xDataInner, yDataInner] = getBoundary(B{l}, imSize, opt);
+                [xDataInner, yDataInner] = getBoundary(B{l}, imSize, options);
                 if isempty(xDataInner); continue; end
 
                 % Have to insert to inner boundary so that it starts and
@@ -97,7 +98,7 @@ function hP = patchObjects(ax, BW, opt)
             end
         end
 
-        hP(k) = patch(ax, xData, yData, 'k');
+        hP(k) = patch(hAxes, xData, yData, 'k');
     end
 
     keep = arrayfun(@(h) ~isa(h, 'matlab.graphics.GraphicsPlaceholder'), hP);
@@ -106,7 +107,7 @@ function hP = patchObjects(ax, BW, opt)
     set(hP, 'EdgeColor', 'none')
 end
 
-function hP = plotObjectsAsPolygons(ax, BW, opt)
+function hP = plotObjectsAsPolygons(hAxes, BW, options)
 %plotObjectsAsPolygons Plot binary objects as polygons
     % Get size of image
     [imHeight, imWidth] = size(BW);
@@ -126,9 +127,9 @@ function hP = plotObjectsAsPolygons(ax, BW, opt)
         % Center coordinates
         y = data(:,1) - imHeight/2; x = data(:,2) - imWidth/2;
 
-        for j = 1:opt.SmoothIter
-            y = uim.utility.circularSmooth(y, opt.SmoothWindow, 'movmean');
-            x = uim.utility.circularSmooth(x, opt.SmoothWindow, 'movmean');
+        for j = 1:options.SmoothIter
+            y = uim.utility.circularSmooth(y, options.SmoothWindow, 'movmean');
+            x = uim.utility.circularSmooth(x, options.SmoothWindow, 'movmean');
         end
 
         if i == 1 || ~exist('pgon', 'var')
@@ -140,10 +141,10 @@ function hP = plotObjectsAsPolygons(ax, BW, opt)
 
     warning('on', 'MATLAB:polyshape:repairedBySimplify')
 
-    hP = plot(ax, pgon, 'FaceColor', 'k', 'FaceAlpha', 1, 'EdgeColor', 'none');
+    hP = plot(hAxes, pgon, 'FaceColor', 'k', 'FaceAlpha', 1, 'EdgeColor', 'none');
 end
 
-function [xData, yData] = getBoundary(B, imSize, opt)
+function [xData, yData] = getBoundary(B, imSize, options)
 
     [xData, yData] = deal([]);
 
@@ -153,9 +154,9 @@ function [xData, yData] = getBoundary(B, imSize, opt)
     xData = B(:,2) - imSize(2)/2;
     yData = B(:,1) - imSize(1)/2;
 
-    for j = 1:opt.SmoothIter
-        yData = uim.utility.circularSmooth(yData, opt.SmoothWindow, 'movmean');
-        xData = uim.utility.circularSmooth(xData, opt.SmoothWindow, 'movmean');
+    for j = 1:options.SmoothIter
+        yData = uim.utility.circularSmooth(yData, options.SmoothWindow, 'movmean');
+        xData = uim.utility.circularSmooth(xData, options.SmoothWindow, 'movmean');
     end
 
     xData(end+1) = xData(1);
