@@ -309,7 +309,7 @@ classdef TestSliderDetails < matlab.unittest.TestCase
 
         function sliderRejectsOptionsItCannotApply(testCase)
             hFigure = createHiddenFigure(testCase);
-            testCase.verifyError(@() uim.widget.Slider("Parent", hFigure, "Orientation", "vertical"), ...
+            testCase.verifyError(@() uim.widget.Slider("Parent", hFigure, "Direction", "vertical"), ...
                 "MATLAB:TooManyInputs");
             testCase.verifyError(@() uim.widget.Slider("Parent", hFigure, "Step", 0.1), ...
                 "MATLAB:TooManyInputs", "Step is read-only.");
@@ -437,6 +437,73 @@ classdef TestSliderDetails < matlab.unittest.TestCase
             slider.Value = 4;
             testCase.verifyEqual(midpoint(hKnob.XData), expected(3), "AbsTol", knobTolerance, ...
                 "The last tick is under the knob centre at Max.");
+        end
+
+        function verticalSliderTicksSpanTheKnobTravelInItsOwnAxes(testCase)
+            hFigure = createHiddenFigure(testCase);
+            slider = uim.widget.Slider("Parent", hFigure, "Units", "pixels", ...
+                "Position", [20, 20, 30, 200], "Orientation", "vertical", ...
+                "Min", -2, "Max", 3, "NumSteps", 5, "TickLength", 4);
+            testCase.addTeardown(@deleteValid, slider);
+            hTicks = findobj(findall(hFigure, "Tag", "SlideBar Container"), "Type", "line");
+
+            testCase.assertNumElements(hTicks, slider.NumSteps + 1);
+            testCase.verifyEqual(tickPositionsAlongY(hTicks), -2:3, "AbsTol", 1e-12, ...
+                "The ticks sit at Min + k*Step along y.");
+
+            slider.Position = [20, 20, 30, 300];
+
+            testCase.verifyEqual(tickPositionsAlongY(hTicks), -2:3, "AbsTol", 1e-12, ...
+                "After a resize the ticks still sit at Min + k*Step.");
+        end
+
+        function verticalSliderTickModeOverIsRightOfTheTrack(testCase)
+            hFigure = createHiddenFigure(testCase);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [20, 20, 120, 320], ...
+                "XLim", [0, 120], "YLim", [0, 320]);
+            trackCenterX = 40 + 30/2;
+            tickLength = 4;
+
+            tickModes = ["over", "under"];
+            tickXLimits = zeros(numel(tickModes), 2);
+            for i = 1:numel(tickModes)
+                slider = uim.widget.Slider("Parent", hAxes, "Position", [40, 20, 30, 200], ...
+                    "Orientation", "vertical", "Min", 1, "Max", 4, "NumSteps", 2, ...
+                    "TickLength", tickLength, "TickMode", char(tickModes(i)));
+                hTicks = findobj(hAxes, "Type", "line");
+
+                % The track starts at Position(2) + Padding(2) and spans
+                % Position(4) - Padding(2) - Padding(4) pixels
+                trackStart = 20 + slider.Padding(2);
+                trackLength = 200 - slider.Padding(2) - slider.Padding(4);
+                testCase.verifyEqual(tickPositionsAlongY(hTicks), ...
+                    trackStart + [0, 0.5, 1] .* trackLength, "AbsTol", 1e-12);
+
+                xData = [hTicks.XData];
+                tickXLimits(i, :) = [min(xData), max(xData)];
+                delete(slider)
+            end
+
+            testCase.verifyEqual(tickXLimits(1, :), trackCenterX + [0, tickLength], ...
+                "AbsTol", 1e-12, "'over' ticks extend right of the track.");
+            testCase.verifyEqual(tickXLimits(2, :), trackCenterX + [-tickLength, 0], ...
+                "AbsTol", 1e-12, "'under' ticks extend left of the track.");
+        end
+
+        function sliderOrientationIsSetAtConstructionOnly(testCase)
+            hFigure = createHiddenFigure(testCase);
+            horizontalSlider = uim.widget.Slider("Parent", hFigure);
+            testCase.addTeardown(@deleteValid, horizontalSlider);
+            verticalSlider = uim.widget.Slider("Parent", hFigure, "Orientation", "vertical");
+            testCase.addTeardown(@deleteValid, verticalSlider);
+
+            testCase.verifyEqual(horizontalSlider.Orientation, 'horizontal', ...
+                "Sliders are horizontal by default.");
+            testCase.verifyEqual(verticalSlider.Orientation, 'vertical');
+            testCase.verifyError(@() setProperty(verticalSlider, "Orientation", 'horizontal'), ...
+                "uim:Slider:OrientationAfterConstruction");
+            testCase.verifyError(@() uim.widget.Slider("Parent", hFigure, "Orientation", "diagonal"), ...
+                "MATLAB:validators:mustBeMember");
         end
 
         function sliderRedrawsTicksWhenNumStepsChanges(testCase)
@@ -642,6 +709,11 @@ end
 function positions = tickPositions(hTicks)
 %tickPositions Sorted x of the tick marks; each tick line is vertical
     positions = sort(arrayfun(@(h) h.XData(1), hTicks))';
+end
+
+function positions = tickPositionsAlongY(hTicks)
+%tickPositionsAlongY Sorted y of the tick marks of a vertical slider; each tick line is horizontal
+    positions = sort(arrayfun(@(h) h.YData(1), hTicks))';
 end
 
 function center = midpoint(values)
