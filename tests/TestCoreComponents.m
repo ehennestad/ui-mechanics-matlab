@@ -444,6 +444,27 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             testCase.verifyEqual(char(secondLabel.Visible), 'off');
         end
 
+        function pageIndicatorAppliesBackgroundAndBorderStyle(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            pages = uim.widget.PageIndicator(canvas, {"One", "Two"});
+
+            backgroundColor = [1, 0, 0];
+            borderColor = [0, 0, 1];
+            pages.BackgroundColor = backgroundColor;
+            pages.BackgroundAlpha = 0.8;
+            pages.BorderColor = borderColor;
+            pages.BorderWidth = 2;
+
+            background = findall(canvas.Axes, "Type", "patch", ...
+                "FaceColor", backgroundColor);
+            testCase.assertNumElements(background, 1);
+            testCase.verifyEqual(background.FaceAlpha, 0.8);
+            testCase.verifyEqual(background.EdgeColor, borderColor);
+            testCase.verifyEqual(background.LineWidth, 2);
+        end
+
         function privateToolbarRendersAllSymbolButtons(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
