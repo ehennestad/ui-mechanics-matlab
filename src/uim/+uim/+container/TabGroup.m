@@ -20,7 +20,9 @@ classdef TabGroup < uim.abstract.Container
 %   The tab bar is a uim.widget.Toolbar, 20 pixels high, along the top
 %   edge, with one toggle button per tab. Pressing the button of another
 %   tab shows that tab's panel, hides the previous one, raises
-%   SelectionChanged and then calls SelectionChangedFcn.
+%   SelectionChanged and then calls SelectionChangedFcn. Assigning
+%   SelectedTab switches tabs the same way without SelectionChanged or
+%   SelectionChangedFcn.
 %
 %   Example:
 %       hFigure = figure();
@@ -36,6 +38,16 @@ classdef TabGroup < uim.abstract.Container
         Type = 'TabGroup' % Component type name
     end
 
+    properties (Dependent)
+        % Index of the selected tab: 1 once the first tab is added, [] before.
+        % Assigning it shows that tab, as pressing its button does.
+        SelectedTab
+    end
+
+    properties (Access = private)
+        SelectedTab_ = [] % Value behind SelectedTab
+    end
+
     properties (SetAccess = protected, Transient)
         Children uim.abstract.Component % Not filled by TabGroup; stays empty
     end
@@ -43,11 +55,6 @@ classdef TabGroup < uim.abstract.Container
     properties
         % Not used; the tab bar is always drawn along the top edge.
         TabLocation = 'top' % Not priority.
-
-        % Index of the selected tab: 1 once the first tab is added, [] before.
-        % It is updated when the user presses a tab button. Setting it does
-        % not change the visible tab.
-        SelectedTab = []
 
         % Function called as fcn(tabGroup, evt) after the user selects
         % another tab. evt is a uim.event.TabSelectionChangedEvent.
@@ -177,7 +184,7 @@ classdef TabGroup < uim.abstract.Container
 
             % Select button if it is the first button added.
             if iButton == 1
-                obj.SelectedTab = 1;
+                obj.SelectedTab_ = 1;
                 obj.TabButtonGroup(1).Value = true;
             end
         end
@@ -248,7 +255,7 @@ classdef TabGroup < uim.abstract.Container
             % Determine which tab is selected
             nextTab = find(ismember(obj.TabButtonGroup, src));
 
-            if isequal(nextTab, obj.SelectedTab)
+            if isequal(nextTab, obj.SelectedTab_)
                 % Selected same tab
                 evtData = uim.event.ToggleEvent(1);
             else
@@ -257,33 +264,57 @@ classdef TabGroup < uim.abstract.Container
             end
 
             % Change button state.
-            obj.TabButtonGroup(obj.SelectedTab).toggleState([], evtData)
+            obj.TabButtonGroup(obj.SelectedTab_).toggleState([], evtData)
 
-            % Set panel visibility todo: make a separate method.
-            if ~isequal(nextTab, obj.SelectedTab)
-                obj.Tabs(nextTab).Panel.Visible = 'on';
-                %obj.TabPanels(nextTab).Visible = 'on';
-                obj.Tabs(obj.SelectedTab).Panel.Visible = 'off';
-                %obj.TabPanels(obj.SelectedTab).Visible = 'off';
-
-                % Update separator visibility
-                for i = 1:numel(obj.TabSeparators)
-                    if i == nextTab || i == nextTab-1
-                        obj.TabSeparators(i).Visible = 'off';
-                    else
-                        obj.TabSeparators(i).Visible = 'on';
-                    end
-                end
-
-                args = {obj.Tabs(obj.SelectedTab), obj.Tabs(nextTab)};
+            if ~isequal(nextTab, obj.SelectedTab_)
+                args = {obj.Tabs(obj.SelectedTab_), obj.Tabs(nextTab)};
                 evtData = uim.event.TabSelectionChangedEvent(args{:});
-                obj.SelectedTab = nextTab;
+                obj.showTab(nextTab)
                 obj.notify('SelectionChanged', evtData)
 
                 if ~isempty(obj.SelectionChangedFcn)
                     obj.SelectionChangedFcn(obj, evtData)
                 end
             end
+        end
+    end
+
+    methods % Set/get
+
+        function selectedTab = get.SelectedTab(obj)
+            selectedTab = obj.SelectedTab_;
+        end
+
+        function set.SelectedTab(obj, newValue)
+            assert(isscalar(newValue) && any(newValue == 1:numel(obj.Tabs)), ...
+                "uim:TabGroup:InvalidSelectedTab", ...
+                "SelectedTab must be the index of an existing tab (1 to %d).", numel(obj.Tabs))
+            if isequal(newValue, obj.SelectedTab_); return; end
+
+            % A user press toggles its own button; here both change
+            obj.TabButtonGroup(obj.SelectedTab_).Value = false;
+            obj.TabButtonGroup(newValue).Value = true;
+            obj.showTab(newValue)
+        end
+    end
+
+    methods (Access = private)
+
+        function showTab(obj, nextTab)
+        %showTab Show the panel of nextTab, hide the selected one, and select nextTab
+            obj.Tabs(nextTab).Panel.Visible = 'on';
+            obj.Tabs(obj.SelectedTab_).Panel.Visible = 'off';
+
+            % Separators next to the selected tab are hidden
+            for i = 1:numel(obj.TabSeparators)
+                if i == nextTab || i == nextTab-1
+                    obj.TabSeparators(i).Visible = 'off';
+                else
+                    obj.TabSeparators(i).Visible = 'on';
+                end
+            end
+
+            obj.SelectedTab_ = nextTab;
         end
     end
 

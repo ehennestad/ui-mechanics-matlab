@@ -256,6 +256,105 @@ classdef TestCoreComponents < matlab.unittest.TestCase
                 "uim:ChannelIndicator:InvalidChannelColors");
         end
 
+        function readoutShowsANewLabel(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            readout = uim.widget.Readout(canvas, "Label", "Frame", "Value", 1);
+            testCase.addTeardown(@deleteValid, readout);
+
+            readout.Label = "Time";
+
+            testCase.verifyNotEmpty(findall(hFigure, "Type", "text", "String", 'Time: 1'));
+        end
+
+        function borderWidthChangeIsDrawn(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            button = uim.control.Button(canvas, "Text", "Go", "BorderColor", "w");
+            testCase.addTeardown(@deleteValid, button);
+
+            button.BorderWidth = 3;
+
+            patches = findobj(canvas.Axes, "Type", "patch");
+            testCase.verifyTrue(any([patches.LineWidth] == 3), ...
+                "The background outline takes the new BorderWidth.");
+        end
+
+        function componentsConvertToStructs(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            button = uim.control.Button(canvas, "Text", "Go");
+            testCase.addTeardown(@deleteValid, button);
+
+            S = button.toStruct();
+
+            testCase.verifyEqual(S.Text, 'Go');
+            testCase.verifyFalse(isfield(S, "ButtonText"), "Protected properties are left out.");
+        end
+
+        function resizablePositionConvertsToPixels(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 400, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [50, 50, 200, 200], ...
+                "XLim", [0, 100], "YLim", [0, 100]);
+            resizable = ResizableStub(hAxes, [10, 10, 20, 20]);
+
+            % 200 px for 100 data units: 2 px per unit
+            testCase.verifyEqual(resizable.getpixelposition(), [20, 20, 40, 40], "AbsTol", 1e-9);
+            testCase.verifyEqual(resizable.getpixelposition(true), [70, 70, 40, 40], "AbsTol", 1e-9);
+        end
+
+        function panelConstructsWithLayoutOptionsAndNoColor(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 600, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+
+            plain = uim.container.Panel(hFigure);
+            testCase.addTeardown(@deleteValid, plain);
+            testCase.verifyClass(plain, "uim.container.Panel", "No BackgroundColor is needed.");
+
+            withMargin = uim.container.Panel(hFigure, BackgroundColor="w", ...
+                Margin=[10, 10, 10, 10], Location="northeast", HorizontalAlignment="right");
+            testCase.addTeardown(@deleteValid, withMargin);
+            hPanel = withMargin.getGraphicsContainer();
+            testCase.verifyEqual(hPanel.Position, withMargin.Position, ...
+                "The uipanel follows the layout options given at construction.");
+        end
+
+        function panelPositionMovesTheUipanel(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 600, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            panel = uim.container.Panel(hFigure, BackgroundColor="w");
+            testCase.addTeardown(@deleteValid, panel);
+
+            panel.Position = [50, 50, 100, 80];
+
+            testCase.verifyEqual(panel.getGraphicsContainer().Position, [50, 50, 100, 80]);
+            testCase.verifyEqual(panel.getpixelposition(), [50, 50, 100, 80], ...
+                "getpixelposition counts the panel offset once.");
+        end
+
+        function tabGroupSelectedTabShowsThatTab(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 600, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            tabGroup = uim.container.TabGroup(hFigure);
+            testCase.addTeardown(@deleteValid, tabGroup);
+            tabOne = uim.container.Tab(tabGroup, "Title", "One");
+            tabTwo = uim.container.Tab(tabGroup, "Title", "Two");
+            setappdata(hFigure, "Changed", false)
+            tabGroup.SelectionChangedFcn = @(~, ~) setappdata(hFigure, "Changed", true);
+
+            tabGroup.SelectedTab = 2;
+
+            testCase.verifyEqual([string(tabOne.Panel.Visible), string(tabTwo.Panel.Visible)], ["off", "on"]);
+            testCase.verifyFalse(getappdata(hFigure, "Changed"), ...
+                "Assigning SelectedTab does not call SelectionChangedFcn.");
+            testCase.verifyError(@() assignProperty(tabGroup, "SelectedTab", 3), ...
+                "uim:TabGroup:InvalidSelectedTab");
+        end
+
         function contrastSliderResetsLimitsOutsideNewDataLimits(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
@@ -716,6 +815,38 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             waitbar.Status = 1;
             barLengths = arrayfun(@(h) max(h.XData) - min(h.XData), barLines);
             testCase.verifyEqual(barLengths(1)/barLengths(2), 1, "RelTol", 0.05);
+        end
+
+        function waitbarFollowsAVerticalPositionChange(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [20, 20, 300, 200], "YLim", [0, 1]);
+            waitbar = uim.widget.Waitbar(hAxes, "Position", [1, 1, 200, 10]);
+            testCase.addTeardown(@deleteValid, waitbar);
+            barLines = findall(hAxes, "Type", "line");
+            yBefore = barLines(1).YData(1);
+
+            waitbar.Position = [1, 100, 200, 10];
+
+            % 99 px higher in a 200 px axes showing one data unit
+            testCase.verifyEqual(barLines(1).YData(1) - yBefore, 99/200, "AbsTol", 1e-9);
+        end
+
+        function waitbarCreatedHiddenDrawsAndDeletes(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure);
+
+            waitbar = uim.widget.Waitbar(hAxes, "Visible", "off");
+            barLines = findall(hAxes, "Type", "line");
+            testCase.verifyNumElements(barLines, 2, "The bars are drawn.");
+            testCase.verifyEqual(string({barLines.Visible}), ["off", "off"]);
+
+            waitbar.Visible = "on";
+            testCase.verifyEqual(string({barLines.Visible}), ["on", "on"]);
+
+            testCase.verifyWarningFree(@() delete(waitbar));
+            testCase.verifyEmpty(findall(hAxes, "Type", "line"), "delete removes the bars.");
         end
 
         function frameMarkerTracksValueInPlainAxes(testCase)
@@ -1199,6 +1330,27 @@ classdef TestCoreComponents < matlab.unittest.TestCase
             delete(binding)
             testCase.verifyFalse(isvalid(zoomButton));
             testCase.verifyFalse(isvalid(panButton));
+        end
+
+        function overviewIndicatorEndsAnUnfinishedDragOnPress(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            canvas = uim.UIComponentCanvas(uipanel(hFigure));
+            indicator = uim.widget.OverviewIndicator(canvas, ...
+                'DataLimits', [0, 200; 0, 100], 'ViewLimits', [50, 100; 25, 50]);
+            testCase.addTeardown(@deleteValid, indicator);
+            viewRect = findall(canvas.Axes, "Tag", "OverviewViewRect");
+
+            warningState = warning("off", "MATLAB:structOnObject");
+            testCase.addTeardown(@() warning(warningState));
+            viewRect.ButtonDownFcn(viewRect, [])
+            firstListener = struct(indicator).DragMotionListener;
+
+            % A second press without a release in between
+            viewRect.ButtonDownFcn(viewRect, [])
+
+            testCase.verifyFalse(isvalid(firstListener), ...
+                "The listeners of the unfinished drag are deleted.");
         end
 
         function overviewIndicatorMapsAndNotifies(testCase)

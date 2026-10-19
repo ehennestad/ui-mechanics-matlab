@@ -118,6 +118,46 @@ classdef TestMessageBox < matlab.unittest.TestCase
             testCase.verifyError(@() uim.widget.MessageBox(hPanel, 1, 2), "uim:MessageBox:InvalidPairs");
         end
 
+        function boxOverAnAxesCanBeDraggedInsideIt(testCase)
+            hFigure = figure("Visible", "off", "Units", "pixels", "Position", [100, 100, 600, 400]);
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure, "Units", "pixels", "Position", [50, 50, 500, 300]);
+            messageBox = uim.widget.MessageBox(hAxes);
+            testCase.addTeardown(@deleteValid, messageBox);
+            messageBox.displayMessage('Drag me')
+
+            boxAxes = messageBoxAxes(hFigure, hAxes);
+            hBackground = findobj(boxAxes, "Type", "patch", "-function", ...
+                @(h) isa(h.ButtonDownFcn, "function_handle") && contains(func2str(h.ButtonDownFcn), "startDrag"));
+            testCase.assertNumElements(hBackground, 1, "The box background takes presses.");
+            positionBefore = getpixelposition(boxAxes);
+
+            hFigure.CurrentPoint = [300, 200];
+            hBackground.ButtonDownFcn(hBackground, [])
+            hFigure.CurrentPoint = [320, 190];
+            moveWithListener(messageBox)
+            testCase.verifyEqual(getpixelposition(boxAxes), positionBefore + [20, -10, 0, 0], ...
+                "AbsTol", 1e-6, "The box follows the pointer.");
+
+            hFigure.CurrentPoint = [2000, 200];
+            moveWithListener(messageBox)
+            boxPosition = getpixelposition(boxAxes);
+            testCase.verifyEqual(boxPosition(1) + boxPosition(3), 550, "AbsTol", 1e-6, ...
+                "The box stops at the right edge of the axes.");
+        end
+
+        function boxOverAnAxesNeedsNoToolbox(testCase)
+            hFigure = figure("Visible", "off");
+            testCase.addTeardown(@deleteValid, hFigure);
+            hAxes = axes(hFigure);
+            messageBox = uim.widget.MessageBox(hAxes);
+            testCase.addTeardown(@deleteValid, messageBox);
+
+            testCase.verifyEmpty(findall(hAxes, "Tag", "imrect"), ...
+                "No imrect is created in the reference axes.");
+            testCase.verifyFalse(isa(messageBox, "uim.mixin.Resizable"));
+        end
+
         function constructorAcceptsNameValueSyntax(testCase)
             hFigure = figure("Visible", "off");
             testCase.addTeardown(@deleteValid, hFigure);
@@ -240,9 +280,20 @@ function [hFigure, messageBox] = createMessageBox(testCase)
     testCase.addTeardown(@deleteValid, messageBox);
 end
 
-function hAxes = messageBoxAxes(hFigure)
+function hAxes = messageBoxAxes(hFigure, referenceAxes)
     allAxes = findall(hFigure, "Type", "axes");
+    if nargin > 1
+        allAxes = allAxes(allAxes ~= referenceAxes);
+    end
     hAxes = allAxes(1);
+end
+
+function moveWithListener(messageBox)
+%moveWithListener Run the drag's motion listener; a hidden figure raises no motion events
+    warningState = warning("off", "MATLAB:structOnObject");
+    restoreWarning = onCleanup(@() warning(warningState));
+    boxState = struct(messageBox);
+    boxState.DragMotionListener.Callback([], [])
 end
 
 function lines = displayedLines(hFigure)

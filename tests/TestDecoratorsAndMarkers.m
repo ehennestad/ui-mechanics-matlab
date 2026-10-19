@@ -44,7 +44,62 @@ classdef TestDecoratorsAndMarkers < matlab.unittest.TestCase
         end
     end
 
-    methods (Test) % uim.widget.ChannelIndicator on an axes that is not held
+    methods (Test) % uim.decorator.Image
+
+        function imageDataReadsBackAsAssigned(testCase)
+            [~, canvas] = createCanvas(testCase);
+            imageData = uint8(reshape(1:12, 3, 4));
+            alphaData = reshape(linspace(0, 1, 12), 3, 4);
+
+            img = uim.decorator.Image(canvas, CData=imageData, Alpha=alphaData, ...
+                Position=[10, 10, 40, 30], PositionMode="manual");
+            testCase.addTeardown(@deleteValid, img);
+
+            testCase.verifyEqual(img.CData, imageData);
+            testCase.verifyEqual(img.Alpha, alphaData);
+            img.CData = img.CData;
+            hImage = findobj(canvas.Axes, "Type", "image");
+            testCase.verifyEqual(hImage.CData, flipud(imageData), ...
+                "Reassigning CData does not flip the drawn image.");
+        end
+
+        function imageFitsInsideAWideComponent(testCase)
+            [~, canvas] = createCanvas(testCase);
+            img = uim.decorator.Image(canvas, CData=zeros(100, 100, "uint8"), ...
+                Position=[10, 10, 200, 100], Size=[200, 100], PositionMode="manual");
+            testCase.addTeardown(@deleteValid, img);
+
+            hImage = findobj(canvas.Axes, "Type", "image");
+            drawnSize = [diff(hImage.XData), diff(hImage.YData)];
+            testCase.verifyEqual(drawnSize, [100, 100], "AbsTol", 1e-9, ...
+                "A square image fills the height of a 200-by-100 component.");
+        end
+
+        function imageRejectsAlphaOfAnotherSize(testCase)
+            [~, canvas] = createCanvas(testCase);
+            img = uim.decorator.Image(canvas, CData=zeros(3, 4, "uint8"));
+            testCase.addTeardown(@deleteValid, img);
+
+            testCase.verifyError(@() assignProperty(img, "Alpha", ones(4, 3)), "uim:Image:InvalidAlpha");
+            img.Alpha = 0.5;
+            testCase.verifyEqual(img.Alpha, 0.5);
+        end
+
+        function imageAcceptsAlphaBeforeCDataAtConstruction(testCase)
+            [~, canvas] = createCanvas(testCase);
+            alphaData = reshape(linspace(0, 1, 12), 3, 4);
+
+            img = uim.decorator.Image(canvas, Alpha=alphaData, CData=zeros(3, 4, "uint8"));
+            testCase.addTeardown(@deleteValid, img);
+
+            testCase.verifyEqual(img.Alpha, alphaData);
+            testCase.verifyError(@() uim.decorator.Image(canvas, Alpha=ones(4, 3), ...
+                CData=zeros(3, 4, "uint8")), "uim:Image:InvalidAlpha", ...
+                "An Alpha of another size is still rejected when the image is drawn.");
+        end
+    end
+
+    methods (Test) % uim.widget.FrameMarker
 
         function channelIndicatorDrawsIntoAnUnheldAxes(testCase)
             hFigure = figure("Visible", "off");
@@ -59,10 +114,6 @@ classdef TestDecoratorsAndMarkers < matlab.unittest.TestCase
             testCase.verifyNumElements(findobj(hAxes, "Type", "patch"), 2, "Both indicators are drawn.");
             testCase.verifyEqual(char(hAxes.NextPlot), 'replace', "NextPlot is restored.");
         end
-    end
-
-    methods (Test) % uim.widget.FrameMarker
-
         function frameMarkerStartsHiddenWhenAsked(testCase)
             [~, hAxes] = createDataAxes(testCase);
             marker = uim.widget.FrameMarker(hAxes, "Minimum", 1, "Maximum", 100, ...
@@ -73,6 +124,49 @@ classdef TestDecoratorsAndMarkers < matlab.unittest.TestCase
             testCase.assertNumElements(handles, 3);
             testCase.verifyTrue(all(strcmp(get(handles, "Visible"), 'off')));
             testCase.verifyTrue(all(arrayfun(@(h) all(h.XData == 20), handles)));
+        end
+
+        function frameMarkerUsesItsAppearanceProperties(testCase)
+            [~, hAxes] = createDataAxes(testCase);
+            marker = uim.widget.FrameMarker(hAxes, "Minimum", 1, "Maximum", 100, "Value", 50, ...
+                "Color", [1, 0, 0], "MarkerSize", 20, "LineWidth", 2);
+            testCase.addTeardown(@deleteValid, marker);
+            topKnob = findall(hAxes, "Tag", "FrameMarker", "Marker", "v");
+            bottomKnob = findall(hAxes, "Tag", "FrameMarker", "Marker", "^");
+
+            testCase.verifyEqual([topKnob.MarkerSize, bottomKnob.MarkerSize], [20, 20]);
+            testCase.verifyEqual(topKnob.Color, [1, 0, 0]);
+            testCase.verifyEqual(topKnob.MarkerFaceColor, [1, 0, 0]);
+
+            marker.MarkerSymbol = 's';
+            marker.Color = [0, 0, 1];
+            testCase.verifyEqual(topKnob.Marker, 'square');
+            testCase.verifyEqual(bottomKnob.MarkerFaceColor, [0, 0, 1], ...
+                "Appearance changes after construction are applied.");
+        end
+
+        function releasingTheBottomKnobRestoresIt(testCase)
+            [~, hAxes] = createDataAxes(testCase);
+            marker = uim.widget.FrameMarker(hAxes, "Minimum", 1, "Maximum", 100, "Value", 20);
+            testCase.addTeardown(@deleteValid, marker);
+            bottomKnob = findall(hAxes, "Tag", "FrameMarker", "Marker", "^");
+
+            marker.onMouseEnterSlider(bottomKnob)
+            marker.knobPressed([], [])
+            marker.onMouseExitSlider(bottomKnob)
+            marker.knobReleased([], [])
+
+            testCase.verifyEqual(bottomKnob.MarkerSize, marker.MarkerSize, ...
+                "Release restores the bottom knob too.");
+        end
+
+        function deletingTheMarkerRemovesItsLines(testCase)
+            [~, hAxes] = createDataAxes(testCase);
+            marker = uim.widget.FrameMarker(hAxes, "Minimum", 1, "Maximum", 100, "Value", 20);
+
+            delete(marker)
+
+            testCase.verifyEmpty(findall(hAxes, "Tag", "FrameMarker"));
         end
 
         function frameMarkerFollowsItsValue(testCase)
@@ -285,6 +379,10 @@ function [hFigure, hAxes] = createDataAxes(testCase)
     hAxes = axes(hFigure, "Units", "pixels", "Position", [40, 40, 400, 200], ...
         "XLim", [1, 100], "YLim", [0, 1]);
     hold(hAxes, "on")
+end
+
+function assignProperty(object, propertyName, value)
+    object.(propertyName) = value;
 end
 
 function deleteValid(object)
