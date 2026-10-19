@@ -1,14 +1,13 @@
-classdef Zoomable < handle
+classdef Zoomable < uim.interface.AxesAttached
 %Zoomable Mixin adding zoom-limit handling to a pointer tool
 %
-%   Combined into uim.interface.PointerTool subclasses; relies on the
-%   concrete Axes and Figure properties that PointerTool provides rather
-%   than declaring them here. PointerTool's Axes is a validated concrete
-%   property, and MATLAB's property-validation-inheritance rules do not
-%   allow a mixin to redeclare it, even as Abstract.
+%   Combined into uim.interface.PointerTool subclasses. Axes and Figure
+%   are declared by uim.interface.AxesAttached and implemented by
+%   PointerTool.
 %
 %   Contract for subclasses:
-%       - Inherit uim.interface.PointerTool (for Axes and Figure).
+%       - Inherit uim.interface.PointerTool, or another class that
+%         implements Axes and Figure.
 %       - Define ZoomFactor, the zoom step used by imageZoom (see
 %         uim.geometry.scaleLimits), and XLimOrig and YLimOrig, the
 %         [min, max] limits that zooming and panning never go beyond.
