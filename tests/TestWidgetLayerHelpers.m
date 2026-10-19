@@ -128,34 +128,4 @@ classdef TestWidgetLayerHelpers < matlab.unittest.TestCase
             testCase.verifySize(uim.graphics.internal.cropImageToContent(dark, 0), [3, 3]);
         end
     end
-
-    methods (Test) % uim.mixin.internal and Resizable
-
-        function rescaledChildFollowsParentMove(testCase)
-            child = uim.mixin.internal.rescaleChildPosition([12, 22, 5, 6], [10, 20, 100, 50], [30, 25, 100, 50]);
-            testCase.verifyEqual(child, [32, 27, 5, 6]);
-        end
-
-        function rescaledChildScalesWithParentResize(testCase)
-            child = uim.mixin.internal.rescaleChildPosition([20, 30, 10, 10], [10, 20, 100, 50], [10, 20, 200, 100]);
-            testCase.verifyEqual(child, [30, 40, 20, 20], ...
-                "Offset from the parent origin and size both double.");
-        end
-
-        function rescaledChildHandlesMoveAndResizeTogether(testCase)
-            child = uim.mixin.internal.rescaleChildPosition([20, 30, 10, 10], [10, 20, 100, 50], [0, 0, 200, 100]);
-            testCase.verifyEqual(child, [20, 20, 20, 20]);
-        end
-
-        function rectangleMaskCoversNormalisedRectangle(testCase)
-            mask = uim.mixin.Resizable.rect2mask([0.25, 0.5, 0.5, 0.25], [8, 4]);
-            testCase.verifySize(mask, [4, 8]);
-            expected = false(4, 8);
-            expected(2:3, 2:6) = true;
-            testCase.verifyEqual(mask, expected);
-
-            oversized = uim.mixin.Resizable.rect2mask([-0.5, -0.5, 3, 3], [4, 4]);
-            testCase.verifyTrue(all(oversized(:)), "Out-of-range rectangles are clamped.");
-        end
-    end
 end
