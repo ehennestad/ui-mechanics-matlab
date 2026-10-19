@@ -27,7 +27,8 @@ classdef PointerManager < handle
 %   Construction holds the axes (hold on), and gives the figure a no-op
 %   WindowButtonMotionFcn if it has none, so CurrentPoint follows the
 %   mouse in java-based figures. Both remain after the manager is
-%   deleted.
+%   deleted. Deleting the manager deletes its tools and the graphics they
+%   drew in the axes.
 %
 %   Keyboard input is not captured. Forward key events from the host's
 %   key callback to onKeyPress and onKeyRelease.
@@ -139,11 +140,21 @@ classdef PointerManager < handle
 
         function delete(obj)
         %delete Delete method for PointerManager.
+        %
+        %   Deleting the manager also deletes its tools, which remove the
+        %   graphics they drew in the axes.
 
             obj.deleteFigureMouseListeners()
             delete(obj.PointerToolToggleListeners)
 
             obj.releaseHostButtonDownFcn()
+
+            tools = struct2cell(obj.Pointers);
+            for i = 1:numel(tools)
+                if isvalid(tools{i})
+                    delete(tools{i})
+                end
+            end
         end
     end
 
