@@ -36,7 +36,7 @@ classdef Image < uim.abstract.Component
         ImageHandle
     end
 
-    properties (Transient, Dependent)
+    properties (Dependent, SetAccess = private)
         AspectRatio % Image height divided by image width, from CData.
     end
 

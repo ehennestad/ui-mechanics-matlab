@@ -119,7 +119,7 @@ classdef Button < uim.abstract.Control
         String = '' % Alias of Text.
     end
 
-    properties (Dependent, Transient)
+    properties (Dependent, SetAccess = private)
         % [x, y, width, height] in pixels of the area covering the button
         % and its text, at least the button size. Raises an error when the
         % button has no text.

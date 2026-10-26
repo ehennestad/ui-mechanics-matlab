@@ -34,7 +34,7 @@ classdef Readout < uim.abstract.Control
         FontWeight = 'normal'       % 'normal' or 'bold'
     end
 
-    properties (Dependent, Transient)
+    properties (Dependent, SetAccess = private)
         String % The currently displayed text (read-only)
     end
 
