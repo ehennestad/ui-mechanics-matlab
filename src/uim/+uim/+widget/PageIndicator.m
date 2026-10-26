@@ -90,14 +90,20 @@ classdef PageIndicator < uim.abstract.Control
 
     methods
 
-        function obj = PageIndicator(hParent, pageNames, varargin)
+        function obj = PageIndicator(hParent, pageNames, propertyValues)
         %PageIndicator Create a page indicator
         %
         %   pages = uim.widget.PageIndicator(parent, pageNames, Name=Value)
         %
         %   See the class help for the accepted parents and options.
 
-            obj@uim.abstract.Control(hParent, varargin{:})
+            arguments
+                hParent
+                pageNames
+                propertyValues.?uim.widget.PageIndicator
+            end
+
+            obj@uim.abstract.Control(hParent, propertyValues)
 
             obj.PageNames = pageNames;
 

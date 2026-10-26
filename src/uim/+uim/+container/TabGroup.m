@@ -83,13 +83,19 @@ classdef TabGroup < uim.abstract.Container
 
     methods %structor
 
-        function obj = TabGroup(hParent, varargin)
+        function obj = TabGroup(hParent, propertyValues)
         %TabGroup Create a tab group
         %
         %   tabGroup = uim.container.TabGroup(hParent, Name=Value) See the
         %   class help.
 
-            obj@uim.abstract.Container(hParent, varargin{:})
+            arguments
+                hParent
+                propertyValues.?uim.container.TabGroup
+                propertyValues.CanvasMode
+            end
+
+            obj@uim.abstract.Container(hParent, propertyValues)
 
             obj.IsConstructed = true;
 

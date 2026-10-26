@@ -21,13 +21,20 @@ classdef TabBar < uim.widget.Toolbar
 
     methods
 
-        function obj = TabBar(hParent, varargin)
+        function obj = TabBar(hParent, propertyValues)
         %TabBar Create an empty tab bar
         %
         %   tabBar = uim.widget.TabBar(parent, Name=Value) accepts the same
         %   parents and options as uim.widget.Toolbar.
 
-            obj@uim.widget.Toolbar(hParent, varargin{:})
+            arguments
+                hParent
+                propertyValues.?uim.widget.TabBar
+                propertyValues.CanvasMode
+            end
+
+            toolbarArgs = namedargs2cell(propertyValues);
+            obj@uim.widget.Toolbar(hParent, toolbarArgs{:})
         end
 
         function addSeparator(obj)
